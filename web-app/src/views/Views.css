@@ -19,6 +19,14 @@
   margin-bottom: 8px;
 }
 
+.view__icon {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  margin-bottom: 8px;
+  border-radius: 12px;
+}
+
 .view__title {
   font-size: 2rem;
   margin: 0;

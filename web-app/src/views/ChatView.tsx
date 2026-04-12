@@ -60,7 +60,8 @@ export function ChatView() {
   return (
     <div className="view view--chat">
       <header className="view__header">
-        <h1 className="view__title view__title--small">✨ Głos Bogów</h1>
+        <img src="/icons/glos-bogow.png" alt="Głos Bogów" className="view__icon" />
+        <h1 className="view__title view__title--small">Głos Bogów</h1>
         <p className="view__subtitle">Komunikacja z Mistrzami Gry</p>
       </header>
 
@@ -76,7 +77,7 @@ export function ChatView() {
                 className={`chat-message ${msg.sender === 'god' ? 'chat-message--god' : 'chat-message--klan'}`}
               >
                 <span className="chat-message__sender">
-                  {msg.sender === 'god' ? '✨ Bogowie' : '👤 Klan'}
+                  {msg.sender === 'god' ? '👁️ Bogowie' : '👤 Klan'}
                 </span>
                 <span className="chat-message__content">{msg.content}</span>
               </div>
