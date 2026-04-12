@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+*.env
+
+# OpenCode config (may contain secrets)
+.opencode/opencode.jsonc
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+web-app/supabase/.branches/
+web-app/supabase/.temp/
+
+# Windows Zone.Identifier files
+*:Zone.Identifier
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.local
+.turbo/
+
+# PWA
+dev-dist/

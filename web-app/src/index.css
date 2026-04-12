@@ -1,0 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+:root {
+  /* Slavic Gods Theme Colors */
+  --color-perun: #FFD700; /* Lightning Gold */
+  --color-perun-glow: rgba(255, 215, 0, 0.4);
+  
+  --color-weles: #8A2BE2; /* Magic Purple */
+  --color-weles-glow: rgba(138, 43, 226, 0.4);
+  
+  --color-mokosz: #2E8B57; /* Nature Green */
+  --color-mokosz-glow: rgba(46, 139, 87, 0.4);
+  
+  --color-bg-dark: #0f1115;
+  --color-overlay: rgba(20, 24, 32, 0.7);
+  --color-text-main: #f1f3f5;
+  --color-text-muted: #8b92a5;
+  
+  /* Glassmorphism setup */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(12px);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  color-scheme: dark;
+  color: var(--color-text-main);
+  background-color: var(--color-bg-dark);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(138, 43, 226, 0.15), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(255, 215, 0, 0.1), transparent 25%);
+  background-attachment: fixed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#root {
+  width: 100%;
+  max-width: 480px; /* Mobile first approach for a PWA */
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  background: var(--color-bg-dark);
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--glass-shadow);
+}
+
+.button-glow {
+  background: linear-gradient(135deg, var(--color-weles), #4b0082);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px var(--color-weles-glow);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.button-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(138, 43, 226, 0.6);
+}
+
+.button-glow:active {
+  transform: translateY(1px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+h1, h2, h3 {
+  font-weight: 800;
+  margin: 0 0 16px 0;
+}
