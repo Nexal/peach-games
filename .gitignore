@@ -48,3 +48,8 @@ Thumbs.db
 
 # PWA
 dev-dist/
+
+# Playwright screenshots
+screenshot*.png
+page-*.png
+/.playwright-mcp/

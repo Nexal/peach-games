@@ -96,6 +96,10 @@ body {
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 
 h1, h2, h3 {
