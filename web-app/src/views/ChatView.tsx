@@ -19,7 +19,7 @@ export function ChatView() {
       const { data } = await supabase
         .from('messages')
         .select('*')
-        .or(`klan_id.eq.${playerSession.klan_id},sender.eq.god`)
+        .or(`klan_id.eq.${playerSession.klan_id},and(sender.eq.god,klan_id.is.null)`)
         .order('created_at', { ascending: true })
         .limit(50);
       if (data) setMessages(data);
@@ -34,7 +34,7 @@ export function ChatView() {
         { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
           const newMsg = payload.new as Message;
-          if (newMsg.klan_id === playerSession.klan_id || newMsg.sender === 'god') {
+          if (newMsg.klan_id === playerSession.klan_id || (newMsg.sender === 'god' && newMsg.klan_id === null)) {
             setMessages((prev) => [...prev, newMsg]);
           }
         }
