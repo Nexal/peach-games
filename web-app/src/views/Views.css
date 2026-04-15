@@ -185,10 +185,19 @@
 }
 
 /* Admin Panel */
-.view--admin,
+.view--admin {
+  padding: 0;
+  background: var(--color-bg-dark);
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+}
+
 .view--admin-login {
   padding: 0;
   background: var(--color-bg-dark);
+  max-width: 100%;
 }
 
 .admin-login {
@@ -277,11 +286,23 @@
 }
 
 .admin-tabs {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
   display: flex;
+  justify-content: space-around;
   gap: 4px;
-  padding: 12px 20px;
-  background: rgba(0, 0, 0, 0.2);
-  overflow-x: auto;
+  padding: 12px 8px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, rgba(15, 17, 21, 0.98) 0%, rgba(20, 22, 28, 0.95) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--glass-border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+  z-index: 100;
 }
 
 .admin-tabs__item {
@@ -304,8 +325,6 @@
 .admin-content {
   padding: 20px;
   padding-bottom: 100px;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
 }
 
 .admin-panel {

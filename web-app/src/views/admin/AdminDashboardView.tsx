@@ -75,6 +75,28 @@ export function AdminDashboardView() {
         <button onClick={logout} className="admin-header__logout">Wyloguj</button>
       </header>
 
+      <main className="admin-content">
+        {activeTab === 'games' && (
+          <GamesPanel
+            games={games}
+            selectedGameId={selectedGameId}
+            onSelectGame={setSelectedGameId}
+            onCreateGame={createGame}
+            onUpdateStatus={updateGameStatus}
+            loading={loading}
+          />
+        )}
+        {activeTab === 'klans' && (
+          <KlansPanel klans={klans} gameId={selectedGameId} />
+        )}
+        {activeTab === 'players' && (
+          <PlayersPanel players={players} klans={klans} gameId={selectedGameId} />
+        )}
+        {activeTab === 'chat' && (
+          <ChatPanel games={games} klans={klans} />
+        )}
+      </main>
+
       <nav className="admin-tabs">
         <button
           className={`admin-tabs__item ${activeTab === 'games' ? 'admin-tabs__item--active' : ''}`}
@@ -101,28 +123,6 @@ export function AdminDashboardView() {
           ✨ Głos Bogów
         </button>
       </nav>
-
-      <main className="admin-content">
-        {activeTab === 'games' && (
-          <GamesPanel
-            games={games}
-            selectedGameId={selectedGameId}
-            onSelectGame={setSelectedGameId}
-            onCreateGame={createGame}
-            onUpdateStatus={updateGameStatus}
-            loading={loading}
-          />
-        )}
-        {activeTab === 'klans' && (
-          <KlansPanel klans={klans} gameId={selectedGameId} />
-        )}
-        {activeTab === 'players' && (
-          <PlayersPanel players={players} klans={klans} gameId={selectedGameId} />
-        )}
-        {activeTab === 'chat' && (
-          <ChatPanel games={games} klans={klans} />
-        )}
-      </main>
     </div>
   );
 }
