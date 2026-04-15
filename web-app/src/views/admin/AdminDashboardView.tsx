@@ -526,7 +526,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
 
     try {
       const response = await fetch(
-        'https://your-project.supabase.co/functions/v1/generate-tts',
+        'https://xmanqwjuqylwhizkqjsi.supabase.co/functions/v1/generate-tts',
         {
           method: 'POST',
           headers: {
