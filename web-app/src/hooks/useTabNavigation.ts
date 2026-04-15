@@ -10,11 +10,11 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
-  { id: 'home', label: 'Strona', icon: '⌂' },
-  { id: 'chat', label: 'Głos Bogów', icon: '', iconSrc: '/icons/glos-bogow.png' },
-  { id: 'quests', label: 'Próby', icon: '🗺️' },
-  { id: 'shop', label: 'Sklep', icon: '⚗️' },
-  { id: 'profile', label: 'Profil', icon: '👤' },
+  { id: 'home', label: 'ᚡᛁᛊᛏᚨ', icon: '', iconSrc: '/icons/home.png' },
+  { id: 'chat', label: 'ᚷᛚᚨᛊᛒᚨᛁᚱ', icon: '', iconSrc: '/icons/glos-bogow.png' },
+  { id: 'quests', label: 'ᛈᚱᚨᛒᚤ', icon: '', iconSrc: '/icons/quests.png' },
+  { id: 'shop', label: 'ᛊᚲᛟᛈ', icon: '', iconSrc: '/icons/shop.png' },
+  { id: 'profile', label: 'ᛈᚱᚢᚠᛁᛚ', icon: '', iconSrc: '/icons/profile.png' },
 ];
 
 export function useTabNavigation() {

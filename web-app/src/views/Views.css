@@ -178,3 +178,550 @@
 .placeholder-panel__text {
   font-size: 0.9rem;
 }
+
+/* Admin Panel */
+.view--admin,
+.view--admin-login {
+  padding: 0;
+  background: var(--color-bg-dark);
+}
+
+.admin-login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.admin-login__logo {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.admin-login__title {
+  font-size: 1.8rem;
+  color: var(--color-perun);
+  margin-bottom: 8px;
+}
+
+.admin-login__subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 30px;
+}
+
+.admin-login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.admin-login__input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.admin-login__input--error {
+  border-color: #ff4444;
+}
+
+.admin-login__error {
+  color: #ff4444;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.admin-login__submit {
+  width: 100%;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--glass-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.admin-header__title {
+  font-size: 1.2rem;
+  color: var(--color-perun);
+  margin: 0;
+}
+
+.admin-header__logout {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-muted);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.2);
+  overflow-x: auto;
+}
+
+.admin-tabs__item {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-muted);
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.admin-tabs__item--active {
+  background: var(--color-perun);
+  color: black;
+  border-color: var(--color-perun);
+}
+
+.admin-content {
+  padding: 20px;
+  padding-bottom: 100px;
+}
+
+.admin-panel__section {
+  margin-bottom: 30px;
+}
+
+.admin-panel__title {
+  font-size: 1.1rem;
+  color: var(--color-text-main);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.admin-panel__row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-panel__input {
+  flex: 1;
+  min-width: 150px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.admin-panel__select {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  min-width: 120px;
+}
+
+.admin-panel__empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.admin-games-list,
+.admin-klans-list,
+.admin-players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-game-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-game-card--selected {
+  border-color: var(--color-perun);
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.admin-game-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-game-card__name {
+  font-weight: 600;
+}
+
+.admin-game-card__status {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.admin-game-card__status--draft {
+  color: var(--color-text-muted);
+}
+
+.admin-game-card__status--active {
+  color: var(--color-mokosz);
+}
+
+.admin-game-card__status--finished {
+  color: var(--color-weles);
+}
+
+.admin-game-card__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-game-card__btn {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-main);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.admin-game-card__btn--start {
+  border-color: var(--color-mokosz);
+  color: var(--color-mokosz);
+}
+
+.admin-game-card__btn--stop {
+  border-color: var(--color-weles);
+  color: var(--color-weles);
+}
+
+.admin-klan-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+.admin-klan-card__color {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.admin-klan-card__name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.admin-klan-card__points {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-klan-card__points button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.admin-klan-card__points button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.admin-klan-card__points span {
+  font-size: 1.2rem;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: center;
+}
+
+.admin-player-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+.admin-player-card__name {
+  font-weight: 500;
+}
+
+.admin-player-card__klan {
+  font-size: 0.85rem;
+}
+
+.admin-player-card--editable .admin-player-card__name {
+  flex: 1;
+}
+
+.admin-player-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-player-card__btn {
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.admin-player-card__btn:hover {
+  opacity: 1;
+}
+
+.admin-player-card__btn--delete:hover {
+  color: #ff4444;
+}
+
+.admin-player-card__btn--save {
+  color: var(--color-mokosz);
+}
+
+.admin-player-card__edit {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  align-items: center;
+}
+
+.admin-player-card__edit-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-perun);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+/* Admin Chat Panel */
+.admin-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-chat__tts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.admin-chat__tts input {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-chat__messages {
+  flex: 1;
+  min-height: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+.admin-chat__message {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-chat__message--god {
+  align-self: flex-end;
+  background: rgba(255, 215, 0, 0.1);
+  border-color: var(--color-perun);
+}
+
+.admin-chat__message-sender {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.admin-chat__message-content {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.admin-chat__input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-chat__input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.admin-chat__input:focus {
+  border-color: var(--color-perun);
+  outline: none;
+}
+
+/* Admin Invite Link */
+.admin-invite {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-invite__input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  color: var(--color-perun);
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: monospace;
+}
+
+.admin-invite__input:focus {
+  border-color: var(--color-perun);
+  outline: none;
+}
+
+.admin-invite__copy {
+  padding: 12px 16px;
+}
+
+.admin-panel__hint {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Profile View */
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 4px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.profile-avatar__color {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.profile-card {
+  padding: 20px;
+}
+
+.profile-card__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.profile-card__row:last-child {
+  border-bottom: none;
+}
+
+.profile-card__label {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.profile-card__value {
+  font-size: 0.9rem;
+}
+
+.profile-card__klan {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-card__klan-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.profile-logout {
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-muted);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.profile-logout:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-main);
+}

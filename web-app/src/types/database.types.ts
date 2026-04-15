@@ -39,31 +39,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      games: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          name: string
+          starts_at: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          name: string
+          starts_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          name?: string
+          starts_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       klans: {
         Row: {
+          game_id: string | null
           id: string
           name: string
           points: number | null
           theme_color: string
         }
         Insert: {
+          game_id?: string | null
           id?: string
           name: string
           points?: number | null
           theme_color: string
         }
         Update: {
+          game_id?: string | null
           id?: string
           name?: string
           points?: number | null
           theme_color?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "klans_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "klans_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
           content: string
           created_at: string | null
+          game_id: string | null
           id: string
           klan_id: string | null
           sender: string
@@ -72,6 +121,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string | null
+          game_id?: string | null
           id?: string
           klan_id?: string | null
           sender: string
@@ -80,12 +130,27 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string | null
+          game_id?: string | null
           id?: string
           klan_id?: string | null
           sender?: string
           tts_requested?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "messages_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "messages_klan_id_fkey"
             columns: ["klan_id"]
@@ -98,26 +163,46 @@ export type Database = {
       players: {
         Row: {
           created_at: string | null
+          game_id: string | null
           id: string
+          joined_at: string | null
           klan_id: string | null
           name: string
           role: string | null
         }
         Insert: {
           created_at?: string | null
+          game_id?: string | null
           id?: string
+          joined_at?: string | null
           klan_id?: string | null
           name: string
           role?: string | null
         }
         Update: {
           created_at?: string | null
+          game_id?: string | null
           id?: string
+          joined_at?: string | null
           klan_id?: string | null
           name?: string
           role?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "players_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "players_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "players_klan_id_fkey"
             columns: ["klan_id"]
@@ -130,6 +215,7 @@ export type Database = {
       quest_completions: {
         Row: {
           completed_at: string | null
+          game_id: string | null
           id: string
           klan_id: string | null
           metadata: Json | null
@@ -137,6 +223,7 @@ export type Database = {
         }
         Insert: {
           completed_at?: string | null
+          game_id?: string | null
           id?: string
           klan_id?: string | null
           metadata?: Json | null
@@ -144,12 +231,27 @@ export type Database = {
         }
         Update: {
           completed_at?: string | null
+          game_id?: string | null
           id?: string
           klan_id?: string | null
           metadata?: Json | null
           quest_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "quest_completions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_completions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quest_completions_klan_id_fkey"
             columns: ["klan_id"]
@@ -169,6 +271,7 @@ export type Database = {
       quests: {
         Row: {
           description: string | null
+          game_id: string | null
           id: string
           reward_points: number | null
           title: string
@@ -176,6 +279,7 @@ export type Database = {
         }
         Insert: {
           description?: string | null
+          game_id?: string | null
           id?: string
           reward_points?: number | null
           title: string
@@ -183,19 +287,84 @@ export type Database = {
         }
         Update: {
           description?: string | null
+          game_id?: string | null
           id?: string
           reward_points?: number | null
           title?: string
           type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "quests_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quests_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
-      [_ in never]: never
+      game_status: {
+        Row: {
+          gracze_count: number | null
+          klany_count: number | null
+          questy_count: number | null
+          ukonczone_count: number | null
+          wiadomosci_count: number | null
+        }
+        Relationships: []
+      }
+      games_status: {
+        Row: {
+          created_at: string | null
+          ends_at: string | null
+          gracze_count: number | null
+          id: string | null
+          klany_count: number | null
+          name: string | null
+          starts_at: string | null
+          status: string | null
+          ukonczone_questy: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          ends_at?: string | null
+          gracze_count?: never
+          id?: string | null
+          klany_count?: never
+          name?: string | null
+          starts_at?: string | null
+          status?: string | null
+          ukonczone_questy?: never
+        }
+        Update: {
+          created_at?: string | null
+          ends_at?: string | null
+          gracze_count?: never
+          id?: string | null
+          klany_count?: never
+          name?: string | null
+          starts_at?: string | null
+          status?: string | null
+          ukonczone_questy?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      create_game: {
+        Args: { game_description?: string; game_name: string }
+        Returns: string
+      }
+      reset_game: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

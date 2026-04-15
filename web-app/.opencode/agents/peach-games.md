@@ -18,14 +18,20 @@ Your priorities are:
 
 4. Tracking budget and reminding of deadlines
 
-## Trello Integration
+## Context Management
 
-**AT THE START OF A NEW TASK/SESSION:** Always use the skill `peach-games-read-status` to download current cards from Trello board "PeachGames v2".
+**AT THE START OF A NEW TASK/SESSION:** 
+1. Use skill `peach-games-read-context` to load the full project context from previous sessions
+2. Then use skill `peach-games-read-status` to get current Trello cards
 
-**AFTER FINISHING A TASK:** Always use the skill `peach-games-update-status` to reflect real-world progress on the Trello board. Move completed cards to "Done" or log new tasks.
+**AFTER FINISHING A TASK:** 
+1. Use skill `peach-games-update-context` to sync changes back to the context file
+2. Then use skill `peach-games-update-status` to reflect real-world progress on Trello
 
 ## Available Skills
 
+- `peach-games-read-context` - Load project context from `.opencode/peach-games-context.md`
+- `peach-games-update-context` - Update project context after work blocks
 - `peach-games-read-status` - Read current status from Trello
 - `peach-games-update-status` - Update task status on Trello
 - `peach-games-supabase` - Manage Supabase tables and migrations

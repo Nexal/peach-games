@@ -1,0 +1,235 @@
+.view--join {
+  padding-bottom: 20px;
+}
+
+.join-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.join-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.join-panel__label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.join-panel__select {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.join-panel__select:focus {
+  border-color: var(--color-perun);
+  outline: none;
+}
+
+.join-panel__players {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.join-panel__empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.join-player-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid var(--glass-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+}
+
+.join-player-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.join-player-card--selected {
+  border-color: var(--color-perun);
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.join-player-card__color {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.join-player-card__name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.join-player-card__klan {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.join-panel__input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.join-panel__input:focus {
+  border-color: var(--color-perun);
+  outline: none;
+}
+
+.join-panel__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+}
+
+.join-panel__preview-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.join-panel__preview-klan {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 2px solid;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.join-panel__preview-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.join-panel__submit {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.join-panel__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Success screen */
+.join-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  text-align: center;
+  padding: 20px;
+}
+
+.join-success__icon {
+  width: 80px;
+  height: 80px;
+  background: var(--color-mokosz);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.join-success__title {
+  font-size: 2rem;
+  color: var(--color-perun);
+  margin-bottom: 20px;
+}
+
+.join-success__klan {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border: 3px solid;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.join-success__klan-color {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.join-success__klan-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.join-success__info {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+/* Error state */
+.join-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  padding: 20px;
+}
+
+.join-error__icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.join-error__message {
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  max-width: 300px;
+}
+
+.join-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-muted);
+}

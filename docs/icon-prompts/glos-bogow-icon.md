@@ -44,7 +44,6 @@ Dark mystical icon for "Voice of the Gods" - stylized sound waves with a divine 
 - Ale też 48x48px i 96x96px
 - Transparent tło
 
-## Zapisz wynik jako
+## Wygenerowana wersja
 
-- `web-app/public/icons/glos-bogow.svg` (główny)
-- Albo wklej tutaj to wygeneruję plik
+Dodano `glos_bogow-removebg-preview.png` (271KB) do `assets/visuals/icons/` i skopiowano do `web-app/public/icons/glos-bogow.png`.

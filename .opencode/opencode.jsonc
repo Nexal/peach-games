@@ -10,14 +10,22 @@
         "mcp-server-trello"
       ],
       "environment": {
-        "TRELLO_API_KEY": "YOUR_TRELLO_API_KEY",
-        "TRELLO_TOKEN": "YOUR_TRELLO_TOKEN"
+        "TRELLO_API_KEY": "cced9296e49710b1593a24c127e1ca60",
+        "TRELLO_TOKEN": "<TRELLO_TOKEN>"
       }
     },
     "notion": {
       "enabled": true,
       "type": "remote",
       "url": "https://mcp.notion.com/mcp"
+    },
+    "playwright": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "npx",
+        "@playwright/mcp"
+      ]
     }
   },
   "plugin": [

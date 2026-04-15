@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Metamorphous&display=swap');
 
 :root {
   /* Slavic Gods Theme Colors */
@@ -22,7 +22,7 @@
   --glass-blur: blur(12px);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   
-  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  font-family: 'Metamorphous', serif;
   line-height: 1.5;
   font-weight: 400;
   
@@ -76,8 +76,8 @@ body {
   border-radius: 8px;
   padding: 12px 24px;
   font-size: 1.1rem;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 600;
+  font-family: 'Metamorphous', serif;
+  font-weight: 400;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px var(--color-weles-glow);
@@ -99,6 +99,16 @@ body {
 }
 
 h1, h2, h3 {
-  font-weight: 800;
+  font-family: 'Metamorphous', serif;
+  font-weight: 400;
   margin: 0 0 16px 0;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+  letter-spacing: 1px;
+}
+
+h4, h5, h6 {
+  font-family: 'Metamorphous', serif;
+  font-weight: 400;
+  margin: 0 0 12px 0;
+  text-shadow: 0 0 10px rgba(138, 43, 226, 0.2);
 }
