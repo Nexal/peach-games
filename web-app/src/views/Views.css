@@ -647,6 +647,22 @@
   cursor: not-allowed;
 }
 
+.admin-chat__broadcast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--color-perun);
+  cursor: pointer;
+}
+
+.admin-chat__broadcast input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
 /* Admin Invite Link */
 .admin-invite {
   display: flex;

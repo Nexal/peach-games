@@ -441,6 +441,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedKlanId, setSelectedKlanId] = useState<string | null>(null);
   const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [broadcastToAll, setBroadcastToAll] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -502,17 +503,31 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
   const sendMessage = async () => {
     if (!inputText.trim()) return;
 
-    const { error } = await supabase.from('messages').insert({
-      content: inputText,
-      sender: 'god',
-      game_id: selectedGameId,
-      klan_id: selectedKlanId,
-      tts_requested: ttsEnabled,
-    });
+    if (broadcastToAll) {
+      const targetKlans = selectedGameId
+        ? klans.filter((k) => k.game_id === selectedGameId)
+        : klans;
 
-    if (!error) {
-      setInputText('');
+      for (const klan of targetKlans) {
+        await supabase.from('messages').insert({
+          content: inputText,
+          sender: 'god',
+          game_id: selectedGameId,
+          klan_id: klan.id,
+          tts_requested: ttsEnabled,
+        });
+      }
+    } else {
+      await supabase.from('messages').insert({
+        content: inputText,
+        sender: 'god',
+        game_id: selectedGameId,
+        klan_id: selectedKlanId,
+        tts_requested: ttsEnabled,
+      });
     }
+
+    setInputText('');
   };
 
   const selectedKlan = klans.find((k) => k.id === selectedKlanId);
@@ -597,15 +612,28 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder={selectedKlan ? `Wiadomość od Bogów do ${selectedKlan.name}...` : 'Wybierz klan aby przemówić...'}
+            placeholder={
+              broadcastToAll
+                ? 'Wiadomość do wszystkich klanów...'
+                : selectedKlan
+                  ? `Wiadomość od Bogów do ${selectedKlan.name}...`
+                  : 'Wybierz klan lub włącz wysyłanie do wszystkich...'
+            }
             className="admin-chat__input"
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            disabled={!selectedKlanId}
           />
-          <button onClick={sendMessage} className="button-glow" disabled={!selectedKlanId}>
+          <button onClick={sendMessage} className="button-glow">
             Wyślij
           </button>
         </div>
+        <label className="admin-chat__broadcast">
+          <input
+            type="checkbox"
+            checked={broadcastToAll}
+            onChange={(e) => setBroadcastToAll(e.target.checked)}
+          />
+          📢 Wyślij do wszystkich klanów
+        </label>
       </div>
     </div>
   );
