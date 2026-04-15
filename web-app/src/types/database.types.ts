@@ -110,6 +110,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          audio_url: string | null
           content: string
           created_at: string | null
           game_id: string | null
@@ -119,6 +120,7 @@ export type Database = {
           tts_requested: boolean | null
         }
         Insert: {
+          audio_url?: string | null
           content: string
           created_at?: string | null
           game_id?: string | null
@@ -128,6 +130,7 @@ export type Database = {
           tts_requested?: boolean | null
         }
         Update: {
+          audio_url?: string | null
           content?: string
           created_at?: string | null
           game_id?: string | null

@@ -10,7 +10,9 @@ export function ChatView() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [playerSession] = useState(getPlayerSession());
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (!playerSession?.klan_id) return;
@@ -49,6 +51,37 @@ export function ChatView() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
+
+  const playAudio = (msg: Message) => {
+    if (!msg.audio_url) return;
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    const audio = new Audio(msg.audio_url);
+    audioRef.current = audio;
+    setPlayingAudioId(msg.id);
+
+    audio.onended = () => {
+      setPlayingAudioId(null);
+    };
+
+    audio.onerror = () => {
+      setPlayingAudioId(null);
+      console.error('Error playing audio');
+    };
+
+    audio.play();
+  };
 
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
@@ -106,6 +139,15 @@ export function ChatView() {
                   {msg.sender === 'god' ? '👁️ Bogowie' : `👤 ${msg.sender}`}
                 </span>
                 <span className="chat-message__content">{msg.content}</span>
+                {msg.audio_url && (
+                  <button
+                    className={`chat-message__play-btn ${playingAudioId === msg.id ? 'chat-message__play-btn--playing' : ''}`}
+                    onClick={() => playAudio(msg)}
+                    title="Odtwórz wiadomość głosową"
+                  >
+                    {playingAudioId === msg.id ? '⏸️' : '▶'}
+                  </button>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />

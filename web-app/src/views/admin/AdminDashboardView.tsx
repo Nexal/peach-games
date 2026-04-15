@@ -435,6 +435,12 @@ function PlayersPanel({
 
 type Message = Database['public']['Tables']['messages']['Row'];
 
+const TTS_VOICES = [
+  { id: 'Kamil_Voice', name: 'Bogini Głos (Kamil)', voiceId: 'PLACEHOLDER_KAMIL' },
+  { id: 'Tomek_Voice', name: 'Mroczny Wizard (Tomek)', voiceId: 'PLACEHOLDER_TOMEK' },
+  { id: 'Kinga_Voice', name: 'Leśna Driada (Kinga)', voiceId: 'PLACEHOLDER_KINGA' },
+];
+
 function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -442,7 +448,11 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
   const [selectedKlanId, setSelectedKlanId] = useState<string | null>(null);
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [broadcastToAll, setBroadcastToAll] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState(TTS_VOICES[0].voiceId);
+  const [previewAudio, setPreviewAudio] = useState<string | null>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (games.length > 0 && !selectedGameId) {
@@ -480,6 +490,14 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    return () => {
+      if (audioPreviewRef.current) {
+        audioPreviewRef.current.pause();
+      }
+    };
+  }, []);
+
   const loadMessages = async () => {
     let query = supabase
       .from('messages')
@@ -500,6 +518,45 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
     if (data) setMessages(data);
   };
 
+  const generatePreview = async () => {
+    if (!inputText.trim()) return;
+
+    setIsGeneratingPreview(true);
+    setPreviewAudio(null);
+
+    try {
+      const response = await fetch(
+        'https://your-project.supabase.co/functions/v1/generate-tts',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: inputText,
+            voice_id: selectedVoice,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.audio_url) {
+        setPreviewAudio(data.audio_url);
+        if (audioPreviewRef.current) {
+          audioPreviewRef.current.pause();
+        }
+        const audio = new Audio(data.audio_url);
+        audioPreviewRef.current = audio;
+        audio.play();
+      }
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      alert('Błąd generowania podglądu audio. Sprawdź konsolę.');
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  };
+
   const sendMessage = async () => {
     if (!inputText.trim()) return;
 
@@ -510,6 +567,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
         game_id: selectedGameId,
         klan_id: null,
         tts_requested: ttsEnabled,
+        audio_url: ttsEnabled ? previewAudio : null,
       });
     } else {
       await supabase.from('messages').insert({
@@ -518,10 +576,16 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
         game_id: selectedGameId,
         klan_id: selectedKlanId,
         tts_requested: ttsEnabled,
+        audio_url: ttsEnabled ? previewAudio : null,
       });
     }
 
     setInputText('');
+    setPreviewAudio(null);
+    if (audioPreviewRef.current) {
+      audioPreviewRef.current.pause();
+      audioPreviewRef.current = null;
+    }
   };
 
   const selectedKlan = klans.find((k) => k.id === selectedKlanId);
@@ -574,6 +638,34 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
           />
           🔊 TTS (tekst na głos)
         </label>
+        {ttsEnabled && (
+          <div className="admin-chat__voice-select">
+            <select
+              value={selectedVoice}
+              onChange={(e) => setSelectedVoice(e.target.value)}
+              className="admin-panel__select"
+            >
+              {TTS_VOICES.map((voice) => (
+                <option key={voice.id} value={voice.voiceId}>
+                  {voice.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={generatePreview}
+              disabled={!inputText.trim() || isGeneratingPreview}
+              className="admin-chat__preview-btn"
+            >
+              {isGeneratingPreview ? '⏳ Generowanie...' : '🔊 Odsłuchaj'}
+            </button>
+          </div>
+        )}
+        {previewAudio && (
+          <div className="admin-chat__preview-player">
+            <span>Podgląd:</span>
+            <audio controls src={previewAudio} />
+          </div>
+        )}
       </div>
 
       <div className="admin-panel__section admin-chat">
@@ -599,6 +691,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
                       ? `✨ Bogowie${klan ? ` → ${klan.name}` : ''}`
                       : `👤 ${msg.sender} (${klan?.name || '?'})`}
                   {msg.tts_requested && ' 🔊'}
+                  {msg.audio_url && ' ▶'}
                 </span>
                 <span className="admin-chat__message-content">{msg.content}</span>
               </div>

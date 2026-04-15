@@ -182,6 +182,32 @@
   line-height: 1.4;
 }
 
+.chat-message__play-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  margin-top: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.chat-message__play-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.chat-message__play-btn--playing {
+  opacity: 1;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
 .chat-input__field {
   flex: 1;
   background: rgba(0, 0, 0, 0.3);
@@ -741,6 +767,52 @@
   width: 16px;
   height: 16px;
   cursor: pointer;
+}
+
+.admin-chat__voice-select {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.admin-chat__voice-select select {
+  flex: 1;
+}
+
+.admin-chat__preview-btn {
+  background: linear-gradient(135deg, var(--color-perun), #b8860b);
+  color: black;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.admin-chat__preview-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-chat__preview-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid var(--color-perun);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--color-perun);
+}
+
+.admin-chat__preview-player audio {
+  flex: 1;
+  height: 32px;
 }
 
 /* Admin Invite Link */
