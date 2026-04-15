@@ -92,7 +92,7 @@ export function ChatView() {
       </header>
 
       <main className="view__content view__content--chat">
-        <div className="chat-container">
+        <div className="chat-messages-scroll">
           <div className="chat-messages">
             {messages.length === 0 && (
               <p className="chat-empty">Cisza w eterze...</p>
@@ -110,21 +110,23 @@ export function ChatView() {
             ))}
             <div ref={messagesEndRef} />
           </div>
-
-          <form onSubmit={sendMessage} className="chat-input">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder={`Wiadomość od ${playerSession.name}...`}
-              className="chat-input__field"
-            />
-            <button type="submit" className="button-glow chat-input__submit">
-              Wyślij
-            </button>
-          </form>
         </div>
       </main>
+
+      <div className="chat-input-bar">
+        <form onSubmit={sendMessage} className="chat-input-bar__form">
+          <input
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder={`Wiadomość od ${playerSession.name}...`}
+            className="chat-input-bar__field"
+          />
+          <button type="submit" className="button-glow chat-input-bar__submit">
+            Wyślij
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
