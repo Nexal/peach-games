@@ -83,6 +83,15 @@
   gap: 10px;
   margin-bottom: 12px;
   padding-right: 5px;
+  min-height: 0;
+}
+
+.chat-input {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--glass-border);
 }
 
 .chat-empty {
@@ -127,11 +136,6 @@
 .chat-message__content {
   font-size: 0.95rem;
   line-height: 1.4;
-}
-
-.chat-input {
-  display: flex;
-  gap: 10px;
 }
 
 .chat-input__field {
