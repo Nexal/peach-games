@@ -632,6 +632,13 @@
   border-color: var(--color-perun);
 }
 
+.admin-chat__message--broadcast {
+  align-self: center;
+  background: rgba(46, 139, 87, 0.15);
+  border-color: var(--color-mokosz);
+  max-width: 90%;
+}
+
 .admin-chat__message-sender {
   font-size: 0.7rem;
   opacity: 0.7;

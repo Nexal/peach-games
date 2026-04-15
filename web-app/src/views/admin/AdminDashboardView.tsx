@@ -504,19 +504,13 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
     if (!inputText.trim()) return;
 
     if (broadcastToAll) {
-      const targetKlans = selectedGameId
-        ? klans.filter((k) => k.game_id === selectedGameId)
-        : klans;
-
-      for (const klan of targetKlans) {
-        await supabase.from('messages').insert({
-          content: inputText,
-          sender: 'god',
-          game_id: selectedGameId,
-          klan_id: klan.id,
-          tts_requested: ttsEnabled,
-        });
-      }
+      await supabase.from('messages').insert({
+        content: inputText,
+        sender: 'god',
+        game_id: selectedGameId,
+        klan_id: null,
+        tts_requested: ttsEnabled,
+      });
     } else {
       await supabase.from('messages').insert({
         content: inputText,
@@ -592,13 +586,18 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
           )}
           {messages.map((msg) => {
             const klan = klans.find((k) => k.id === msg.klan_id);
+            const isBroadcast = msg.sender === 'god' && msg.klan_id === null;
             return (
               <div
                 key={msg.id}
-                className={`admin-chat__message ${msg.sender === 'god' ? 'admin-chat__message--god' : ''}`}
+                className={`admin-chat__message ${msg.sender === 'god' ? 'admin-chat__message--god' : ''} ${isBroadcast ? 'admin-chat__message--broadcast' : ''}`}
               >
                 <span className="admin-chat__message-sender">
-                  {msg.sender === 'god' ? '✨ Bogowie' : `👤 ${msg.sender} (${klan?.name || '?'})`}
+                  {isBroadcast
+                    ? '📢 Broadcast'
+                    : msg.sender === 'god'
+                      ? `✨ Bogowie${klan ? ` → ${klan.name}` : ''}`
+                      : `👤 ${msg.sender} (${klan?.name || '?'})`}
                   {msg.tts_requested && ' 🔊'}
                 </span>
                 <span className="admin-chat__message-content">{msg.content}</span>
