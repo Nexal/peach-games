@@ -515,10 +515,12 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
     }
   };
 
+  const selectedKlan = klans.find((k) => k.id === selectedKlanId);
+
   return (
     <div className="admin-panel">
       <div className="admin-panel__section">
-        <h2 className="admin-panel__title">Konfiguracja wiadomości</h2>
+        <h2 className="admin-panel__title">📨 Czat Klanu</h2>
         <div className="admin-panel__row">
           <select
             value={selectedGameId || ''}
@@ -540,7 +542,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
             onChange={(e) => setSelectedKlanId(e.target.value || null)}
             className="admin-panel__select"
           >
-            <option value="">Globalna (wszystkie klany)</option>
+            <option value="">Wszystkie klany</option>
             {klans
               .filter((k) => k.game_id === selectedGameId)
               .map((k) => (
@@ -550,6 +552,11 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
               ))}
           </select>
         </div>
+        {selectedKlan && (
+          <p className="admin-panel__info">
+            👁️ Przemawiasz jako Bogowie do klanu <strong>{selectedKlan.name}</strong>
+          </p>
+        )}
         <label className="admin-chat__tts">
           <input
             type="checkbox"
@@ -561,7 +568,9 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
       </div>
 
       <div className="admin-panel__section admin-chat">
-        <h2 className="admin-panel__title">Głos Bogów - podgląd</h2>
+        <h2 className="admin-panel__title">
+          {selectedKlan ? `💬 Czat: ${selectedKlan.name}` : '💬 Czat wszystkich klanów'}
+        </h2>
         <div className="admin-chat__messages">
           {messages.length === 0 && (
             <p className="admin-panel__empty">Brak wiadomości</p>
@@ -574,7 +583,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
                 className={`admin-chat__message ${msg.sender === 'god' ? 'admin-chat__message--god' : ''}`}
               >
                 <span className="admin-chat__message-sender">
-                  {msg.sender === 'god' ? '✨ Bogowie' : klan?.name || 'Gracz'}
+                  {msg.sender === 'god' ? '✨ Bogowie' : `👤 ${msg.sender} (${klan?.name || '?'})`}
                   {msg.tts_requested && ' 🔊'}
                 </span>
                 <span className="admin-chat__message-content">{msg.content}</span>
@@ -588,11 +597,12 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Napisz wiadomość od Bogów..."
+            placeholder={selectedKlan ? `Wiadomość od Bogów do ${selectedKlan.name}...` : 'Wybierz klan aby przemówić...'}
             className="admin-chat__input"
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+            disabled={!selectedKlanId}
           />
-          <button onClick={sendMessage} className="button-glow">
+          <button onClick={sendMessage} className="button-glow" disabled={!selectedKlanId}>
             Wyślij
           </button>
         </div>
