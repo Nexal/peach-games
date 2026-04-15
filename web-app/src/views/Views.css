@@ -306,6 +306,11 @@
   padding-bottom: 100px;
 }
 
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+}
+
 .admin-panel__section {
   margin-bottom: 30px;
 }
@@ -559,7 +564,6 @@
 .admin-chat {
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
 .admin-chat__tts {
@@ -578,9 +582,8 @@
 }
 
 .admin-chat__messages {
-  flex: 1;
-  min-height: 300px;
-  max-height: 400px;
+  min-height: 200px;
+  max-height: 350px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -589,6 +592,7 @@
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid var(--glass-border);
   border-radius: 12px;
+  flex-shrink: 0;
 }
 
 .admin-chat__message {
