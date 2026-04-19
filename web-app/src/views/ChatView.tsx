@@ -129,15 +129,18 @@ export function ChatView() {
 
   const compressImage = (file: File, maxWidth: number = 1200, quality: number = 0.8): Promise<Blob> => {
     return new Promise((resolve, reject) => {
+      console.log('Compressing image:', file.name, 'Size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let { width, height } = img;
+        console.log('Original:', width, 'x', height);
 
         if (width > maxWidth) {
           height = (height * maxWidth) / width;
           width = maxWidth;
         }
+        console.log('Resized to:', width, 'x', height);
 
         canvas.width = width;
         canvas.height = height;
@@ -151,7 +154,10 @@ export function ChatView() {
         ctx.drawImage(img, 0, 0, width, height);
         canvas.toBlob(
           (blob) => {
-            if (blob) resolve(blob);
+            if (blob) {
+              console.log('Compressed size:', (blob.size / 1024).toFixed(1), 'KB');
+              resolve(blob);
+            }
             else reject(new Error('Could not compress image'));
           },
           'image/jpeg',
@@ -168,8 +174,10 @@ export function ChatView() {
 
     try {
       const compressed = await compressImage(file);
-      const fileName = `${crypto.randomUUID()}.jpg`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
       const filePath = `${playerSession.game_id}/${fileName}`;
+
+      console.log('Uploading to:', filePath, 'Size:', (compressed.size / 1024).toFixed(1), 'KB');
 
       const { error: uploadError } = await supabase.storage
         .from('chat-images')
