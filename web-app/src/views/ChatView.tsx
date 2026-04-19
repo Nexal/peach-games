@@ -22,6 +22,10 @@ export function ChatView() {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [chatMode, setChatMode] = useState<'klan' | 'global'>('klan');
   const [klans, setKlans] = useState<Klan[]>([]);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -121,20 +125,113 @@ export function ChatView() {
     audio.play();
   };
 
+  const compressImage = (file: File, maxWidth: number = 1200, quality: number = 0.8): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Could not compress image'));
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => reject(new Error('Could not load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    if (!playerSession?.game_id) return null;
+
+    try {
+      const compressed = await compressImage(file);
+      const fileName = `${crypto.randomUUID()}.jpg`;
+      const filePath = `${playerSession.game_id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('chat-images')
+        .upload(filePath, compressed, {
+          contentType: 'image/jpeg',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        return null;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('chat-images')
+        .getPublicUrl(filePath);
+
+      return urlData.publicUrl;
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      return null;
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedImage(file);
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || !playerSession) return;
+    if ((!inputText.trim() && !selectedImage) || !playerSession) return;
+
+    setUploading(true);
+
+    let imageUrl: string | null = null;
+    if (selectedImage) {
+      imageUrl = await uploadImage(selectedImage);
+    }
 
     await supabase.from('messages').insert({
-      content: inputText,
+      content: inputText.trim() || (imageUrl ? '📷' : ''),
       sender: playerSession.name,
       klan_id: chatMode === 'global' ? null : playerSession.klan_id,
       sender_klan_id: playerSession.klan_id,
       game_id: playerSession.game_id,
+      image_url: imageUrl,
       tts_requested: false,
     });
 
     setInputText('');
+    clearImage();
+    setUploading(false);
   };
 
   if (!playerSession) {
@@ -209,6 +306,9 @@ export function ChatView() {
                     {isGod ? '👁️ Bogowie' : `👤 ${msg.sender}${clan ? ` (${clan.name})` : ''}`}
                   </span>
                   <span className="chat-message__content" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>{msg.content}</span>
+                  {msg.image_url && (
+                    <img src={msg.image_url} alt="Załącznik" className="chat-message__image" onClick={() => window.open(msg.image_url, '_blank')} />
+                  )}
                   {msg.audio_url && (
                     <div className="chat-message__footer">
                       <button
@@ -229,7 +329,30 @@ export function ChatView() {
       </main>
 
       <div className="chat-input-bar">
+        {imagePreview && (
+          <div className="chat-input-bar__preview">
+            <img src={imagePreview} alt="Podgląd" className="chat-input-bar__preview-img" />
+            <button type="button" onClick={clearImage} className="chat-input-bar__preview-remove">✕</button>
+          </div>
+        )}
         <form onSubmit={sendMessage} className="chat-input-bar__form">
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            capture="environment"
+            onChange={handleImageSelect}
+            style={{ display: 'none' }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="chat-input-bar__camera"
+            disabled={uploading}
+            title="Zrób zdjęcie"
+          >
+            📷
+          </button>
           <input
             type="text"
             value={inputText}
@@ -237,8 +360,8 @@ export function ChatView() {
             placeholder={`Modlitwa od ${playerSession.name}...`}
             className="chat-input-bar__field"
           />
-          <button type="submit" className="button-glow chat-input-bar__submit">
-            Wyślij
+          <button type="submit" className="button-glow chat-input-bar__submit" disabled={uploading}>
+            {uploading ? '...' : 'Wyślij'}
           </button>
         </form>
       </div>

@@ -115,6 +115,7 @@ export type Database = {
           created_at: string | null
           game_id: string | null
           id: string
+          image_url: string | null
           klan_id: string | null
           sender: string
           sender_klan_id: string | null
@@ -126,6 +127,7 @@ export type Database = {
           created_at?: string | null
           game_id?: string | null
           id?: string
+          image_url?: string | null
           klan_id?: string | null
           sender: string
           sender_klan_id?: string | null
@@ -137,6 +139,7 @@ export type Database = {
           created_at?: string | null
           game_id?: string | null
           id?: string
+          image_url?: string | null
           klan_id?: string | null
           sender?: string
           sender_klan_id?: string | null

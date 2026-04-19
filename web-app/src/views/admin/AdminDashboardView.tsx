@@ -480,6 +480,59 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
   const audioPlayersRef = useRef<Record<string, HTMLAudioElement>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const compressImage = (file: File, maxWidth: number = 1200, quality: number = 0.8): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Could not get canvas context')); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => { if (blob) resolve(blob); else reject(new Error('Could not compress image')); }, 'image/jpeg', quality);
+      };
+      img.onerror = () => reject(new Error('Could not load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    if (!selectedGameId) return null;
+    try {
+      const compressed = await compressImage(file);
+      const fileName = `${crypto.randomUUID()}.jpg`;
+      const filePath = `${selectedGameId}/${fileName}`;
+      const { error: uploadError } = await supabase.storage.from('chat-images').upload(filePath, compressed, { contentType: 'image/jpeg', upsert: false });
+      if (uploadError) { console.error('Upload error:', uploadError); return null; }
+      const { data: urlData } = supabase.storage.from('chat-images').getPublicUrl(filePath);
+      return urlData.publicUrl;
+    } catch (err) { console.error('Image upload failed:', err); return null; }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedImage(file);
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   useEffect(() => {
     if (games.length > 0 && !selectedGameId) {
@@ -605,9 +658,10 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
   };
 
   const sendMessage = async () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() && !selectedImage) return;
 
     let audioUrl: string | null = previewAudio;
+    let imageUrl: string | null = null;
 
     if (ttsEnabled && !audioUrl) {
       setIsGeneratingPreview(true);
@@ -615,30 +669,37 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
       setIsGeneratingPreview(false);
     }
 
+    if (selectedImage) {
+      imageUrl = await uploadImage(selectedImage);
+    }
+
     if (broadcastToAll) {
       await supabase.from('messages').insert({
-        content: inputText,
+        content: inputText.trim() || (imageUrl ? '📷' : ''),
         sender: 'god',
         game_id: selectedGameId,
         klan_id: null,
         sender_klan_id: null,
         tts_requested: ttsEnabled,
         audio_url: audioUrl,
+        image_url: imageUrl,
       });
     } else {
       await supabase.from('messages').insert({
-        content: inputText,
+        content: inputText.trim() || (imageUrl ? '📷' : ''),
         sender: 'god',
         game_id: selectedGameId,
         klan_id: selectedKlanId,
         sender_klan_id: selectedKlanId,
         tts_requested: ttsEnabled,
         audio_url: audioUrl,
+        image_url: imageUrl,
       });
     }
 
     setInputText('');
     setPreviewAudio(null);
+    clearImage();
     if (audioPreviewRef.current) {
       audioPreviewRef.current.pause();
       audioPreviewRef.current = null;
@@ -803,12 +864,37 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
                   </div>
                 </div>
                 <span className="admin-chat__message-content">{msg.content}</span>
+                {msg.image_url && (
+                  <img src={msg.image_url} alt="Załącznik" className="admin-chat__message-image" onClick={() => window.open(msg.image_url, '_blank')} />
+                )}
               </div>
             );
           })}
           <div ref={messagesEndRef} />
         </div>
+        {imagePreview && (
+          <div className="admin-chat__image-preview">
+            <img src={imagePreview} alt="Podgląd" />
+            <button type="button" onClick={clearImage} className="admin-chat__image-preview-remove">✕</button>
+          </div>
+        )}
         <div className="admin-chat__input-row">
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            capture="environment"
+            onChange={handleImageSelect}
+            style={{ display: 'none' }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="admin-chat__camera-btn"
+            title="Załącz zdjęcie"
+          >
+            📷
+          </button>
           <input
             type="text"
             value={inputText}
@@ -825,7 +911,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
           />
           <button
             onClick={sendMessage}
-            disabled={!inputText.trim() || isGeneratingPreview}
+            disabled={(!inputText.trim() && !selectedImage) || isGeneratingPreview}
             className="button-glow"
           >
             {isGeneratingPreview ? '⏳ Generowanie audio...' : 'Wyślij'}
