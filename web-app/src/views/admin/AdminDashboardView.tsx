@@ -693,7 +693,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
             onChange={(e) => setSelectedKlanId(e.target.value || null)}
             className="admin-panel__select"
           >
-            <option value="">Wszystkie klany</option>
+            <option value="">Publiczny</option>
             {klans
               .filter((k) => k.game_id === selectedGameId)
               .map((k) => (
@@ -703,9 +703,13 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
               ))}
           </select>
         </div>
-        {selectedKlan && (
+        {selectedKlan ? (
           <p className="admin-panel__info">
             👁️ Przemawiasz jako Bogowie do klanu <strong>{selectedKlan.name}</strong>
+          </p>
+        ) : selectedKlanId === null && (
+          <p className="admin-panel__info">
+            🌍 Przemawiasz jako Bogowie na kanale <strong>Publicznym</strong>
           </p>
         )}
         <label className="admin-chat__tts">
@@ -748,7 +752,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
 
       <div className="admin-panel__section admin-chat">
         <h2 className="admin-panel__title">
-          {selectedKlan ? `💬 Czat: ${selectedKlan.name}` : '💬 Czat wszystkich klanów'}
+          {selectedKlan ? `💬 Czat: ${selectedKlan.name}` : '💬 Czat Publiczny'}
         </h2>
         <div className="admin-chat__messages">
           {messages.length === 0 && (
@@ -809,10 +813,10 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
             onChange={(e) => setInputText(e.target.value)}
             placeholder={
               broadcastToAll
-                ? 'Wiadomość do wszystkich klanów...'
+                ? '📢 Broadcast do wszystkich...'
                 : selectedKlan
                   ? `Wiadomość od Bogów do ${selectedKlan.name}...`
-                  : 'Wybierz klan lub włącz wysyłanie do wszystkich...'
+                  : 'Wiadomość na kanał Publiczny...'
             }
             className="admin-chat__input"
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
@@ -831,7 +835,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
             checked={broadcastToAll}
             onChange={(e) => setBroadcastToAll(e.target.checked)}
           />
-          📢 Wyślij do wszystkich klanów
+          📢 Broadcast (widoczny dla wszystkich)
         </label>
       </div>
     </div>

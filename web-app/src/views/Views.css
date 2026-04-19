@@ -247,6 +247,40 @@
   50% { transform: scale(1.05); }
 }
 
+.chat-mode-toggle {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  padding: 3px;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.chat-mode-toggle__btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 6px 16px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.chat-mode-toggle__btn--active {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.chat-mode-toggle__btn:hover:not(.chat-mode-toggle__btn--active) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.chat-message--global {
+  opacity: 0.85;
+  border-style: dashed;
+}
+
 .chat-input__field {
   flex: 1;
   background: rgba(0, 0, 0, 0.3);

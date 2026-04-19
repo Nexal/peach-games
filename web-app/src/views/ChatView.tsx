@@ -19,6 +19,7 @@ export function ChatView() {
   const [inputText, setInputText] = useState('');
   const [playerSession] = useState(getPlayerSession());
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [chatMode, setChatMode] = useState<'klan' | 'global'>('klan');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -26,26 +27,39 @@ export function ChatView() {
     if (!playerSession?.klan_id) return;
 
     const fetchMessages = async () => {
-      const { data } = await supabase
+      let query = supabase
         .from('messages')
         .select('*')
-        .or(`klan_id.eq.${playerSession.klan_id},and(sender.eq.god,klan_id.is.null)`)
         .order('created_at', { ascending: true })
         .limit(50);
+
+      if (chatMode === 'klan') {
+        query = query.or(`klan_id.eq.${playerSession.klan_id},and(sender.eq.god,klan_id.is.null)`);
+      } else {
+        query = query.eq('klan_id', null);
+      }
+
+      const { data } = await query;
       if (data) setMessages(data);
     };
 
     fetchMessages();
 
     const channel = supabase
-      .channel(`chat:klan:${playerSession.klan_id}`)
+      .channel(`chat:${chatMode}:${playerSession.klan_id}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
           const newMsg = payload.new as Message;
-          if (newMsg.klan_id === playerSession.klan_id || (newMsg.sender === 'god' && newMsg.klan_id === null)) {
-            setMessages((prev) => [...prev, newMsg]);
+          if (chatMode === 'klan') {
+            if (newMsg.klan_id === playerSession.klan_id || (newMsg.sender === 'god' && newMsg.klan_id === null)) {
+              setMessages((prev) => [...prev, newMsg]);
+            }
+          } else {
+            if (newMsg.klan_id === null) {
+              setMessages((prev) => [...prev, newMsg]);
+            }
           }
         }
       )
@@ -61,7 +75,7 @@ export function ChatView() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [playerSession?.klan_id]);
+  }, [playerSession?.klan_id, chatMode]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -102,17 +116,15 @@ export function ChatView() {
     e.preventDefault();
     if (!inputText.trim() || !playerSession) return;
 
-    const { error } = await supabase.from('messages').insert({
+    await supabase.from('messages').insert({
       content: inputText,
       sender: playerSession.name,
-      klan_id: playerSession.klan_id,
+      klan_id: chatMode === 'global' ? null : playerSession.klan_id,
       game_id: playerSession.game_id,
       tts_requested: false,
     });
 
-    if (!error) {
-      setInputText('');
-    }
+    setInputText('');
   };
 
   if (!playerSession) {
@@ -141,8 +153,24 @@ export function ChatView() {
     >
       <header className="view__header">
         <img src="/icons/glos-bogow.png" alt="Głos Bogów" className="view__icon" />
-        <h1 className="view__title view__title--small">Czat Klanu {playerSession.klan_name}</h1>
-        <p className="view__subtitle">Komunikacja z Mistrzami Gry</p>
+        <h1 className="view__title view__title--small">
+          {chatMode === 'global' ? 'Modlitwa Wspólna' : `Modlitwa ${playerSession.klan_name}`}
+        </h1>
+        <p className="view__subtitle">Przesłanie od Bogów</p>
+        <div className="chat-mode-toggle">
+          <button
+            className={`chat-mode-toggle__btn ${chatMode === 'klan' ? 'chat-mode-toggle__btn--active' : ''}`}
+            onClick={() => setChatMode('klan')}
+          >
+            Klan
+          </button>
+          <button
+            className={`chat-mode-toggle__btn ${chatMode === 'global' ? 'chat-mode-toggle__btn--active' : ''}`}
+            onClick={() => setChatMode('global')}
+          >
+            Global
+          </button>
+        </div>
       </header>
 
       <main className="view__content view__content--chat">
@@ -157,7 +185,7 @@ export function ChatView() {
               return (
                 <div
                   key={msg.id}
-                  className={`chat-message ${isGod ? 'chat-message--god' : isOwnMessage ? 'chat-message--own' : 'chat-message--klan'}`}
+                  className={`chat-message ${isGod ? 'chat-message--god' : isOwnMessage ? 'chat-message--own' : 'chat-message--klan'} ${chatMode === 'global' ? 'chat-message--global' : ''}`}
                 >
                   <span className="chat-message__sender">
                     {isGod ? '👁️ Bogowie' : `👤 ${msg.sender}`}
@@ -188,7 +216,7 @@ export function ChatView() {
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder={`Wiadomość od ${playerSession.name}...`}
+            placeholder={`Modlitwa od ${playerSession.name}...`}
             className="chat-input-bar__field"
           />
           <button type="submit" className="button-glow chat-input-bar__submit">
