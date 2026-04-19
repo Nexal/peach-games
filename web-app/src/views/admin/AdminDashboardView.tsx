@@ -557,6 +557,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
             text: inputText,
