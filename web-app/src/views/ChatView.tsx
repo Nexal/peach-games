@@ -385,6 +385,7 @@ export function ChatView() {
               id="chat-image-input"
               ref={fileInputRef}
               accept="image/*"
+              capture="user"
               onChange={handleImageSelect}
               style={{ display: 'none' }}
             />
