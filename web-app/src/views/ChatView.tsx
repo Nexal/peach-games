@@ -25,6 +25,7 @@ export function ChatView() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -307,7 +308,7 @@ export function ChatView() {
                   </span>
                   <span className="chat-message__content" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>{msg.content}</span>
                   {msg.image_url && (
-                    <img src={msg.image_url} alt="Załącznik" className="chat-message__image" onClick={() => window.open(msg.image_url, '_blank')} />
+                    <img src={msg.image_url} alt="Załącznik" className="chat-message__image" onClick={() => setEnlargedImage(msg.image_url)} />
                   )}
                   {msg.audio_url && (
                     <div className="chat-message__footer">
@@ -365,6 +366,15 @@ export function ChatView() {
           </button>
         </form>
       </div>
+
+      {enlargedImage && (
+        <div className="chat-image-modal" onClick={() => setEnlargedImage(null)}>
+          <div className="chat-image-modal__content" onClick={(e) => e.stopPropagation()}>
+            <button className="chat-image-modal__close" onClick={() => setEnlargedImage(null)}>✕</button>
+            <img src={enlargedImage} alt="Powiększenie" className="chat-image-modal__img" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
