@@ -758,10 +758,13 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
             const klan = klans.find((k) => k.id === msg.klan_id);
             const isBroadcast = msg.sender === 'god' && msg.klan_id === null;
             const isPlaying = audioPlayersRef.current[msg.id] && !audioPlayersRef.current[msg.id].paused;
+            const klanColor = klan?.theme_color;
+            const isSelectedKlan = selectedKlanId && msg.klan_id === selectedKlanId;
             return (
               <div
                 key={msg.id}
-                className={`admin-chat__message ${msg.sender === 'god' ? 'admin-chat__message--god' : ''} ${isBroadcast ? 'admin-chat__message--broadcast' : ''}`}
+                className={`admin-chat__message ${msg.sender === 'god' ? 'admin-chat__message--god' : ''} ${isBroadcast ? 'admin-chat__message--broadcast' : ''} ${isSelectedKlan ? 'admin-chat__message--selected-klan' : ''}`}
+                style={klanColor && !isBroadcast ? { borderLeft: `4px solid ${klanColor}` } : undefined}
               >
                 <div className="admin-chat__message-header">
                   <span className="admin-chat__message-sender">

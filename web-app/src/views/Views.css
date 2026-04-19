@@ -724,6 +724,10 @@
   max-width: 90%;
 }
 
+.admin-chat__message--selected-klan {
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
 .admin-chat__message-sender {
   font-size: 0.7rem;
   opacity: 0.7;
