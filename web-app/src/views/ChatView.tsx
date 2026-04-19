@@ -6,6 +6,14 @@ import type { Database } from '../types/database.types';
 
 type Message = Database['public']['Tables']['messages']['Row'];
 
+function hexToRgb(hex: string): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (result) {
+    return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+  }
+  return '255, 0, 0';
+}
+
 export function ChatView() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -124,7 +132,13 @@ export function ChatView() {
   }
 
   return (
-    <div className="view view--chat" style={{ '--klan-color': playerSession.klan_color } as React.CSSProperties}>
+    <div
+      className="view view--chat"
+      style={{
+        '--klan-color': playerSession.klan_color,
+        '--klan-color-rgb': hexToRgb(playerSession.klan_color),
+      } as React.CSSProperties}
+    >
       <header className="view__header">
         <img src="/icons/glos-bogow.png" alt="Głos Bogów" className="view__icon" />
         <h1 className="view__title view__title--small">Czat Klanu {playerSession.klan_name}</h1>
@@ -137,26 +151,32 @@ export function ChatView() {
             {messages.length === 0 && (
               <p className="chat-empty">Cisza w eterze...</p>
             )}
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`chat-message ${msg.sender === 'god' ? 'chat-message--god' : 'chat-message--klan'}`}
-              >
-                <span className="chat-message__sender">
-                  {msg.sender === 'god' ? '👁️ Bogowie' : `👤 ${msg.sender}`}
-                </span>
-                <span className="chat-message__content">{msg.content}</span>
-                {msg.audio_url && (
-                  <button
-                    className={`chat-message__play-btn ${playingAudioId === msg.id ? 'chat-message__play-btn--playing' : ''}`}
-                    onClick={() => playAudio(msg)}
-                    title="Odtwórz wiadomość głosową"
-                  >
-                    {playingAudioId === msg.id ? '⏸️' : '▶'}
-                  </button>
-                )}
-              </div>
-            ))}
+            {messages.map((msg) => {
+              const isOwnMessage = msg.sender === playerSession.name;
+              const isGod = msg.sender === 'god';
+              return (
+                <div
+                  key={msg.id}
+                  className={`chat-message ${isGod ? 'chat-message--god' : isOwnMessage ? 'chat-message--own' : 'chat-message--klan'}`}
+                >
+                  <span className="chat-message__sender">
+                    {isGod ? '👁️ Bogowie' : `👤 ${msg.sender}`}
+                  </span>
+                  <span className="chat-message__content">{msg.content}</span>
+                  {msg.audio_url && (
+                    <div className="chat-message__footer">
+                      <button
+                        className={`chat-message__play-btn ${playingAudioId === msg.id ? 'chat-message__play-btn--playing' : ''}`}
+                        onClick={() => playAudio(msg)}
+                        title="Odtwórz wiadomość głosową"
+                      >
+                        {playingAudioId === msg.id ? '⏸️' : '▶'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             <div ref={messagesEndRef} />
           </div>
         </div>
