@@ -353,7 +353,7 @@ export function ChatView() {
                   title={msg.created_at ? new Date(msg.created_at).toLocaleString('pl-PL') : ''}
                 >
                   <span className="chat-message__sender" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>
-                    {isGod ? '👁️ Bogowie' : `👤 ${msg.sender}`}
+                    {isGod ? '👁️ Bogowie' : isGlobal ? `👤 ${msg.sender} (${clan?.name || '?'})` : `👤 ${msg.sender}`}
                   </span>
                   <span className="chat-message__content" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>{msg.content}</span>
                   {msg.image_url && (
