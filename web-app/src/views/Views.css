@@ -539,6 +539,17 @@
   color: var(--color-weles);
 }
 
+.admin-game-card__btn--delete {
+  border-color: var(--color-czarnowski);
+  color: var(--color-czarnowski);
+  padding: 6px 10px;
+}
+
+.admin-game-card__btn--delete:hover {
+  background: var(--color-czarnowski);
+  color: white;
+}
+
 .admin-klan-card {
   display: flex;
   align-items: center;

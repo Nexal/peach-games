@@ -66,6 +66,20 @@ export function AdminDashboardView() {
     await loadGames();
   };
 
+  const deleteGame = async (gameId: string) => {
+    if (!confirm('Na pewno chcesz usunąć tę grę? To usunie też wszystkie klany i graczy.')) return;
+    setLoading(true);
+    await supabase.from('quest_completions').delete().eq('game_id', gameId);
+    await supabase.from('messages').delete().eq('game_id', gameId);
+    await supabase.from('players').delete().eq('game_id', gameId);
+    await supabase.from('klans').delete().eq('game_id', gameId);
+    await supabase.from('quests').delete().eq('game_id', gameId);
+    await supabase.from('games').delete().eq('id', gameId);
+    if (selectedGameId === gameId) setSelectedGameId(null);
+    await loadGames();
+    setLoading(false);
+  };
+
   return (
     <div className="view view--admin">
       <header className="admin-header">
@@ -83,6 +97,7 @@ export function AdminDashboardView() {
             onSelectGame={setSelectedGameId}
             onCreateGame={createGame}
             onUpdateStatus={updateGameStatus}
+            onDeleteGame={deleteGame}
             loading={loading}
           />
         )}
@@ -133,6 +148,7 @@ function GamesPanel({
   onSelectGame,
   onCreateGame,
   onUpdateStatus,
+  onDeleteGame,
   loading,
 }: {
   games: Game[];
@@ -140,6 +156,7 @@ function GamesPanel({
   onSelectGame: (id: string) => void;
   onCreateGame: (name: string) => void;
   onUpdateStatus: (id: string, status: string) => void;
+  onDeleteGame: (id: string) => void;
   loading: boolean;
 }) {
   const [newGameName, setNewGameName] = useState('');
@@ -188,6 +205,15 @@ function GamesPanel({
                 </span>
               </div>
               <div className="admin-game-card__actions">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteGame(game.id);
+                  }}
+                  className="admin-game-card__btn admin-game-card__btn--delete"
+                >
+                  🗑
+                </button>
                 {game.status === 'draft' && (
                   <button
                     onClick={(e) => {

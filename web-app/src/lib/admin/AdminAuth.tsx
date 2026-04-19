@@ -12,7 +12,14 @@ const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'peachgames2026';
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return sessionStorage.getItem('admin_auth') === 'true';
+    if (sessionStorage.getItem('admin_auth') === 'true') return true;
+    const params = new URLSearchParams(window.location.search);
+    const urlPassword = params.get('admin_password');
+    if (urlPassword === ADMIN_PASSWORD) {
+      sessionStorage.setItem('admin_auth', 'true');
+      return true;
+    }
+    return false;
   });
 
   const login = (password: string): boolean => {
