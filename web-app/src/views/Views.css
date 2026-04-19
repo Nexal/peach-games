@@ -110,9 +110,9 @@
 
 .chat-message--god {
   align-self: flex-end;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.08) 100%);
-  border: 1px solid rgba(212, 175, 55, 0.4);
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.2);
+  background: linear-gradient(135deg, rgba(192, 192, 192, 0.2) 0%, rgba(192, 192, 192, 0.08) 100%);
+  border: 1px solid rgba(192, 192, 192, 0.4);
+  box-shadow: 0 6px 20px rgba(192, 192, 192, 0.2);
 }
 
 .chat-message--klan {
