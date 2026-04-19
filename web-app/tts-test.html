@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>TTS Test</title>
+</head>
+<body>
+  <h1>Test TTS</h1>
+  <button id="testBtn">Generuj i odtwórz</button>
+  <pre id="output"></pre>
+
+  <script>
+    document.getElementById('testBtn').onclick = async () => {
+      const output = document.getElementById('output');
+      output.textContent = 'Generowanie...';
+
+      try {
+        // Użyj tokena anon z localStorage Supabase
+        const response = await fetch(
+          'https://xmanqwjuqylwhizkqjsi.supabase.co/functions/v1/generate-tts',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtYW5xd2pxdWx3aGl6a2xqc2kiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY0NTc5NzYwMH0.placeholder'
+            },
+            body: JSON.stringify({
+              text: "to jest próbka boga",
+              voice_id: "rpg9PEuAEDV7I1OjYrbj"
+            })
+          }
+        );
+
+        const data = await response.json();
+        output.textContent = JSON.stringify(data, null, 2);
+
+        if (data.audio_url) {
+          const audio = new Audio(data.audio_url);
+          audio.play();
+        }
+      } catch (err) {
+        output.textContent = 'Error: ' + err.message;
+      }
+    };
+  </script>
+</body>
+</html>

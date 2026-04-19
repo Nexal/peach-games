@@ -8,7 +8,6 @@ interface RequestBody {
 }
 
 serve(async (req: Request) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, {
       headers: {
@@ -37,7 +36,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // Call ElevenLabs API
     const response = await fetch(
       `${ELEVENLABS_API_URL}/text-to-speech/${voice_id}/stream`,
       {
@@ -48,7 +46,7 @@ serve(async (req: Request) => {
           "xi-api-key": apiKey,
         },
         body: JSON.stringify({
-          text: text,
+          text,
           model_id: "eleven_multilingual_v2",
           voice_settings: {
             stability: 0.5,
@@ -61,18 +59,15 @@ serve(async (req: Request) => {
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("ElevenLabs API error:", errorText);
+      const errorBody = await response.text();
+      console.error("ElevenLabs API error:", response.status, errorBody);
       return new Response(
-        JSON.stringify({ error: "Failed to generate speech" }),
+        JSON.stringify({ error: "Failed to generate speech", details: errorBody }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Get audio data
     const audioData = await response.arrayBuffer();
-
-    // Return audio as base64 (for frontend to play or upload)
     const base64Audio = btoa(
       new Uint8Array(audioData).reduce(
         (data, byte) => data + String.fromCharCode(byte),
@@ -95,7 +90,7 @@ serve(async (req: Request) => {
   } catch (error) {
     console.error("Error generating TTS:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "Internal server error", details: String(error) }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }

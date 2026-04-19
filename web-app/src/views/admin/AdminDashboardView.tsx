@@ -462,7 +462,7 @@ function PlayersPanel({
 type Message = Database['public']['Tables']['messages']['Row'];
 
 const TTS_VOICES = [
-  { id: 'Kamil_Voice', name: 'Bogini Głos (Kamil)', voiceId: 'PLACEHOLDER_KAMIL' },
+  { id: 'Kamil_Voice', name: 'Bogini Głos (Kamil)', voiceId: 'rpg9PEuAEDV7I1OjYrbj' },
   { id: 'Tomek_Voice', name: 'Mroczny Wizard (Tomek)', voiceId: 'PLACEHOLDER_TOMEK' },
   { id: 'Kinga_Voice', name: 'Leśna Driada (Kinga)', voiceId: 'PLACEHOLDER_KINGA' },
 ];
