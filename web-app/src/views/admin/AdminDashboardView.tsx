@@ -479,6 +479,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
+  const audioPlayersRef = useRef<Record<string, HTMLAudioElement>>({});
 
   useEffect(() => {
     if (games.length > 0 && !selectedGameId) {
@@ -504,6 +505,13 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
         { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
           setMessages((prev) => [...prev, payload.new as Message]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'messages' },
+        (payload) => {
+          setMessages((prev) => prev.filter((m) => m.id !== payload.old.id));
         }
       )
       .subscribe();
@@ -544,48 +552,68 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
     if (data) setMessages(data);
   };
 
+  const generateTTS = async (text: string, voiceId: string, retries = 3): Promise<string | null> => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch(
+          'https://xmanqwjuqylwhizkqjsi.supabase.co/functions/v1/generate-tts',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ text, voice_id: voiceId }),
+          }
+        );
+
+        const data = await response.json();
+        if (data.audio_url) {
+          return data.audio_url;
+        }
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 1000 * attempt));
+        }
+      } catch (error) {
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 1000 * attempt));
+        }
+      }
+    }
+    return null;
+  };
+
   const generatePreview = async () => {
     if (!inputText.trim()) return;
 
     setIsGeneratingPreview(true);
     setPreviewAudio(null);
 
-    try {
-      const response = await fetch(
-        'https://xmanqwjuqylwhizkqjsi.supabase.co/functions/v1/generate-tts',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            text: inputText,
-            voice_id: selectedVoice,
-          }),
-        }
-      );
-
-      const data = await response.json();
-      if (data.audio_url) {
-        setPreviewAudio(data.audio_url);
-        if (audioPreviewRef.current) {
-          audioPreviewRef.current.pause();
-        }
-        const audio = new Audio(data.audio_url);
-        audioPreviewRef.current = audio;
-        audio.play();
+    const audioUrl = await generateTTS(inputText, selectedVoice);
+    if (audioUrl) {
+      setPreviewAudio(audioUrl);
+      if (audioPreviewRef.current) {
+        audioPreviewRef.current.pause();
       }
-    } catch (error) {
-      console.error('Error generating preview:', error);
-      alert('Błąd generowania podglądu audio. Sprawdź konsolę.');
-    } finally {
-      setIsGeneratingPreview(false);
+      const audio = new Audio(audioUrl);
+      audioPreviewRef.current = audio;
+      audio.play();
+    } else {
+      alert('Błąd generowania audio. Spróbuj ponownie.');
     }
+    setIsGeneratingPreview(false);
   };
 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
+
+    let audioUrl: string | null = previewAudio;
+
+    if (ttsEnabled && !audioUrl) {
+      setIsGeneratingPreview(true);
+      audioUrl = await generateTTS(inputText, selectedVoice);
+      setIsGeneratingPreview(false);
+    }
 
     if (broadcastToAll) {
       await supabase.from('messages').insert({
@@ -594,7 +622,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
         game_id: selectedGameId,
         klan_id: null,
         tts_requested: ttsEnabled,
-        audio_url: ttsEnabled ? previewAudio : null,
+        audio_url: audioUrl,
       });
     } else {
       await supabase.from('messages').insert({
@@ -603,7 +631,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
         game_id: selectedGameId,
         klan_id: selectedKlanId,
         tts_requested: ttsEnabled,
-        audio_url: ttsEnabled ? previewAudio : null,
+        audio_url: audioUrl,
       });
     }
 
@@ -613,6 +641,29 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
       audioPreviewRef.current.pause();
       audioPreviewRef.current = null;
     }
+  };
+
+  const playHistoricalAudio = (msg: Message) => {
+    if (audioPlayersRef.current[msg.id]) {
+      audioPlayersRef.current[msg.id].pause();
+      delete audioPlayersRef.current[msg.id];
+      return;
+    }
+    if (msg.audio_url) {
+      const audio = new Audio(msg.audio_url);
+      audioPlayersRef.current[msg.id] = audio;
+      audio.play();
+      audio.onended = () => {
+        delete audioPlayersRef.current[msg.id];
+      };
+    }
+  };
+
+  const deleteMessage = async (msg: Message) => {
+    const confirmed = window.confirm(`Usunąć wiadomość?\n\n"${msg.content}"`);
+    if (!confirmed) return;
+    setInputText(msg.content);
+    await supabase.from('messages').delete().eq('id', msg.id);
   };
 
   const selectedKlan = klans.find((k) => k.id === selectedKlanId);
@@ -706,20 +757,42 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
           {messages.map((msg) => {
             const klan = klans.find((k) => k.id === msg.klan_id);
             const isBroadcast = msg.sender === 'god' && msg.klan_id === null;
+            const isPlaying = audioPlayersRef.current[msg.id] && !audioPlayersRef.current[msg.id].paused;
             return (
               <div
                 key={msg.id}
                 className={`admin-chat__message ${msg.sender === 'god' ? 'admin-chat__message--god' : ''} ${isBroadcast ? 'admin-chat__message--broadcast' : ''}`}
               >
-                <span className="admin-chat__message-sender">
-                  {isBroadcast
-                    ? '📢 Broadcast'
-                    : msg.sender === 'god'
-                      ? `✨ Bogowie${klan ? ` → ${klan.name}` : ''}`
-                      : `👤 ${msg.sender} (${klan?.name || '?'})`}
-                  {msg.tts_requested && ' 🔊'}
-                  {msg.audio_url && ' ▶'}
-                </span>
+                <div className="admin-chat__message-header">
+                  <span className="admin-chat__message-sender">
+                    {isBroadcast
+                      ? '📢 Broadcast'
+                      : msg.sender === 'god'
+                        ? `✨ Bogowie${klan ? ` → ${klan.name}` : ''}`
+                        : `👤 ${msg.sender} (${klan?.name || '?'})`}
+                    {msg.tts_requested && ' 🔊'}
+                  </span>
+                  <div className="admin-chat__message-actions">
+                    {msg.audio_url && (
+                      <button
+                        className="admin-chat__action-btn"
+                        onClick={() => playHistoricalAudio(msg)}
+                        title="Odsłuchaj"
+                      >
+                        {isPlaying ? '⏸' : '▶'}
+                      </button>
+                    )}
+                    {msg.sender === 'god' && (
+                      <button
+                        className="admin-chat__action-btn admin-chat__action-btn--delete"
+                        onClick={() => deleteMessage(msg)}
+                        title="Usuń (przenieś do edycji)"
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <span className="admin-chat__message-content">{msg.content}</span>
               </div>
             );
@@ -741,8 +814,12 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
             className="admin-chat__input"
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
           />
-          <button onClick={sendMessage} className="button-glow">
-            Wyślij
+          <button
+            onClick={sendMessage}
+            disabled={!inputText.trim() || isGeneratingPreview}
+            className="button-glow"
+          >
+            {isGeneratingPreview ? '⏳ Generowanie audio...' : 'Wyślij'}
           </button>
         </div>
         <label className="admin-chat__broadcast">

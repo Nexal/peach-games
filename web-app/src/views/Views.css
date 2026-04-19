@@ -734,6 +734,36 @@
   line-height: 1.4;
 }
 
+.admin-chat__message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-chat__message-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.admin-chat__action-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.admin-chat__action-btn:hover {
+  opacity: 1;
+}
+
+.admin-chat__action-btn--delete:hover {
+  background: rgba(255, 0, 0, 0.3);
+}
+
 .admin-chat__input-row {
   display: flex;
   gap: 10px;
