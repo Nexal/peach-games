@@ -360,7 +360,7 @@
 }
 
 .chat-message__sender {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   opacity: 0.8;
   display: flex;
   align-items: center;

@@ -264,7 +264,7 @@ export function ChatView() {
     }
 
     const { error: insertError } = await supabase.from('messages').insert({
-      content: inputText.trim() || (imageUrl ? '📷' : ''),
+      content: inputText.trim(),
       sender: playerSession.name,
       klan_id: chatMode === 'global' ? null : playerSession.klan_id,
       sender_klan_id: playerSession.klan_id,
@@ -350,9 +350,10 @@ export function ChatView() {
                     '--msg-klan-color': clanColor,
                     '--msg-klan-color-rgb': clanColorRgb,
                   } as React.CSSProperties}
+                  title={msg.created_at ? new Date(msg.created_at).toLocaleString('pl-PL') : ''}
                 >
                   <span className="chat-message__sender" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>
-                    {isGod ? '👁️ Bogowie' : `👤 ${msg.sender}${clan ? ` (${clan.name})` : ''}`}
+                    {isGod ? '👁️ Bogowie' : `👤 ${msg.sender}`}
                   </span>
                   <span className="chat-message__content" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>{msg.content}</span>
                   {msg.image_url && (
