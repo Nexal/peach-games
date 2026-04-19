@@ -203,15 +203,32 @@ export function ChatView() {
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    try {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    console.log('Image selected:', file.name, 'Size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+      console.log('Image selected:', file.name, 'Size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
 
-    setSelectedImage(file);
-    const reader = new FileReader();
-    reader.onload = () => setImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
+      setSelectedImage(file);
+      setImagePreview(null);
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setImagePreview(event.target.result as string);
+        }
+      };
+      reader.onerror = (err) => {
+        console.error('FileReader error:', err);
+        setSelectedImage(null);
+        setImagePreview(null);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error selecting image:', err);
+      setSelectedImage(null);
+      setImagePreview(null);
+    }
   };
 
   const clearImage = () => {
@@ -361,23 +378,18 @@ export function ChatView() {
           </div>
         )}
         <form onSubmit={sendMessage} className="chat-input-bar__form">
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept="image/*"
-            capture="environment"
-            onChange={handleImageSelect}
-            style={{ display: 'none' }}
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="chat-input-bar__camera"
-            disabled={uploading}
-            title="Zrób zdjęcie"
-          >
+          <label htmlFor="chat-image-input" className="chat-input-bar__camera" title="Zrób zdjęcie">
             📷
-          </button>
+            <input
+              type="file"
+              id="chat-image-input"
+              ref={fileInputRef}
+              accept="image/*"
+              capture="environment"
+              onChange={handleImageSelect}
+              style={{ display: 'none' }}
+            />
+          </label>
           <input
             type="text"
             value={inputText}
