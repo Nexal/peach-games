@@ -36,7 +36,7 @@ export function ChatView() {
       if (chatMode === 'klan') {
         query = query.or(`klan_id.eq.${playerSession.klan_id},and(sender.eq.god,klan_id.is.null)`);
       } else {
-        query = query.eq('klan_id', null);
+        query = query.is('klan_id', null);
       }
 
       const { data } = await query;
@@ -162,13 +162,13 @@ export function ChatView() {
             className={`chat-mode-toggle__btn ${chatMode === 'klan' ? 'chat-mode-toggle__btn--active' : ''}`}
             onClick={() => setChatMode('klan')}
           >
-            Klan
+            💬 Klan
           </button>
           <button
             className={`chat-mode-toggle__btn ${chatMode === 'global' ? 'chat-mode-toggle__btn--active' : ''}`}
             onClick={() => setChatMode('global')}
           >
-            Global
+            🌍 Wspólna
           </button>
         </div>
       </header>
@@ -182,13 +182,21 @@ export function ChatView() {
             {messages.map((msg) => {
               const isOwnMessage = msg.sender === playerSession.name;
               const isGod = msg.sender === 'god';
+              const isGlobal = msg.klan_id === null;
+              const clan = klans.find(k => k.id === msg.klan_id);
+              const clanColor = clan?.theme_color || '#888888';
+              const clanColorRgb = hexToRgb(clanColor);
               return (
                 <div
                   key={msg.id}
-                  className={`chat-message ${isGod ? 'chat-message--god' : isOwnMessage ? 'chat-message--own' : 'chat-message--klan'} ${chatMode === 'global' ? 'chat-message--global' : ''}`}
+                  className={`chat-message ${isGod ? 'chat-message--god' : isOwnMessage ? 'chat-message--own' : 'chat-message--klan'} ${isGlobal ? 'chat-message--global' : ''}`}
+                  style={{
+                    '--msg-klan-color': clanColor,
+                    '--msg-klan-color-rgb': clanColorRgb,
+                  } as React.CSSProperties}
                 >
                   <span className="chat-message__sender">
-                    {isGod ? '👁️ Bogowie' : `👤 ${msg.sender}`}
+                    {isGod ? '👁️ Bogowie' : `👤 ${msg.sender}${clan ? ` (${clan.name})` : ''}`}
                   </span>
                   <span className="chat-message__content">{msg.content}</span>
                   {msg.audio_url && (
