@@ -124,9 +124,9 @@
 
 .chat-message--own {
   align-self: flex-start;
-  background: linear-gradient(135deg, rgba(var(--msg-klan-color-rgb, 255, 0, 0), 0.25) 0%, rgba(var(--msg-klan-color-rgb, 255, 0, 0), 0.12) 100%);
-  border: 1px solid rgba(var(--msg-klan-color-rgb, 255, 0, 0), 0.5);
-  box-shadow: 0 6px 20px rgba(var(--msg-klan-color-rgb, 255, 0, 0), 0.3);
+  background: linear-gradient(135deg, rgba(var(--msg-klan-color-rgb, 255, 0, 0), 0.35) 0%, rgba(var(--msg-klan-color-rgb, 255, 0, 0), 0.15) 100%);
+  border: 1px solid rgba(var(--msg-klan-color-rgb, 255, 0, 0), 0.6);
+  box-shadow: 0 6px 20px rgba(var(--msg-klan-color-rgb, 255, 0, 0), 0.35);
 }
 
 .chat-message--klan {

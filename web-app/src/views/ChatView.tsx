@@ -5,6 +5,7 @@ import { getPlayerSession } from '../lib/playerSession';
 import type { Database } from '../types/database.types';
 
 type Message = Database['public']['Tables']['messages']['Row'];
+type Klan = Database['public']['Tables']['klans']['Row'];
 
 function hexToRgb(hex: string): string {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -20,8 +21,16 @@ export function ChatView() {
   const [playerSession] = useState(getPlayerSession());
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [chatMode, setChatMode] = useState<'klan' | 'global'>('klan');
+  const [klans, setKlans] = useState<Klan[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (playerSession?.game_id) {
+      supabase.from('klans').select('*').eq('game_id', playerSession.game_id)
+        .then(({ data }) => data && setKlans(data));
+    }
+  }, [playerSession?.game_id]);
 
   useEffect(() => {
     if (!playerSession?.klan_id) return;
@@ -190,16 +199,16 @@ export function ChatView() {
               return (
                 <div
                   key={msg.id}
-                  className={`chat-message ${isGod ? 'chat-message--god' : isOwnMessage ? 'chat-message--own' : 'chat-message--klan'} ${isGlobal ? 'chat-message--global' : ''}`}
+                  className={`chat-message ${isGod ? 'chat-message--god' : isOwnMessage ? 'chat-message--own' : 'chat-message--klan'} ${isGlobal && !isOwnMessage && !isGod ? 'chat-message--global' : ''}`}
                   style={{
                     '--msg-klan-color': clanColor,
                     '--msg-klan-color-rgb': clanColorRgb,
                   } as React.CSSProperties}
                 >
-                  <span className="chat-message__sender">
+                  <span className="chat-message__sender" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>
                     {isGod ? '👁️ Bogowie' : `👤 ${msg.sender}${clan ? ` (${clan.name})` : ''}`}
                   </span>
-                  <span className="chat-message__content">{msg.content}</span>
+                  <span className="chat-message__content" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>{msg.content}</span>
                   {msg.audio_url && (
                     <div className="chat-message__footer">
                       <button
