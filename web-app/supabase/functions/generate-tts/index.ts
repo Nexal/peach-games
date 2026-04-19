@@ -7,15 +7,15 @@ interface RequestBody {
   voice_id: string;
 }
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -24,7 +24,7 @@ serve(async (req: Request) => {
     if (!text || !voice_id) {
       return new Response(
         JSON.stringify({ error: "Missing text or voice_id" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -32,7 +32,7 @@ serve(async (req: Request) => {
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: "ElevenLabs API key not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -63,7 +63,7 @@ serve(async (req: Request) => {
       console.error("ElevenLabs API error:", response.status, errorBody);
       return new Response(
         JSON.stringify({ error: "Failed to generate speech", details: errorBody }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -83,7 +83,7 @@ serve(async (req: Request) => {
       {
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          ...corsHeaders,
         },
       }
     );
@@ -91,7 +91,7 @@ serve(async (req: Request) => {
     console.error("Error generating TTS:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error", details: String(error) }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 });
