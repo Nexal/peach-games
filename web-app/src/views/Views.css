@@ -237,6 +237,13 @@
   justify-content: center;
 }
 
+.chat-input-bar__error {
+  color: #e74c3c;
+  font-size: 0.8rem;
+  margin-top: 8px;
+  text-align: center;
+}
+
 .chat-message__image {
   max-width: 200px;
   max-height: 150px;

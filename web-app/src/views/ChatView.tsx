@@ -26,6 +26,7 @@ export function ChatView() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -197,6 +198,8 @@ export function ChatView() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('Image selected:', file.name, 'Size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+
     setSelectedImage(file);
     const reader = new FileReader();
     reader.onload = () => setImagePreview(reader.result as string);
@@ -211,16 +214,24 @@ export function ChatView() {
 
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if ((!inputText.trim() && !selectedImage) || !playerSession) return;
+    if (!playerSession) return;
+
+    if (!inputText.trim() && !selectedImage) return;
 
     setUploading(true);
+    setUploadError(null);
 
     let imageUrl: string | null = null;
     if (selectedImage) {
       imageUrl = await uploadImage(selectedImage);
+      if (!imageUrl) {
+        setUploadError(' Nie udało się wysłać zdjęcia. Spróbuj ponownie.');
+        setUploading(false);
+        return;
+      }
     }
 
-    await supabase.from('messages').insert({
+    const { error: insertError } = await supabase.from('messages').insert({
       content: inputText.trim() || (imageUrl ? '📷' : ''),
       sender: playerSession.name,
       klan_id: chatMode === 'global' ? null : playerSession.klan_id,
@@ -229,6 +240,11 @@ export function ChatView() {
       image_url: imageUrl,
       tts_requested: false,
     });
+
+    if (insertError) {
+      console.error('Insert error:', insertError);
+      setUploadError(' Nie udało się wysłać wiadomości.');
+    }
 
     setInputText('');
     clearImage();
@@ -365,6 +381,7 @@ export function ChatView() {
             {uploading ? '...' : 'Wyślij'}
           </button>
         </form>
+        {uploadError && <p className="chat-input-bar__error">{uploadError}</p>}
       </div>
 
       {enlargedImage && (
