@@ -131,7 +131,11 @@ export function ChatView() {
     return new Promise((resolve, reject) => {
       console.log('Compressing image:', file.name, 'Size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
       const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
       img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+
         const canvas = document.createElement('canvas');
         let { width, height } = img;
         console.log('Original:', width, 'x', height);
@@ -164,8 +168,11 @@ export function ChatView() {
           quality
         );
       };
-      img.onerror = () => reject(new Error('Could not load image'));
-      img.src = URL.createObjectURL(file);
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Could not load image'));
+      };
+      img.src = objectUrl;
     });
   };
 
