@@ -120,6 +120,7 @@ export function ChatView() {
       content: inputText,
       sender: playerSession.name,
       klan_id: chatMode === 'global' ? null : playerSession.klan_id,
+      sender_klan_id: playerSession.klan_id,
       game_id: playerSession.game_id,
       tts_requested: false,
     });
@@ -183,7 +184,7 @@ export function ChatView() {
               const isOwnMessage = msg.sender === playerSession.name;
               const isGod = msg.sender === 'god';
               const isGlobal = msg.klan_id === null;
-              const clan = klans.find(k => k.id === msg.klan_id);
+              const clan = klans.find(k => k.id === (msg.sender_klan_id || msg.klan_id));
               const clanColor = clan?.theme_color || '#888888';
               const clanColorRgb = hexToRgb(clanColor);
               return (

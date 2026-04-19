@@ -117,6 +117,7 @@ export type Database = {
           id: string
           klan_id: string | null
           sender: string
+          sender_klan_id: string | null
           tts_requested: boolean | null
         }
         Insert: {
@@ -127,6 +128,7 @@ export type Database = {
           id?: string
           klan_id?: string | null
           sender: string
+          sender_klan_id?: string | null
           tts_requested?: boolean | null
         }
         Update: {
@@ -137,6 +139,7 @@ export type Database = {
           id?: string
           klan_id?: string | null
           sender?: string
+          sender_klan_id?: string | null
           tts_requested?: boolean | null
         }
         Relationships: [

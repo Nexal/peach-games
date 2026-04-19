@@ -621,6 +621,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
         sender: 'god',
         game_id: selectedGameId,
         klan_id: null,
+        sender_klan_id: null,
         tts_requested: ttsEnabled,
         audio_url: audioUrl,
       });
@@ -630,6 +631,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
         sender: 'god',
         game_id: selectedGameId,
         klan_id: selectedKlanId,
+        sender_klan_id: selectedKlanId,
         tts_requested: ttsEnabled,
         audio_url: audioUrl,
       });
@@ -759,10 +761,10 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
             <p className="admin-panel__empty">Brak wiadomości</p>
           )}
           {messages.map((msg) => {
-            const klan = klans.find((k) => k.id === msg.klan_id);
+            const clan = klans.find((k) => k.id === (msg.sender_klan_id || msg.klan_id));
             const isBroadcast = msg.sender === 'god' && msg.klan_id === null;
             const isPlaying = audioPlayersRef.current[msg.id] && !audioPlayersRef.current[msg.id].paused;
-            const klanColor = klan?.theme_color;
+            const klanColor = clan?.theme_color;
             const isSelectedKlan = selectedKlanId && msg.klan_id === selectedKlanId;
             return (
               <div
@@ -775,8 +777,8 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
                     {isBroadcast
                       ? '📢 Broadcast'
                       : msg.sender === 'god'
-                        ? `✨ Bogowie${klan ? ` → ${klan.name}` : ''}`
-                        : `👤 ${msg.sender} (${klan?.name || '?'})`}
+                        ? `✨ Bogowie${clan ? ` (${clan.name})` : ''}`
+                        : `👤 ${msg.sender}${clan ? ` (${clan.name})` : ''}`}
                     {msg.tts_requested && ' 🔊'}
                   </span>
                   <div className="admin-chat__message-actions">
