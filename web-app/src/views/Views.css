@@ -253,6 +253,7 @@
   transition: transform 0.2s;
   background: rgba(0, 0, 0, 0.3);
   padding: 4px;
+  object-fit: contain;
 }
 
 .chat-message__image:hover {
@@ -1027,6 +1028,7 @@
   transition: transform 0.2s;
   background: rgba(0, 0, 0, 0.3);
   padding: 4px;
+  object-fit: contain;
 }
 
 .admin-chat__message-image:hover {
