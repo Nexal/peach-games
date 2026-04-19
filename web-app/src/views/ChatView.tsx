@@ -385,25 +385,27 @@ export function ChatView() {
           </div>
         )}
         <form onSubmit={sendMessage} className="chat-input-bar__form">
-          <label htmlFor="chat-image-input" className="chat-input-bar__camera" title="Zrób zdjęcie">
-            📷
+          <div className="chat-input-bar__field-wrapper">
             <input
-              type="file"
-              id="chat-image-input"
-              ref={fileInputRef}
-              accept="image/*"
-              capture="user"
-              onChange={handleImageSelect}
-              style={{ display: 'none' }}
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder={`Modlitwa od ${playerSession.name}...`}
+              className="chat-input-bar__field"
             />
-          </label>
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder={`Modlitwa od ${playerSession.name}...`}
-            className="chat-input-bar__field"
-          />
+            <label htmlFor="chat-image-input" className="chat-input-bar__camera" title="Zrób zdjęcie">
+              📷
+              <input
+                type="file"
+                id="chat-image-input"
+                ref={fileInputRef}
+                accept="image/*"
+                capture="user"
+                onChange={handleImageSelect}
+                style={{ display: 'none' }}
+              />
+            </label>
+          </div>
           <button type="submit" className="button-glow chat-input-bar__submit" disabled={uploading}>
             {uploading ? '...' : 'Wyślij'}
           </button>
