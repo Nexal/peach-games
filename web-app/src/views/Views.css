@@ -317,11 +317,11 @@
 }
 
 .chat-message--god .chat-message__sender {
-  color: #d4af37;
+  color: #e0e0e0;
 }
 
 .chat-message--god .chat-message__content {
-  color: #e8d5a3;
+  color: #ffffff;
 }
 
 .chat-message__content {
