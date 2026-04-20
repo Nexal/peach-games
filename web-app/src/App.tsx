@@ -3,6 +3,7 @@ import { useTabNavigation } from './hooks/useTabNavigation';
 import { TabBar } from './components/tab-bar/TabBar';
 import { HomeView } from './views/HomeView';
 import { ChatView } from './views/ChatView';
+import { MapView } from './views/MapView';
 import { QuestsView } from './views/QuestsView';
 import { ShopView } from './views/ShopView';
 import { ProfileView } from './views/ProfileView';
@@ -77,6 +78,8 @@ function AppContent() {
     switch (activeTab) {
       case 'home':
         return <HomeView />;
+      case 'map':
+        return <MapView />;
       case 'chat':
         return <ChatView />;
       case 'quests':

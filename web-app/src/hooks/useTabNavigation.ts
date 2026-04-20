@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export type TabId = 'home' | 'chat' | 'quests' | 'shop' | 'profile';
+export type TabId = 'home' | 'map' | 'chat' | 'quests' | 'shop' | 'profile';
 
 interface Tab {
   id: TabId;
@@ -11,6 +11,7 @@ interface Tab {
 
 const tabs: Tab[] = [
   { id: 'home', label: 'ᚡᛁᛊᛏᚨ', icon: '', iconSrc: '/icons/home.png' },
+  { id: 'map', label: 'ᛗᚨᛈᚨ', icon: '🗺️', iconSrc: undefined },
   { id: 'chat', label: 'ᚷᛚᚨᛊᛒᚨᛁᚱ', icon: '', iconSrc: '/icons/glos-bogow.png' },
   { id: 'quests', label: 'ᛈᚱᚨᛒᚤ', icon: '', iconSrc: '/icons/quests.png' },
   { id: 'shop', label: 'ᛊᚲᛟᛈ', icon: '', iconSrc: '/icons/shop.png' },

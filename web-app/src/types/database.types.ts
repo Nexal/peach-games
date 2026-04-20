@@ -319,6 +319,79 @@ export type Database = {
           },
         ]
       }
+      map_markers: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          game_id: string | null
+          icon_url: string | null
+          id: string
+          is_active: boolean | null
+          klan_id: string | null
+          lat: number | null
+          lng: number | null
+          quest_id: string | null
+          reward_points: number | null
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          game_id?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          klan_id?: string | null
+          lat?: number | null
+          lng?: number | null
+          quest_id?: string | null
+          reward_points?: number | null
+          title: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          game_id?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          klan_id?: string | null
+          lat?: number | null
+          lng?: number | null
+          quest_id?: string | null
+          reward_points?: number | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_markers_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_markers_klan_id_fkey"
+            columns: ["klan_id"]
+            isOneToOne: false
+            referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_markers_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       game_status: {
