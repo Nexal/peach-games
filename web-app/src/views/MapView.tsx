@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase';
 import type { MapMarker } from '../types/map.types';
 import { DEFAULT_MAP_CONFIG, TILE_LAYERS } from '../types/map.types';
 import { LocationMarker, CenterOnLocationButton } from '../components/map/MapControls';
+import { AnimatedMarker, PulsingMarker } from '../components/map/AnimatedMarkers';
+import { usePlayerPosition } from '../hooks/usePlayerPosition';
 import 'leaflet/dist/leaflet.css';
 import './MapView.css';
 
@@ -53,6 +55,9 @@ const clanIcon = new L.Icon({
 function MapContent() {
   const { session } = usePlayerSession();
   const [markers, setMarkers] = useState<MapMarker[]>([]);
+
+  // Send player position to database every ~10 seconds
+  usePlayerPosition({ minDistance: 10 });
 
   useEffect(() => {
     if (!session?.game_id) return;
@@ -110,6 +115,10 @@ function MapContent() {
 
       {/* User's current location */}
       <LocationMarker watchPosition={true} />
+
+      {/* Animated markers - experimental */}
+      <AnimatedMarker center={DEFAULT_MAP_CONFIG.center} orbitRadius={100} speed={0.5} />
+      <PulsingMarker position={DEFAULT_MAP_CONFIG.center} />
 
       {/* Base marker - always shown */}
       <Marker position={DEFAULT_MAP_CONFIG.center} icon={baseIcon}>

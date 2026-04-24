@@ -392,6 +392,48 @@ export type Database = {
           },
         ]
       }
+      player_positions: {
+        Row: {
+          accuracy: number | null
+          game_id: string | null
+          lat: number | null
+          lng: number | null
+          player_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accuracy?: number | null
+          game_id?: string | null
+          lat: number
+          lng: number
+          player_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          accuracy?: number | null
+          game_id?: string | null
+          lat?: number | null
+          lng?: number | null
+          player_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_positions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_positions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       game_status: {

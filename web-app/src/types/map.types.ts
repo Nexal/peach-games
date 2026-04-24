@@ -34,4 +34,8 @@ export const TILE_LAYERS = {
     url: 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     attribution: '© OpenStreetMap contributors, © CARTO',
   },
+  dark_nolabels: {
+    url: 'https://basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+    attribution: '© OpenStreetMap contributors, © CARTO',
+  },
 };

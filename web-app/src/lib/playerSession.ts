@@ -1,5 +1,6 @@
 export type PlayerSession = {
   id: string;
+  player_id?: string; // Optional alias for id
   name: string;
   klan_id: string;
   klan_name: string;
@@ -14,14 +15,22 @@ export function getPlayerSession(): PlayerSession | null {
   if (!data) return null;
   
   try {
-    return JSON.parse(data) as PlayerSession;
+    const parsed = JSON.parse(data) as PlayerSession;
+    // Ensure player_id is set (for compatibility)
+    parsed.player_id = parsed.player_id || parsed.id;
+    return parsed;
   } catch {
     return null;
   }
 }
 
 export function setPlayerSession(session: PlayerSession): void {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  // Ensure player_id is always set
+  const sessionWithPlayerId = {
+    ...session,
+    player_id: session.player_id || session.id,
+  };
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionWithPlayerId));
 }
 
 export function clearPlayerSession(): void {

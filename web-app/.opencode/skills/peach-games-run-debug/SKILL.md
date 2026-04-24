@@ -24,25 +24,26 @@ Popraw niedoróbki w plikach:
 
 ## 3. Zarządzanie Serwerem
 
-Skrypt `scripts/dev-server/dev-server.sh` do zarządzania serwerem:
-
+Uruchom serwer z `--host` (dostępny w sieci lokalnej):
 ```bash
-# Sprawdź status
-./web-app/scripts/dev-server/dev-server.sh status
+cd web-app && npm run dev -- --host
+```
 
-# Uruchom (z --host dla sieci lokalnej)
-./web-app/scripts/dev-server/dev-server.sh start
+Zatrzymaj serwer:
+```bash
+pkill -f "vite.*--host"
+```
 
-# Zatrzymaj
-./web-app/scripts/dev-server/dev-server.sh stop
+Sprawdź status:
+```bash
+pgrep -f "vite.*--host" > /dev/null && echo "RUNNING" || echo "STOPPED"
 ```
 
 ## 4. Restart Serwera
 
 Po naprawie błędów:
 ```bash
-./web-app/scripts/dev-server/dev-server.sh stop
-./web-app/scripts/dev-server/dev-server.sh start
+pkill -f "vite.*--host"; cd web-app && npm run dev -- --host &
 ```
 
 Serwer `npm run dev` automatycznie przeładowuje zawartość. Jeśli logi milczą, sprawdź czy serwer działa przez `status`.

@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useAdminAuth } from '../../lib/admin/AdminAuth';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../types/database.types';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import { TILE_LAYERS, DEFAULT_MAP_CONFIG } from '../../types/map.types';
+import 'leaflet/dist/leaflet.css';
 
 type Game = Database['public']['Tables']['games']['Row'];
 type Klan = Database['public']['Tables']['klans']['Row'];
@@ -9,7 +13,7 @@ type Player = Database['public']['Tables']['players']['Row'];
 
 export function AdminDashboardView() {
   const { logout } = useAdminAuth();
-  const [activeTab, setActiveTab] = useState<'games' | 'klans' | 'players' | 'chat'>('games');
+  const [activeTab, setActiveTab] = useState<'games' | 'klans' | 'players' | 'chat' | 'map'>('games');
   const [games, setGames] = useState<Game[]>([]);
   const [klans, setKlans] = useState<Klan[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -110,6 +114,9 @@ export function AdminDashboardView() {
         {activeTab === 'chat' && (
           <ChatPanel games={games} klans={klans} />
         )}
+        {activeTab === 'map' && selectedGameId && (
+          <MapPanel gameId={selectedGameId} klans={klans} />
+        )}
       </main>
 
       <nav className="admin-tabs">
@@ -136,6 +143,12 @@ export function AdminDashboardView() {
           onClick={() => setActiveTab('chat')}
         >
           ✨ Głos Bogów
+        </button>
+        <button
+          className={`admin-tabs__item ${activeTab === 'map' ? 'admin-tabs__item--active' : ''}`}
+          onClick={() => setActiveTab('map')}
+        >
+          🗺️ Mapa
         </button>
       </nav>
     </div>
@@ -936,6 +949,166 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+interface MapPanelProps {
+  gameId: string;
+  klans: Klan[];
+}
+
+function MapPanel({ gameId, klans }: MapPanelProps) {
+  const [positions, setPositions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchPositions = async () => {
+      const { data } = await supabase
+        .from('player_positions')
+        .select(`
+          player_id,
+          lat,
+          lng,
+          accuracy,
+          updated_at,
+          players:player_id (
+            id,
+            name,
+            klan_id,
+            klans:klan_id (
+              id,
+              name,
+              theme_color
+            )
+          )
+        `)
+        .eq('game_id', gameId)
+        .gt('updated_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
+        .order('updated_at', { ascending: false });
+
+      if (data) {
+        setPositions(data);
+      }
+    };
+
+    fetchPositions();
+
+    const channel = supabase
+      .channel('admin_map_positions')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'player_positions',
+        filter: `game_id=eq.${gameId}`,
+      }, () => {
+        fetchPositions();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gameId]);
+
+  const getKlanColor = (klanId: string | null) => {
+    if (!klanId) return '#888888';
+    const klan = klans.find(k => k.id === klanId);
+    return klan?.theme_color || '#888888';
+  };
+
+  return (
+    <div className="admin-map-panel">
+      <div className="admin-map-panel__header">
+        <h2>🗺️ Pozycje Graczy</h2>
+        <span className="admin-map-panel__count">
+          {positions.length} graczy online
+        </span>
+      </div>
+
+      <div className="admin-map-panel__container">
+        <MapContainer
+          center={DEFAULT_MAP_CONFIG.center}
+          zoom={DEFAULT_MAP_CONFIG.zoom}
+          className="admin-map"
+          zoomControl={true}
+          attributionControl={false}
+        >
+          <TileLayer
+            url={TILE_LAYERS.dark.url}
+            attribution={TILE_LAYERS.dark.attribution}
+          />
+
+          {/* Base campfire marker */}
+          <Marker position={DEFAULT_MAP_CONFIG.center}>
+            <Popup>
+              <div className="map-popup map-popup--base">
+                <h3>🔥 Ognisko / Baza</h3>
+              </div>
+            </Popup>
+          </Marker>
+
+          {/* Player markers */}
+          {positions.map((pos) => {
+            const playerName = pos.players?.name || 'Nieznany';
+            const klanName = pos.players?.klans?.name || 'Bez klanu';
+            const klanColor = getKlanColor(pos.players?.klan_id);
+
+            const playerIcon = L.divIcon({
+              className: 'admin-player-marker',
+              html: `
+                <div style="
+                  width: 36px;
+                  height: 36px;
+                  background: ${klanColor};
+                  border: 3px solid #fff;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: bold;
+                  font-size: 12px;
+                  color: #fff;
+                  box-shadow: 0 0 12px ${klanColor};
+                ">
+                  ${playerName.charAt(0).toUpperCase()}
+                </div>
+              `,
+              iconSize: [36, 36],
+              iconAnchor: [18, 18],
+            });
+
+            return (
+              <Marker
+                key={pos.player_id}
+                position={[pos.lat, pos.lng]}
+                icon={playerIcon}
+              >
+                <Popup>
+                  <div className="admin-map-popup">
+                    <h3 style={{ color: klanColor }}>{playerName}</h3>
+                    <p><strong>Klan:</strong> {klanName}</p>
+                    <p><strong>Pozycja:</strong> {pos.lat.toFixed(5)}, {pos.lng.toFixed(5)}</p>
+                    <p><strong>Dokładność:</strong> ±{Math.round(pos.accuracy || 0)}m</p>
+                    <p><strong>Online:</strong> {new Date(pos.updated_at).toLocaleTimeString()}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MapContainer>
+      </div>
+
+      <div className="admin-map-panel__legend">
+        {klans.map((klan) => (
+          <div key={klan.id} className="admin-map-panel__legend-item">
+            <span
+              className="admin-map-panel__legend-color"
+              style={{ background: klan.theme_color }}
+            />
+            <span>{klan.name}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

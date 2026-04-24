@@ -34,7 +34,7 @@
   width: 100%;
   flex: 1;
   min-height: 200px;
-  background: var(--color-bg-dark);
+  background: #1a1a2e;
 }
 
 /* Ensure Leaflet map doesn't cause page scroll */
@@ -46,16 +46,16 @@
 
 /* Override Leaflet default styles for dark theme */
 .leaflet-popup-content-wrapper {
-  background: var(--color-bg-dark);
-  border: 1px solid var(--glass-border);
+  background: #1e1e32;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   color: var(--color-text-main);
   box-shadow: var(--glass-shadow);
 }
 
 .leaflet-popup-tip {
-  background: var(--color-bg-dark);
-  border: 1px solid var(--glass-border);
+  background: #1e1e32;
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .leaflet-popup-close-button {
@@ -70,6 +70,39 @@
 .leaflet-control-zoom {
   border: none !important;
   box-shadow: var(--glass-shadow) !important;
+}
+
+.leaflet-control-zoom a {
+  background: #1e1e32 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: var(--color-text-main) !important;
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-size: 18px !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.leaflet-control-zoom-in {
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.leaflet-control-zoom-out {
+  border-radius: 0 0 8px 8px !important;
+}
+
+/* Attribution */
+.leaflet-control-attribution {
+  background: rgba(30, 30, 50, 0.9) !important;
+  color: var(--color-text-muted) !important;
+  font-size: 10px !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--color-text-muted) !important;
 }
 
 .leaflet-control-zoom a {
@@ -162,8 +195,8 @@
   height: 44px;
   border: none;
   border-radius: 50%;
-  background: var(--color-bg-dark);
-  border: 1px solid var(--glass-border);
+  background: #1e1e32;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: var(--color-text-main);
   font-size: 1.2rem;
   cursor: pointer;
@@ -175,7 +208,7 @@
 }
 
 .map-control-button:hover {
-  background: var(--glass-bg);
+  background: rgba(255, 255, 255, 0.1);
   transform: scale(1.05);
 }
 
@@ -189,14 +222,33 @@
 }
 
 .map-control-error {
-  background: var(--color-bg-dark);
-  border: 1px solid var(--glass-border);
+  background: #1e1e32;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   padding: 4px 8px;
   font-size: 0.7rem;
   color: #e74c3c;
   max-width: 100px;
   text-align: center;
+}
+
+/* Animated marker styles */
+.animated-ghost-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.pulsing-fire-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.pulse-ring {
+  pointer-events: none;
+}
+
+.leaflet-marker-icon {
+  transition: none !important;
 }
 
 /* Mobile adjustments */
