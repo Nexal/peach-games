@@ -133,7 +133,7 @@ function ChaseQuestPanel({
   quest: QuestWithCompletion;
   playerPosition: { lat: number; lng: number } | null;
 }) {
-  const { activeSession, markerPosition, activating, activate } =
+  const { activeSession, activating, activate } =
     useChaseQuest(quest, playerPosition);
 
   const isActive = !!activeSession;
@@ -160,23 +160,9 @@ function ChaseQuestPanel({
         {quest.type && <span>🏇 Gonitwa</span>}
       </div>
 
-      {isActive && markerPosition && playerPosition && (
-        <ChaseMapPreview
-          playerPosition={playerPosition}
-          markerPosition={markerPosition}
-          catchDistance={activeSession?.catch_distance_m || 20}
-        />
-      )}
-
       {isActive && (
         <div className="chase-quest__instructions">
-          🚴 Gonitwa w toku! Złap znacznik zanim ucieknie.
-          {playerPosition && markerPosition && (
-            <DistanceDisplay
-              playerPosition={playerPosition}
-              markerPosition={markerPosition}
-            />
-          )}
+          🚴 Gonitwa aktywna! Sprawdź mapę - znacznik się porusza!
         </div>
       )}
 
@@ -193,71 +179,6 @@ function ChaseQuestPanel({
           ? 'Gonitwa aktywna...'
           : '🚀 Aktywuj gonitwę'}
       </button>
-    </div>
-  );
-}
-
-function DistanceDisplay({
-  playerPosition,
-  markerPosition,
-}: {
-  playerPosition: { lat: number; lng: number };
-  markerPosition: { lat: number; lng: number };
-}) {
-  const R = 6371000;
-  const dLat = ((markerPosition.lat - playerPosition.lat) * Math.PI) / 180;
-  const dLng = ((markerPosition.lng - playerPosition.lng) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((playerPosition.lat * Math.PI) / 180) *
-      Math.cos((markerPosition.lat * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = Math.round(R * c);
-
-  return (
-    <div className="chase-quest__distance">
-      📍 {distance}m <span>do celu</span>
-    </div>
-  );
-}
-
-function ChaseMapPreview({
-  playerPosition,
-  markerPosition,
-  catchDistance,
-}: {
-  playerPosition: { lat: number; lng: number };
-  markerPosition: { lat: number; lng: number };
-  catchDistance: number;
-}) {
-  const R = 6371000;
-  const dLat = ((markerPosition.lat - playerPosition.lat) * Math.PI) / 180;
-  const dLng = ((markerPosition.lng - playerPosition.lng) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((playerPosition.lat * Math.PI) / 180) *
-      Math.cos((markerPosition.lat * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c;
-
-  const maxDisplayDistance = 500;
-  const progress = Math.min(100, Math.max(0, ((maxDisplayDistance - distance) / maxDisplayDistance) * 100));
-
-  return (
-    <div className="chase-quest__progress">
-      <div className="chase-quest__progress-label">
-        📍 Odległość: {Math.round(distance)}m (cel: {catchDistance}m)
-      </div>
-      <div className="chase-quest__progress-bar">
-        <div
-          className="chase-quest__progress-fill"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
     </div>
   );
 }

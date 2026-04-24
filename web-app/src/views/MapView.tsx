@@ -52,6 +52,21 @@ const clanIcon = new L.Icon({
   popupAnchor: [0, -16],
 });
 
+// Chase marker icon (pulsing red/horse)
+const chaseIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" fill="#E74C3C" opacity="0.2"/>
+      <circle cx="12" cy="12" r="7" fill="#E74C3C" opacity="0.4"/>
+      <circle cx="12" cy="12" r="4" fill="#E74C3C"/>
+      <path d="M12 6l1.5 3 3.5.5-2.5 2.5.5 3.5-3-1.5-3 1.5.5-3.5L7 9.5l3.5-.5z" fill="#FFD700"/>
+    </svg>
+  `),
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+  popupAnchor: [0, -20],
+});
+
 function MapContent() {
   const { session } = usePlayerSession();
   const [markers, setMarkers] = useState<MapMarker[]>([]);
@@ -134,9 +149,15 @@ function MapContent() {
       {markers.map((marker) => {
         let icon = questIcon;
         if (marker.type === 'clan_base') icon = clanIcon;
+        if (marker.type === 'chase') icon = chaseIcon;
 
         // Filter by clan for quest markers (only show own clan's quests)
         if (marker.type === 'quest' && marker.clan_id && marker.clan_id !== session?.klan_id) {
+          return null;
+        }
+
+        // Chase markers - only show if own clan
+        if (marker.type === 'chase' && marker.clan_id && marker.clan_id !== session?.klan_id) {
           return null;
         }
 

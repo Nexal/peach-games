@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { getPlayerSession } from '../../lib/playerSession';
 import type { Database } from '../../types/database.types';
@@ -62,7 +62,7 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
   const [activeSession, setActiveSession] = useState<ChaseSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
-  const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const markerIdRef = useRef<string | null>(null);
 
   const loadSession = useCallback(async () => {
     if (!session?.klan_id || !session?.game_id) {
@@ -70,15 +70,19 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
       return;
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('chase_sessions')
       .select('*')
       .eq('quest_id', quest.id)
       .eq('klan_id', session.klan_id)
       .is('completed_at', null)
-      .single();
+      .limit(1);
 
-    setActiveSession(data);
+    if (error) {
+      console.error('[ChaseQuest] loadSession error', error);
+    }
+
+    setActiveSession(data?.[0] || null);
     setLoading(false);
   }, [quest.id, session?.klan_id, session?.game_id]);
 
@@ -108,41 +112,49 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
 
   useEffect(() => {
     if (!activeSession) {
-      setMarkerPosition(null);
       return;
     }
 
-    const updatePosition = () => {
-      const started = new Date(activeSession.started_at!).getTime();
-      const now = Date.now();
-      const elapsedSeconds = (now - started) / 1000;
+    let intervalId: ReturnType<typeof setInterval>;
 
-      const pos = calculatePosition(
-        activeSession.start_lat,
-        activeSession.start_lng,
-        activeSession.bearing,
-        elapsedSeconds,
-        activeSession.speed_mps
-      );
-      setMarkerPosition(pos);
+    const startTracking = async () => {
+      const startLat = activeSession.start_lat;
+      const startLng = activeSession.start_lng;
+      const bearing = activeSession.bearing;
+      const speedMps = activeSession.speed_mps;
+      const startedAt = new Date(activeSession.started_at!).getTime();
+      const catchDistance = activeSession.catch_distance_m || 20;
 
-      if (playerPosition) {
-        const distance = getDistanceM(
-          playerPosition.lat,
-          playerPosition.lng,
-          pos.lat,
-          pos.lng
-        );
+      const updatePosition = async () => {
+        const now = Date.now();
+        const elapsedSeconds = (now - startedAt) / 1000;
 
-        if (distance <= (activeSession.catch_distance_m || 20)) {
-          handleComplete();
+        const pos = calculatePosition(startLat, startLng, bearing, elapsedSeconds, speedMps);
+
+        if (playerPosition) {
+          const distance = getDistanceM(
+            playerPosition.lat,
+            playerPosition.lng,
+            pos.lat,
+            pos.lng
+          );
+
+          if (distance <= catchDistance) {
+            clearInterval(intervalId);
+            await handleComplete();
+          }
         }
-      }
+      };
+
+      updatePosition();
+      intervalId = setInterval(updatePosition, 1000);
     };
 
-    updatePosition();
-    const interval = setInterval(updatePosition, 1000);
-    return () => clearInterval(interval);
+    startTracking();
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [activeSession, playerPosition]);
 
   const handleComplete = async () => {
@@ -172,19 +184,26 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
         .from('klans')
         .select('points')
         .eq('id', session.klan_id)
-        .single();
+        .limit(1);
 
-      if (klanData) {
+      if (klanData && klanData[0]) {
         await supabase
           .from('klans')
           .update({
-            points: (klanData.points || 0) + (activeSession.reward_points || 0),
+            points: (klanData[0].points || 0) + (activeSession.reward_points || 0),
           })
           .eq('id', session.klan_id);
       }
 
+      if (markerIdRef.current) {
+        await supabase
+          .from('map_markers')
+          .update({ is_active: false })
+          .eq('id', markerIdRef.current);
+        markerIdRef.current = null;
+      }
+
       setActiveSession(null);
-      setMarkerPosition(null);
     }
   };
 
@@ -195,30 +214,61 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
 
     const randomBearing = Math.random() * 360;
     const randomSpeed = 1.5 + Math.random() * 1.5;
+    const offsetMeters = 150 + Math.random() * 100;
 
-    const { data, error } = await supabase
+    const startLat = playerPosition.lat + (offsetMeters / 111000) * Math.cos(randomBearing * Math.PI / 180);
+    const startLng = playerPosition.lng + (offsetMeters / (111000 * Math.cos(playerPosition.lat * Math.PI / 180))) * Math.sin(randomBearing * Math.PI / 180);
+
+    const { data: sessionData, error: sessionError } = await supabase
       .from('chase_sessions')
       .insert({
         quest_id: quest.id,
         klan_id: session.klan_id,
         game_id: session.game_id,
-        start_lat: playerPosition.lat,
-        start_lng: playerPosition.lng,
+        start_lat: startLat,
+        start_lng: startLng,
         bearing: randomBearing,
         speed_mps: randomSpeed,
       })
       .select()
-      .single();
+      .limit(1);
 
-    if (!error && data) {
-      setActiveSession(data);
+    if (sessionError || !sessionData || !sessionData[0]) {
+      console.error('[ChaseQuest] insert error', sessionError);
+      setActivating(false);
+      return;
     }
+
+    const chaseSession = sessionData[0];
+
+    const { data: markerData, error: markerError } = await supabase
+      .from('map_markers')
+      .insert({
+        game_id: session.game_id,
+        klan_id: session.klan_id,
+        quest_id: quest.id,
+        type: 'chase',
+        title: 'Gooniec!',
+        description: 'Gonitwa w toku! Złap gońca!',
+        lat: startLat,
+        lng: startLng,
+        is_active: true,
+      })
+      .select()
+      .limit(1);
+
+    if (markerError) {
+      console.error('[ChaseQuest] marker insert error', markerError);
+    } else if (markerData && markerData[0]) {
+      markerIdRef.current = markerData[0].id;
+    }
+
+    setActiveSession(chaseSession);
     setActivating(false);
   };
 
   return {
     activeSession,
-    markerPosition,
     loading,
     activating,
     activate,
