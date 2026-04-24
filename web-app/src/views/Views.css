@@ -1281,6 +1281,37 @@
   color: var(--color-text-main);
 }
 
+.profile-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.profile-tab {
+  flex: 1;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.profile-tab--active {
+  background: var(--glass-bg);
+  color: var(--color-text-main);
+  font-weight: 600;
+}
+
 /* Admin Map Panel */
 .admin-map-panel {
   display: flex;

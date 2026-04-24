@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { getPlayerSession, clearPlayerSession } from '../lib/playerSession';
 import type { PlayerSession } from '../lib/playerSession';
+import { CursesView } from './profile/CursesView';
+
+type ProfileTab = 'profile' | 'curses';
 
 export function ProfileView() {
   const [session, setSession] = useState<PlayerSession | null>(null);
+  const [activeTab, setActiveTab] = useState<ProfileTab>('profile');
 
   useEffect(() => {
     setSession(getPlayerSession());
@@ -36,14 +40,22 @@ export function ProfileView() {
     );
   }
 
+  if (activeTab === 'curses') {
+    return (
+      <div className="view view--profile">
+        <CursesView onBack={() => setActiveTab('profile')} />
+      </div>
+    );
+  }
+
   return (
     <div className="view view--profile">
       <header className="view__header">
-        <div 
+        <div
           className="profile-avatar"
           style={{ borderColor: session.klan_color }}
         >
-          <span 
+          <span
             className="profile-avatar__color"
             style={{ backgroundColor: session.klan_color }}
           />
@@ -52,26 +64,36 @@ export function ProfileView() {
         <p className="view__subtitle">Gracz klanu {session.klan_name}</p>
       </header>
 
+      <div className="profile-tabs">
+        <button className="profile-tab profile-tab--active">👤 Profil</button>
+        <button
+          className="profile-tab"
+          onClick={() => setActiveTab('curses')}
+        >
+          💀 Klątwy
+        </button>
+      </div>
+
       <main className="view__content">
         <div className="profile-card glass-panel">
           <div className="profile-card__row">
             <span className="profile-card__label">Klan</span>
             <div className="profile-card__klan">
-              <span 
+              <span
                 className="profile-card__klan-color"
                 style={{ backgroundColor: session.klan_color }}
               />
               <span>{session.klan_name}</span>
             </div>
           </div>
-          
+
           <div className="profile-card__row">
             <span className="profile-card__label">ID Sesji</span>
             <span className="profile-card__value">{session.id.slice(0, 8)}...</span>
           </div>
         </div>
 
-        <button 
+        <button
           onClick={handleLogout}
           className="profile-logout"
         >

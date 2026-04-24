@@ -1,0 +1,188 @@
+.curses-view {
+  padding: 16px;
+  min-height: 100%;
+}
+
+.curses-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.curses-back {
+  background: none;
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-muted);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.curses-back:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-main);
+}
+
+.curses-title {
+  font-size: 1.4rem;
+  color: var(--color-perun);
+  margin-bottom: 4px;
+}
+
+.curses-subtitle {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.curses-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.curses-tab {
+  flex: 1;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.curses-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.curses-tab--active {
+  background: var(--glass-bg);
+  color: var(--color-text-main);
+  font-weight: 600;
+}
+
+.curses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.curses-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.curses-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-muted);
+}
+
+.curse-card {
+  background: var(--glass-bg);
+  border: 2px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.3s;
+}
+
+.curse-card--active {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+  }
+}
+
+.curse-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.curse-card__icon {
+  font-size: 1.4rem;
+}
+
+.curse-card__name {
+  flex: 1;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.curse-card__badge {
+  padding: 3px 8px;
+  background: var(--color-perun);
+  color: #000;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.curse-card__desc {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.curse-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.curse-card__btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.curse-card__btn--activate {
+  background: linear-gradient(135deg, var(--color-perun), #b8860b);
+  color: #000;
+}
+
+.curse-card__btn--activate:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+.curse-card__btn--activate:active {
+  transform: translateY(0);
+}
+
+.curse-card__btn--deactivate {
+  background: rgba(255, 100, 100, 0.2);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 100, 100, 0.3);
+}
+
+.curse-card__btn--deactivate:hover {
+  background: rgba(255, 100, 100, 0.3);
+}

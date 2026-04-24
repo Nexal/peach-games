@@ -43,7 +43,6 @@ function AppContent() {
 
     const handleRouteChange = () => {
       const pathname = window.location.pathname;
-      const searchParams = new URLSearchParams(window.location.search);
       setShowAdmin(pathname === '/admin');
       setShowJoin(pathname === '/join');
     };
