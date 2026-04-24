@@ -54,6 +54,9 @@
 | `quests` | Quest definitions (title, description, points, type) |
 | `quest_completions` | Player completions (player_id, quest_id, photo_url) |
 | `messages` | Chat messages (player_id, clan_id, content, is_gm) |
+| `clan_items` | Clan buffs/curse/debuff items (klan_id, name, type, effect, duration, uses, active) |
+| `player_positions` | Real-time player geolocation (player_id, lat, lng, accuracy, updated_at) |
+| `map_markers` | Quest markers on map (title, lat, lng, type, klan_id, is_active) |
 
 ### Key Files
 
@@ -67,26 +70,35 @@ web-app/
 │   │   └── admin/
 │   │       └── AdminAuth.tsx            # Admin password auth
 │   ├── hooks/
-│   │   └── useTabNavigation.ts           # Tab state management
+│   │   ├── useTabNavigation.ts           # Tab state management
+│   │   └── usePlayerPosition.ts          # Player geolocation tracking
 │   ├── components/
-│   │   └── tab-bar/
-│   │       ├── TabBar.tsx               # Tab navigation
-│   │       └── TabBar.css
+│   │   ├── tab-bar/
+│   │   │   ├── TabBar.tsx               # Tab navigation
+│   │   │   └── TabBar.css
+│   │   └── map/
+│   │       ├── LocationMarker.tsx        # Player location marker
+│   │       ├── CenterOnLocationButton.tsx
+│   │       └── AnimatedMarkers.tsx      # Pulsing markers
 │   ├── views/
 │   │   ├── HomeView.tsx                 # Home with session gate
 │   │   ├── ChatView.tsx                 # Realtime chat "Głos Bogów"
+│   │   ├── MapView.tsx                  # Leaflet map with player positions
 │   │   ├── QuestsView.tsx               # Quest list (placeholder)
 │   │   ├── ShopView.tsx                 # Shop (placeholder)
-│   │   ├── ProfileView.tsx              # Player profile
+│   │   ├── ProfileView.tsx              # Player profile + curses tab
 │   │   ├── admin/
 │   │   │   ├── AdminLoginView.tsx
-│   │   │   └── AdminDashboardView.tsx    # Full admin panel
-│   │   └── join/
-│   │       ├── JoinView.tsx             # Player registration
-│   │       └── JoinView.css
+│   │   │   └── AdminDashboardView.tsx   # Full admin panel + MapPanel
+│   │   ├── join/
+│   │   │   ├── JoinView.tsx             # Player registration
+│   │   │   └── JoinView.css
+│   │   └── profile/
+│   │       ├── CursesView.tsx           # Clan buffs/curses/debuffs
+│   │       └── CursesView.css
 │   └── types/
 │       └── database.types.ts            # Generated: npx supabase gen types typescript --linked > src/types/database.types.ts
-├── supabase/migrations/                # SQL migrations
+├── supabase/migrations/                # SQL migrations (auto-push after every change)
 └── .env.local                          # VITE_ADMIN_PASSWORD=peachgames2026
 ```
 
@@ -150,15 +162,30 @@ web-app/
 
 ---
 
+## Supabase Migration Workflow
+
+**AFTER every change to `supabase/migrations/*.sql`, ALWAYS do:**
+
+```bash
+cd web-app
+echo "Y" | npx supabase db push
+npx supabase gen types typescript --linked > src/types/database.types.ts
+```
+
+This pushes the migration to cloud AND regenerates TypeScript types.
+
+---
+
 ## Next Steps
 
-1. **Test session flow** — verify blocking screen, join flow, redirects
-2. **QuestsView** — GPS tracking, QR scanning, rune puzzles
-3. **ShopView** — buffs/curses purchasable with clan points
-4. **ProfileView** — show clan points, inventory
-5. **Enhance chat** — filter by clan
-6. **Git commit** — many changes since last commit
-7. **Trello sync** — use skills for reading/updating board
+1. ✅ **Session flow** — tested, working
+2. ✅ **Dev mode login** — `/join?dev=true` for quick testing
+3. ✅ **MapView** — Leaflet with CartoDB Dark tiles, player positions
+4. ✅ **CursesView** — clan buffs/curse/debuff activation in Profile tab
+5. ✅ **Admin Map Panel** — shows all players with clan colors
+6. 🔲 **QuestsView** — GPS tracking, QR scanning, rune puzzles
+7. 🔲 **ShopView** — buffs/curses purchasable with clan points
+8. 🔲 **Głos Bogów** — enhance chat with clan filter + TTS
 
 ---
 

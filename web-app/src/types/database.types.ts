@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -39,6 +40,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      clan_items: {
+        Row: {
+          activated_at: string | null
+          active: boolean | null
+          cooldown_seconds: number | null
+          created_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          effect: Json
+          id: string
+          klan_id: string | null
+          name: string
+          target_type: string
+          type: string
+          uses_remaining: number | null
+        }
+        Insert: {
+          activated_at?: string | null
+          active?: boolean | null
+          cooldown_seconds?: number | null
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          effect: Json
+          id?: string
+          klan_id?: string | null
+          name: string
+          target_type: string
+          type: string
+          uses_remaining?: number | null
+        }
+        Update: {
+          activated_at?: string | null
+          active?: boolean | null
+          cooldown_seconds?: number | null
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          effect?: Json
+          id?: string
+          klan_id?: string | null
+          name?: string
+          target_type?: string
+          type?: string
+          uses_remaining?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_items_klan_id_fkey"
+            columns: ["klan_id"]
+            isOneToOne: false
+            referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       games: {
         Row: {
           created_at: string | null
@@ -108,6 +165,86 @@ export type Database = {
           },
         ]
       }
+      map_markers: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          game_id: string | null
+          icon_url: string | null
+          id: string
+          is_active: boolean | null
+          klan_id: string | null
+          lat: number
+          lng: number
+          quest_id: string | null
+          reward_points: number | null
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          game_id?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          klan_id?: string | null
+          lat: number
+          lng: number
+          quest_id?: string | null
+          reward_points?: number | null
+          title: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          game_id?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          klan_id?: string | null
+          lat?: number
+          lng?: number
+          quest_id?: string | null
+          reward_points?: number | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_markers_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_markers_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_markers_klan_id_fkey"
+            columns: ["klan_id"]
+            isOneToOne: false
+            referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_markers_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           audio_url: string | null
@@ -165,6 +302,62 @@ export type Database = {
             columns: ["klan_id"]
             isOneToOne: false
             referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_klan_id_fkey"
+            columns: ["sender_klan_id"]
+            isOneToOne: false
+            referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_positions: {
+        Row: {
+          accuracy: number | null
+          game_id: string
+          lat: number
+          lng: number
+          player_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          accuracy?: number | null
+          game_id: string
+          lat: number
+          lng: number
+          player_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          accuracy?: number | null
+          game_id?: string
+          lat?: number
+          lng?: number
+          player_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_positions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_positions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_positions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]
@@ -319,121 +512,6 @@ export type Database = {
           },
         ]
       }
-      map_markers: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          game_id: string | null
-          icon_url: string | null
-          id: string
-          is_active: boolean | null
-          klan_id: string | null
-          lat: number | null
-          lng: number | null
-          quest_id: string | null
-          reward_points: number | null
-          title: string
-          type: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          game_id?: string | null
-          icon_url?: string | null
-          id?: string
-          is_active?: boolean | null
-          klan_id?: string | null
-          lat?: number | null
-          lng?: number | null
-          quest_id?: string | null
-          reward_points?: number | null
-          title: string
-          type: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          game_id?: string | null
-          icon_url?: string | null
-          id?: string
-          is_active?: boolean | null
-          klan_id?: string | null
-          lat?: number | null
-          lng?: number | null
-          quest_id?: string | null
-          reward_points?: number | null
-          title?: string
-          type?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "map_markers_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "map_markers_klan_id_fkey"
-            columns: ["klan_id"]
-            isOneToOne: false
-            referencedRelation: "klans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "map_markers_quest_id_fkey"
-            columns: ["quest_id"]
-            isOneToOne: false
-            referencedRelation: "quests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      player_positions: {
-        Row: {
-          accuracy: number | null
-          game_id: string | null
-          lat: number | null
-          lng: number | null
-          player_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          accuracy?: number | null
-          game_id?: string | null
-          lat: number
-          lng: number
-          player_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          accuracy?: number | null
-          game_id?: string | null
-          lat?: number | null
-          lng?: number | null
-          player_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "player_positions_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_positions_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       game_status: {
@@ -488,7 +566,39 @@ export type Database = {
         Args: { game_description?: string; game_name: string }
         Returns: string
       }
+      get_game_player_positions: {
+        Args: { p_game_id: string }
+        Returns: {
+          accuracy: number
+          klan_id: string
+          klan_name: string
+          lat: number
+          lng: number
+          player_id: string
+          player_name: string
+          updated_at: string
+        }[]
+      }
+      insert_sample_map_markers: {
+        Args: {
+          p_game_id: string
+          p_klan_mokosz_id: string
+          p_klan_perun_id: string
+          p_klan_weles_id: string
+        }
+        Returns: undefined
+      }
       reset_game: { Args: never; Returns: undefined }
+      update_player_position: {
+        Args: {
+          p_accuracy?: number
+          p_game_id: string
+          p_lat: number
+          p_lng: number
+          p_player_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -624,3 +734,5 @@ export const Constants = {
     Enums: {},
   },
 } as const
+A new version of Supabase CLI is available: v2.90.0 (currently installed v2.89.1)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
