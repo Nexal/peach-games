@@ -45,7 +45,7 @@ function AppContent() {
       const pathname = window.location.pathname;
       const searchParams = new URLSearchParams(window.location.search);
       setShowAdmin(pathname === '/admin');
-      setShowJoin(pathname === '/join' && searchParams.has('game'));
+      setShowJoin(pathname === '/join');
     };
     window.addEventListener('popstate', handleRouteChange);
     window.addEventListener('pushState', handleRouteChange);
