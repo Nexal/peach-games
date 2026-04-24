@@ -30,12 +30,15 @@ export function usePlayerPosition(options: UsePlayerPositionOptions = {}) {
   const { session } = usePlayerSession();
   const lastPositionRef = useRef<PositionUpdate | null>(null);
   const watchIdRef = useRef<number | null>(null);
+  const [currentPosition, setCurrentPosition] = useState<PositionUpdate | null>(null);
 
   const sendPosition = useCallback(async (position: PositionUpdate) => {
     const playerId = session?.player_id || session?.id;
     if (!playerId || !session?.game_id) return;
 
     if (position.accuracy && position.accuracy > 100) return;
+
+    setCurrentPosition(position);
 
     // Upsert position directly
     const { error } = await supabase.from('player_positions').upsert({
@@ -113,7 +116,7 @@ export function usePlayerPosition(options: UsePlayerPositionOptions = {}) {
     };
   }, [enabled, session?.id, session?.player_id, session?.game_id, minDistance, sendPosition]);
 
-  return null;
+  return currentPosition;
 }
 
 export function useGamePlayerPositions(gameId: string | undefined) {

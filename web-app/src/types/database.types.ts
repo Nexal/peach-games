@@ -1,4 +1,3 @@
-Initialising login role...
 export type Json =
   | string
   | number
@@ -40,6 +39,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      chase_sessions: {
+        Row: {
+          bearing: number
+          catch_distance_m: number | null
+          completed_at: string | null
+          completed_by_player_id: string | null
+          game_id: string | null
+          id: string
+          klan_id: string | null
+          quest_id: string | null
+          reward_points: number | null
+          speed_mps: number
+          start_lat: number
+          start_lng: number
+          started_at: string | null
+        }
+        Insert: {
+          bearing: number
+          catch_distance_m?: number | null
+          completed_at?: string | null
+          completed_by_player_id?: string | null
+          game_id?: string | null
+          id?: string
+          klan_id?: string | null
+          quest_id?: string | null
+          reward_points?: number | null
+          speed_mps?: number
+          start_lat: number
+          start_lng: number
+          started_at?: string | null
+        }
+        Update: {
+          bearing?: number
+          catch_distance_m?: number | null
+          completed_at?: string | null
+          completed_by_player_id?: string | null
+          game_id?: string | null
+          id?: string
+          klan_id?: string | null
+          quest_id?: string | null
+          reward_points?: number | null
+          speed_mps?: number
+          start_lat?: number
+          start_lng?: number
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chase_sessions_completed_by_player_id_fkey"
+            columns: ["completed_by_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chase_sessions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chase_sessions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chase_sessions_klan_id_fkey"
+            columns: ["klan_id"]
+            isOneToOne: false
+            referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chase_sessions_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clan_items: {
         Row: {
           activated_at: string | null
@@ -734,5 +817,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-A new version of Supabase CLI is available: v2.90.0 (currently installed v2.89.1)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

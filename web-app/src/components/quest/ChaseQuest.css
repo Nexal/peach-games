@@ -1,0 +1,162 @@
+.chase-quest {
+  background: var(--glass-bg);
+  border: 2px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chase-quest--active {
+  border-color: var(--color-perun);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+}
+
+.chase-quest__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chase-quest__icon {
+  font-size: 2rem;
+}
+
+.chase-quest__info {
+  flex: 1;
+}
+
+.chase-quest__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.chase-quest__desc {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.chase-quest__status {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.chase-quest__status--inactive {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-muted);
+}
+
+.chase-quest__status--active {
+  background: rgba(255, 215, 0, 0.2);
+  color: var(--color-perun);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.chase-quest__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.chase-quest__meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chase-quest__map {
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+
+.chase-quest__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chase-quest__progress-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.chase-quest__progress-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.chase-quest__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-perun), #b8860b);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.chase-quest__distance {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-perun);
+}
+
+.chase-quest__distance span {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.chase-quest__btn {
+  padding: 14px 20px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chase-quest__btn--activate {
+  background: linear-gradient(135deg, var(--color-perun), #b8860b);
+  color: #000;
+}
+
+.chase-quest__btn--activate:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.3);
+}
+
+.chase-quest__btn--activate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chase-quest__btn--complete {
+  background: linear-gradient(135deg, var(--color-mokosz), #1a5c3a);
+  color: #fff;
+}
+
+.chase-quest__instructions {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
