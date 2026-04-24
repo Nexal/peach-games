@@ -1,95 +1,113 @@
 ---
 name: peach-games-playwright
-description: "Skill do manualnego testowania aplikacji PeachGames używając Playwright MCP. Pozwala na interakcję z przeglądarką bez opuszczania terminala."
+description: "Skill do manualnego testowania aplikacji PeachGames używając Playwright MCP. Testuj bez snapshots - operuj na drzewie DOM."
 ---
 
 # Playwright MCP dla PeachGames
 
-Masz dostęp do Playwright MCP (narzędzia `playwright_browser_*`). Możesz testować aplikację bezpośrednio z terminala bez ręcznego klikania w przeglądarce.
+Masz dostęp do Playwright MCP. Możesz testować aplikację bezpośrednio z terminala.
 
-## Kiedy używać Playwright MCP
+## Zasada: Unikaj snapshots - operuj na DOM
 
-**Użyj po implementacji:**
-- Nowego komponentu UI
-- Nowego widoku (View)
-- Zmiany w stylach CSS
-- Nowej funkcjonalności JavaScript
+### NIE używaj `playwright_browser_snapshot` często
+Snapshot jest kosztowną operacją. Zamiast tego:
 
-**Pozwala na:**
-- Otwieranie stron w prawdziwej przeglądarce
-- Robienie screenshotów
-- Kliknięcia i interakcję z elementami
-- Sprawdzanie console logów
-- Podgląd network requestów
+1. **Klikaj przez `playwright_browser_click`** bezpośrednio używając `element` (label/text) lub `ref` z poprzedniego snapshotu
+2. **Sprawdzaj stan przez `playwright_browser_evaluate`** - szybciej niż snapshot
+3. **Network requesty** - `playwright_browser_network_requests` zamiast obserwować UI
+4. **Console errors** - `playwright_browser_console_messages` - rzadko bo raczej nie ma błędów
 
-## Typowe workflow testowania
+### Tylko snapshot gdy:
+- Przeglądarka jest "zawieszona" i nie wiesz co jest na stronie
+- Debuggujesz problem z UI
+- Screenshot nie wystarczy
 
-### 1. Otwórz aplikację
+## Typowe workflow (bez snapshotów)
+
+### 1. Nawiguj
 ```
 playwright_browser_navigate url="http://localhost:5173"
 ```
 
-### 2. Sprawdź snapshot strony (accessibility tree)
+### 2. Klikaj bezpośrednio przez tekst/label
 ```
-playwright_browser_snapshot
-```
-
-### 3. Zrób screenshot jeśli potrzebujesz wizualnej weryfikacji
-```
-playwright_browser_take_screenshot filename="test.png" type="png"
+playwright_browser_click element="Mapa"  # używa getByRole
+playwright_browser_click element="Profil"
 ```
 
-### 4. Kliknij element (np. tab "Mapa")
+### 3. Sprawdź stan JS
 ```
-playwright_browser_snapshot  # najpierw zobacz strukture
-# potem np:
-playwright_browser_click element="Mapa" ref="..."
+playwright_browser_evaluate function="() => document.title"
+playwright_browser_evaluate function="() => document.querySelector('.view--map') !== null"
 ```
 
-### 5. Sprawdź console czy nie ma błędów
+### 4. Wypełniaj formy
+```
+playwright_browser_fill_form fields=[{"name": "username", "type": "textbox", "value": "test"}]
+```
+
+### 5. Debug: Screenshot + Console
+```
+playwright_browser_take_screenshot filename="test.png"
+playwright_browser_console_messages level="error"
+```
+
+## Użyteczne komendy (bez snapshotu)
+
+| Komenda | Kiedy używać |
+|---------|--------------|
+| `navigate` | Otwórz URL |
+| `click` | Kliknij przez element name lub ref |
+| `fill_form` | Wypełnij formularz |
+| `type` | Wpisz tekst w element |
+| `evaluate` | Sprawdź stan JS/DOM |
+| `wait_for` | Czekaj na tekst/element |
+| `console_messages` | Sprawdź błędy (rzadko) |
+| `network_requests` | Debug requestów (rzadko) |
+| `snapshot` | TYLKO gdy nie wiesz co jest na stronie |
+| `screenshot` | Tylko wizualna weryfikacja |
+
+## Przykładowe scenariusze
+
+### Kliknięcie zakładki i sprawdzenie czy działa
+```
+playwright_browser_navigate url="http://localhost:5173"
+playwright_browser_click element="Mapa"
+playwright_browser_evaluate function="() => document.querySelector('.view--map') !== null"
+```
+
+### Test formularza login
+```
+playwright_browser_navigate url="http://localhost:5173/join?dev=true"
+playwright_browser_click element="q"  # game name
+playwright_browser_evaluate function="() => document.querySelector('input')?.value"
+playwright_browser_fill_form fields=[{"name": "", "type": "textbox", "ref": "e78", "value": "Rado"}]
+playwright_browser_click element="Dołącz do gry"
+playwright_browser_evaluate function="() => window.location.pathname"
+```
+
+### Sprawdzenie błędów JS
 ```
 playwright_browser_console_messages level="error"
 ```
 
-## Przykładowe scenariusze
-
-### Test zakładki Mapa
-1. `playwright_browser_navigate url="http://localhost:5173"`
-2. Kliknij tab "Mapa"
-3. `playwright_browser_snapshot` — sprawdź czy mapa się załadowała
-4. `playwright_browser_console_messages level="error"` — sprawdź błędy
-
-### Test formularza
-1. Otwórz stronę z formularzem
-2. `playwright_browser_fill_form fields=[...]`
-3. `playwright_browser_click` na submit
-4. Sprawdź feedback
-
-## Użyteczne komendy
-
-| Komenda | Zastosowanie |
-|---------|-------------|
-| `navigate` | Otwórz URL |
-| `snapshot` | Zobacz strukturę strony |
-| `screenshot` | Zrób zdjęcie strony |
-| `click` | Kliknij element |
-| `fill_form` | Wypełnij formularz |
-| `console_messages` | Sprawdź błędy w konsoli |
-| `wait_for` | Czekaj na tekst/element |
-
 ## Ważne
 
-1. **Start dev server** jeśli nie działa:
+1. **Dev server:**
    ```bash
    cd web-app && npm run dev -- --host
    ```
 
-2. Na telefonie użyj IP sieci zamiast `localhost`:
+2. **Mobile testing** - użyj IP sieci zamiast localhost:
    ```
    playwright_browser_navigate url="http://192.168.x.x:5173"
    ```
 
-3. Po zakończeniu testów zamknij przeglądarzę:
+3. **Po testach zamknij:**
    ```
    playwright_browser_close
    ```
+
+## Referencja ref
+
+Ref to identyfikator elementu z snapshotu (np. `e14`). Używaj ichgdy znasz ref z poprzedniego snapshotu. Nowe elementy - klikaj przez `element` ( tekst/label).
