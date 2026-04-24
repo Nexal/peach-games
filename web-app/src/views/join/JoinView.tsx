@@ -6,16 +6,18 @@ import './JoinView.css';
 
 type Player = Database['public']['Tables']['players']['Row'];
 type Klan = Database['public']['Tables']['klans']['Row'];
+type Game = Database['public']['Tables']['games']['Row'];
 
 export function JoinView() {
+  const [games, setGames] = useState<Game[]>([]);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [klans, setKlans] = useState<Klan[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [customName, setCustomName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isDevMode, setIsDevMode] = useState(false);
 
-  // Check if already logged in - redirect if has session
   useEffect(() => {
     const session = getPlayerSession();
     if (session) {
@@ -24,18 +26,30 @@ export function JoinView() {
   }, []);
 
   useEffect(() => {
-    // Check for game parameter in URL - it's required
-    // URL format: http://localhost:5173/join?game=UUID
+    // Check for game parameter in URL - required for normal flow
+    // But also check if we should show dev mode (no game param)
     const params = new URLSearchParams(window.location.search);
     const gameParam = params.get('game');
-    
-    if (!gameParam) {
+    const devParam = params.get('dev');
+
+    if (devParam === 'true') {
+      setIsDevMode(true);
+      loadAllGames();
+    } else if (!gameParam) {
       setError('Brak parametru gry. Użyj linku zaproszenia od Mistrza Gry.');
       return;
+    } else {
+      loadGameById(gameParam);
     }
-    
-    loadGameById(gameParam);
   }, []);
+
+  const loadAllGames = async () => {
+    const { data } = await supabase
+      .from('games')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (data) setGames(data);
+  };
 
   const loadGameById = async (gameId: string) => {
     setError(null);
@@ -44,12 +58,12 @@ export function JoinView() {
       .select('*')
       .eq('id', gameId)
       .single();
-    
+
     if (gameError || !gameData) {
       setError('Gra nie została znaleziona. Sprawdź link zaproszenia.');
       return;
     }
-    
+
     setSelectedGameId(gameId);
   };
 
@@ -69,17 +83,17 @@ export function JoinView() {
   };
 
   const availablePlayers = players.filter(p => !p.joined_at);
+  const joinedPlayers = players.filter(p => p.joined_at);
 
   const handleJoin = async () => {
     if (!selectedPlayerId) return;
-    
+
     const player = players.find(p => p.id === selectedPlayerId);
     if (!player) return;
 
     const finalName = customName.trim() || player.name;
     const klan = klans.find(k => k.id === player.klan_id);
 
-    // Update player name and set joined_at
     const { error: updateError } = await supabase
       .from('players')
       .update({ name: finalName, joined_at: new Date().toISOString() })
@@ -90,7 +104,6 @@ export function JoinView() {
       return;
     }
 
-    // Save session
     setPlayerSession({
       id: player.id,
       name: finalName,
@@ -100,7 +113,6 @@ export function JoinView() {
       game_id: selectedGameId || '',
     });
 
-    // Navigate to home to show the app with new session
     window.location.href = '/';
   };
 
@@ -123,6 +135,7 @@ export function JoinView() {
       <header className="view__header">
         <img src="/icons/glos-bogow.png" alt="PeachGames" className="view__logo" />
         <h1 className="view__title">Dołącz do gry</h1>
+        {isDevMode && <span className="join-dev-badge">🧪 Tryb testowy</span>}
       </header>
 
       <main className="view__content">
@@ -131,38 +144,88 @@ export function JoinView() {
             <div className="join-error__icon">⚠️</div>
             <p className="join-error__message">{error}</p>
           </div>
-        ) : !selectedGameId ? (
-          <div className="join-loading">Ładowanie...</div>
         ) : (
         <div className="join-panel">
-          <div className="join-panel__section">
-            <label className="join-panel__label">Dostępni gracze:</label>
-            <div className="join-panel__players">
-              {availablePlayers.length === 0 && (
-                <p className="join-panel__empty">Brak dostępnych graczy</p>
-              )}
-              {availablePlayers.map((player) => {
-                const klan = klans.find(k => k.id === player.klan_id);
-                return (
+          {/* Dev mode: Select game from list */}
+          {isDevMode && !selectedGameId && games.length > 0 && (
+            <div className="join-panel__section">
+              <label className="join-panel__label">Wybierz grę:</label>
+              <div className="join-panel__players">
+                {games.map((game) => (
                   <button
-                    key={player.id}
-                    className={`join-player-card ${selectedPlayerId === player.id ? 'join-player-card--selected' : ''}`}
-                    onClick={() => {
-                      setSelectedPlayerId(player.id);
-                      setCustomName(player.name);
-                    }}
+                    key={game.id}
+                    className="join-player-card"
+                    onClick={() => loadGameById(game.id)}
                   >
-                    <span 
-                      className="join-player-card__color"
-                      style={{ backgroundColor: klan?.theme_color || '#888' }}
-                    />
-                    <span className="join-player-card__name">{player.name}</span>
-                    <span className="join-player-card__klan">{klan?.name}</span>
+                    <span className="join-player-card__name">{game.name}</span>
+                    <span className="join-player-card__klan">Status: {game.status}</span>
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Select from available players */}
+          {selectedGameId && (
+            <>
+              {availablePlayers.length > 0 && (
+                <div className="join-panel__section">
+                  <label className="join-panel__label">Dostępni gracze:</label>
+                  <div className="join-panel__players">
+                    {availablePlayers.map((player) => {
+                      const klan = klans.find(k => k.id === player.klan_id);
+                      return (
+                        <button
+                          key={player.id}
+                          className={`join-player-card ${selectedPlayerId === player.id ? 'join-player-card--selected' : ''}`}
+                          onClick={() => {
+                            setSelectedPlayerId(player.id);
+                            setCustomName(player.name || '');
+                          }}
+                        >
+                          <span
+                            className="join-player-card__color"
+                            style={{ backgroundColor: klan?.theme_color || '#888' }}
+                          />
+                          <span className="join-player-card__name">{player.name || '(bez imienia)'}</span>
+                          <span className="join-player-card__klan">{klan?.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Also show already joined players for testing */}
+              {joinedPlayers.length > 0 && (
+                <div className="join-panel__section">
+                  <label className="join-panel__label">Zalogowani gracze (kliknij by przejąć):</label>
+                  <div className="join-panel__players">
+                    {joinedPlayers.map((player) => {
+                      const klan = klans.find(k => k.id === player.klan_id);
+                      return (
+                        <button
+                          key={player.id}
+                          className={`join-player-card join-player-card--joined ${selectedPlayerId === player.id ? 'join-player-card--selected' : ''}`}
+                          onClick={() => {
+                            setSelectedPlayerId(player.id);
+                            setCustomName(player.name || '');
+                          }}
+                        >
+                          <span
+                            className="join-player-card__color"
+                            style={{ backgroundColor: klan?.theme_color || '#888' }}
+                          />
+                          <span className="join-player-card__name">{player.name || '(bez imienia)'}</span>
+                          <span className="join-player-card__klan">{klan?.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           {selectedPlayer && (
             <div className="join-panel__section">
@@ -174,14 +237,14 @@ export function JoinView() {
                 placeholder="Wpisz imię..."
                 className="join-panel__input"
               />
-              
+
               <div className="join-panel__preview">
                 <span className="join-panel__preview-label">Twój Klan:</span>
-                <div 
+                <div
                   className="join-panel__preview-klan"
                   style={{ borderColor: getKlanColor(selectedPlayer.klan_id) }}
                 >
-                  <span 
+                  <span
                     className="join-panel__preview-color"
                     style={{ backgroundColor: getKlanColor(selectedPlayer.klan_id) }}
                   />
@@ -198,6 +261,18 @@ export function JoinView() {
           >
             Dołącz do gry
           </button>
+
+          {isDevMode && selectedGameId && (
+            <button
+              className="join-panel__back"
+              onClick={() => {
+                setSelectedGameId(null);
+                setSelectedPlayerId(null);
+              }}
+            >
+              ← Wybierz inną grę
+            </button>
+          )}
         </div>
         )}
       </main>

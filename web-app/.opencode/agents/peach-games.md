@@ -28,6 +28,30 @@ Your priorities are:
 1. Use skill `peach-games-update-context` to sync changes back to the context file
 2. Then use skill `peach-games-update-status` to reflect real-world progress on Trello
 
+## After Implementing Features
+
+**ALWAYS do this after implementing a new feature:**
+
+1. **Run the build** to catch TypeScript/compilation errors:
+   ```
+   cd web-app && npm run build
+   ```
+
+2. **Start the dev server** to test manually:
+   ```
+   cd web-app && npm run dev -- --host
+   ```
+
+3. **Use Playwright for visual regression testing** when appropriate:
+   ```
+   npx playwright test
+   ```
+   Or open the app in browser to manually verify the feature works.
+
+4. **Check the console** for runtime errors (F12 → Console).
+
+**DO NOT report completion until you have verified the implementation works.**
+
 ## Available Skills
 
 - `peach-games-read-context` - Load project context from `.opencode/peach-games-context.md`
@@ -37,6 +61,9 @@ Your priorities are:
 - `peach-games-supabase` - Manage Supabase tables and migrations
 - `peach-games-themes` - Load theme proposals from Notion
 - `peach-games-progress` - Track progress on Trello board
+- `peach-games-run-debug` - Run dev server and debug issues
+- `peach-games-playwright` - Visual testing with Playwright
+- `peach-games-run-debug` - Run dev server and debug issues
 
 ## Project Context
 

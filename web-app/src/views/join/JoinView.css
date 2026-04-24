@@ -233,3 +233,47 @@
   padding: 40px;
   color: var(--color-text-muted);
 }
+
+/* Dev mode badge */
+.join-dev-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(255, 215, 0, 0.2);
+  color: var(--color-perun);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+/* Already joined player card style */
+.join-player-card--joined {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.join-player-card--joined:hover {
+  opacity: 1;
+}
+
+.join-player-card--joined.join-player-card--selected {
+  opacity: 1;
+}
+
+/* Back button */
+.join-panel__back {
+  background: none;
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-muted);
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 10px;
+  transition: all 0.2s;
+}
+
+.join-panel__back:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-main);
+}
