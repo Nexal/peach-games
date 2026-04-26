@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { usePlayerSession } from '../App';
-import { usePlayerPosition } from '../hooks/usePlayerPosition';
-import { useChaseQuest } from '../components/quest/ChaseQuest';
+import { usePlayerSession, useGame } from '../App';
 import type { Database } from '../types/database.types';
 import './QuestsView.css';
 
@@ -15,7 +13,7 @@ type QuestWithCompletion = Quest & {
 
 export function QuestsView() {
   const { session } = usePlayerSession();
-  const { position: playerPosition } = usePlayerPosition();
+  const { playerPosition, activateQuest, activeQuests } = useGame();
   const [quests, setQuests] = useState<QuestWithCompletion[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,10 +30,7 @@ export function QuestsView() {
     if (!session?.game_id || !session?.klan_id) return;
 
     const [questsRes, completionsRes] = await Promise.all([
-      supabase
-        .from('quests')
-        .select('*')
-        .eq('game_id', session.game_id),
+      supabase.from('quests').select('*').eq('game_id', session.game_id),
       supabase
         .from('quest_completions')
         .select('*')
@@ -68,9 +63,7 @@ export function QuestsView() {
           <div className="placeholder-panel glass-panel">
             <div className="placeholder-panel__icon">🔒</div>
             <h2 className="placeholder-panel__title">Brak sesji</h2>
-            <p className="placeholder-panel__text">
-              Dołącz do gry, aby zobaczyć próby.
-            </p>
+            <p className="placeholder-panel__text">Dołącz do gry, aby zobaczyć próby.</p>
           </div>
         </main>
       </div>
@@ -90,7 +83,7 @@ export function QuestsView() {
     );
   }
 
-  const chaseQuest = quests.find((q) => q.type === 'chase');
+  const chaseQuests = quests.filter((q) => q.type === 'chase');
   const otherQuests = quests.filter((q) => q.type !== 'chase');
 
   return (
@@ -101,20 +94,21 @@ export function QuestsView() {
       </header>
 
       <main className="view__content">
-        {chaseQuest && (
+        {chaseQuests.map((quest) => (
           <ChaseQuestPanel
-            quest={chaseQuest}
+            key={quest.id}
+            quest={quest}
             playerPosition={playerPosition}
+            isActive={!!activeQuests[quest.id]}
+            onActivate={() => activateQuest(quest.id)}
           />
-        )}
+        ))}
 
-        {otherQuests.length === 0 && !chaseQuest && (
+        {otherQuests.length === 0 && chaseQuests.length === 0 && (
           <div className="placeholder-panel glass-panel">
             <div className="placeholder-panel__icon">🗺️</div>
             <h2 className="placeholder-panel__title">Brak prób</h2>
-            <p className="placeholder-panel__text">
-              Mistrz Gry nie dodał jeszcze żadnych prób.
-            </p>
+            <p className="placeholder-panel__text">Mistrz Gry nie dodał jeszcze żadnych prób.</p>
           </div>
         )}
 
@@ -129,14 +123,14 @@ export function QuestsView() {
 function ChaseQuestPanel({
   quest,
   playerPosition,
+  isActive,
+  onActivate,
 }: {
   quest: QuestWithCompletion;
   playerPosition: { lat: number; lng: number } | null;
+  isActive: boolean;
+  onActivate: () => void;
 }) {
-  const { activeSession, activating, activate } = useChaseQuest(quest, playerPosition);
-
-  const isActive = !!activeSession;
-
   return (
     <div className={`chase-quest ${isActive ? 'chase-quest--active' : ''} ${quest.completed ? 'chase-quest--completed' : ''}`}>
       <div className="chase-quest__header">
@@ -145,12 +139,7 @@ function ChaseQuestPanel({
           <h3 className="chase-quest__title">{quest.title}</h3>
           <p className="chase-quest__desc">{quest.description}</p>
         </div>
-        <span
-          className={`chase-quest__status ${
-            quest.completed ? 'chase-quest__status--completed' :
-            isActive ? 'chase-quest__status--active' : 'chase-quest__status--inactive'
-          }`}
-        >
+        <span className={`chase-quest__status ${quest.completed ? 'chase-quest__status--completed' : isActive ? 'chase-quest__status--active' : 'chase-quest__status--inactive'}`}>
           {quest.completed ? 'UKOŃCZONE!' : isActive ? 'W TRAKCIE' : 'DOSTĘPNA'}
         </span>
       </div>
@@ -161,30 +150,20 @@ function ChaseQuestPanel({
       </div>
 
       {isActive && (
-        <div className="chase-quest__instructions">
-          🚴 Gonitwa aktywna! Sprawdź mapę - znacznik się porusza!
-        </div>
+        <div className="chase-quest__instructions">🚴 Gonitwa aktywna! Sprawdź mapę - znacznik się porusza!</div>
       )}
 
       {quest.completed && (
-        <div className="chase-quest__success">
-          🎉 Quest ukończony pomyślnie!
-        </div>
+        <div className="chase-quest__success">🎉 Quest ukończony pomyślnie!</div>
       )}
 
       {!quest.completed && (
         <button
           className="chase-quest__btn chase-quest__btn--activate"
-          onClick={activate}
-          disabled={!playerPosition || activating || isActive}
+          onClick={onActivate}
+          disabled={!playerPosition || isActive}
         >
-          {!playerPosition
-            ? 'Włącz GPS aby aktywować'
-            : activating
-            ? 'Uruchamianie...'
-            : isActive
-            ? 'Gonitwa aktywna...'
-            : '🚀 Aktywuj gonitwę'}
+          {!playerPosition ? 'Włącz GPS aby aktywować' : isActive ? 'Gonitwa aktywna...' : '🚀 Aktywuj gonitwę'}
         </button>
       )}
     </div>
@@ -208,18 +187,14 @@ function QuestCard({ quest }: { quest: QuestWithCompletion }) {
           <h3 className="quest-card__title">{quest.title}</h3>
           <p className="quest-card__desc">{quest.description}</p>
         </div>
-        {quest.completed && (
-          <span className="quest-card__badge">✓ UKOŃCZONE</span>
-        )}
+        {quest.completed && <span className="quest-card__badge">✓ UKOŃCZONE</span>}
       </div>
 
       <div className="quest-card__meta">
         <span>🏆 +{quest.reward_points} pkt</span>
         {quest.type && <span>{quest.type.toUpperCase()}</span>}
         {quest.completed && quest.completed_at && (
-          <span>
-            {new Date(quest.completed_at).toLocaleDateString('pl-PL')}
-          </span>
+          <span>{new Date(quest.completed_at).toLocaleDateString('pl-PL')}</span>
         )}
       </div>
     </div>

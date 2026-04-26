@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { usePlayerSession } from '../App';
+import { usePlayerSession, useGame } from '../App';
 import { supabase } from '../lib/supabase';
 import type { MapMarker } from '../types/map.types';
 import { DEFAULT_MAP_CONFIG, TILE_LAYERS } from '../types/map.types';
 import { LocationMarker, CenterOnLocationButton } from '../components/map/MapControls';
 import { AnimatedMarker, PulsingMarker } from '../components/map/AnimatedMarkers';
-import { usePlayerPosition as usePosition } from '../hooks/usePlayerPosition';
-import { useChase } from '../hooks/useChaseProvider';
 import 'leaflet/dist/leaflet.css';
 import './MapView.css';
 
@@ -77,26 +75,26 @@ function getDistanceM(lat1: number, lng1: number, lat2: number, lng2: number): n
 }
 
 function ChaseMarker({ questId }: { questId: string }) {
-  const { position, session, onCatch } = useChase(questId);
-  const { position: playerPosition } = usePosition();
+  const { activeQuests, completeChase, playerPosition } = useGame();
+  const state = activeQuests[questId];
 
   useEffect(() => {
-    if (!position || !session || !playerPosition) return;
+    if (!state?.position || !state?.session || !playerPosition) return;
 
     const distance = getDistanceM(
       playerPosition.lat, playerPosition.lng,
-      position.lat, position.lng
+      state.position.lat, state.position.lng
     );
 
-    if (distance <= (session.catch_distance_m || 20)) {
-      onCatch(session.id);
+    if (distance <= (state.session.catch_distance_m || 20)) {
+      completeChase(state.session.id, questId);
     }
-  }, [position, playerPosition, session, onCatch]);
+  }, [state?.position, playerPosition, state?.session, completeChase, questId]);
 
-  if (!position) return null;
+  if (!state?.position) return null;
 
   return (
-    <Marker position={position} icon={chaseIcon}>
+    <Marker position={state.position} icon={chaseIcon}>
       <Popup>
         <div className="map-popup map-popup--chase">
           <h3>🐎 Gonitwa!</h3>
@@ -109,23 +107,22 @@ function ChaseMarker({ questId }: { questId: string }) {
 
 function MapContent() {
   const { session } = usePlayerSession();
+  const { activeQuests, playerPosition } = useGame();
   const [markers, setMarkers] = useState<MapMarker[]>([]);
-  const [chaseQuestId, setChaseQuestId] = useState<string | null>(null);
-
-  usePosition();
+  const [chaseQuestIds, setChaseQuestIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!session?.game_id) return;
 
     const fetchMarkers = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('map_markers')
         .select('*')
         .eq('game_id', session.game_id)
         .eq('is_active', true);
 
-      if (!error && data) {
-        const mapped: MapMarker[] = data.map(m => ({
+      if (data) {
+        setMarkers(data.map(m => ({
           id: m.id,
           position: [m.lat ?? 0, m.lng ?? 0] as [number, number],
           title: m.title,
@@ -136,8 +133,7 @@ function MapContent() {
           is_active: m.is_active ?? true,
           quest_id: m.quest_id ?? undefined,
           reward_points: m.reward_points ?? undefined,
-        }));
-        setMarkers(mapped);
+        })));
       }
     };
 
@@ -150,37 +146,28 @@ function MapContent() {
         schema: 'public',
         table: 'map_markers',
         filter: `game_id=eq.${session.game_id}`,
-      }, () => {
-        fetchMarkers();
-      })
+      }, fetchMarkers)
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [session?.game_id]);
 
   useEffect(() => {
-    if (!session?.game_id || !session?.klan_id) return;
+    if (!session?.game_id) return;
 
     supabase
       .from('quests')
       .select('id')
       .eq('game_id', session.game_id)
       .eq('type', 'chase')
-      .limit(1)
       .then(({ data }) => {
-        if (data?.[0]) setChaseQuestId(data[0].id);
+        if (data) setChaseQuestIds(data.map(q => q.id));
       });
-  }, [session?.game_id, session?.klan_id]);
+  }, [session?.game_id]);
 
   return (
     <>
-      <TileLayer
-        url={TILE_LAYERS.dark.url}
-        attribution={TILE_LAYERS.dark.attribution}
-      />
-
+      <TileLayer url={TILE_LAYERS.dark.url} attribution={TILE_LAYERS.dark.attribution} />
       <LocationMarker watchPosition={true} />
       <AnimatedMarker center={DEFAULT_MAP_CONFIG.center} orbitRadius={100} speed={0.5} />
       <PulsingMarker position={DEFAULT_MAP_CONFIG.center} />
@@ -194,22 +181,17 @@ function MapContent() {
         </Popup>
       </Marker>
 
-      {chaseQuestId && (
-        <ChaseMarker questId={chaseQuestId} />
-      )}
+      {chaseQuestIds.map(id => (
+        <ChaseMarker key={id} questId={id} />
+      ))}
 
       {markers.map((marker) => {
         let icon = questIcon;
         if (marker.type === 'clan_base') icon = clanIcon;
         if (marker.type === 'chase') icon = chaseIcon;
 
-        if (marker.type === 'quest' && marker.clan_id && marker.clan_id !== session?.klan_id) {
-          return null;
-        }
-
-        if (marker.type === 'chase' && marker.clan_id && marker.clan_id !== session?.klan_id) {
-          return null;
-        }
+        if (marker.type === 'quest' && marker.clan_id && marker.clan_id !== session?.klan_id) return null;
+        if (marker.type === 'chase' && marker.clan_id && marker.clan_id !== session?.klan_id) return null;
 
         return (
           <Marker key={marker.id} position={marker.position} icon={icon}>

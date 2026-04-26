@@ -1,0 +1,105 @@
+.completion-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: completionFadeIn 0.3s ease-out;
+  backdrop-filter: blur(8px);
+}
+
+@keyframes completionFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.completion-modal {
+  background: linear-gradient(145deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.98));
+  border: 3px solid var(--klan-color, #FFD700);
+  border-radius: 24px;
+  padding: 40px 50px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 0 60px var(--klan-color, #FFD700), 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: completionBounce 0.5s ease-out;
+}
+
+@keyframes completionBounce {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.completion-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+  animation: completionSpin 0.8s ease-out;
+}
+
+@keyframes completionSpin {
+  0% { transform: rotate(-20deg) scale(0.5); }
+  50% { transform: rotate(10deg) scale(1.2); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+.completion-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--klan-color, #FFD700);
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 10px var(--klan-color, #FFD700);
+}
+
+.completion-quest-name {
+  font-size: 1.2rem;
+  color: #fff;
+  margin: 0 0 24px 0;
+  font-weight: 600;
+}
+
+.completion-points-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 215, 0, 0.15);
+  border: 2px solid var(--klan-color, #FFD700);
+  border-radius: 16px;
+  padding: 16px 32px;
+  margin-bottom: 20px;
+}
+
+.completion-points-value {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--klan-color, #FFD700);
+  line-height: 1;
+}
+
+.completion-points-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 4px;
+}
+
+.completion-by {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 20px 0;
+}
+
+.completion-dismiss {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
+}
+
+.completion-overlay.fade-out {
+  animation: completionFadeOut 0.5s ease-in forwards;
+}
+
+@keyframes completionFadeOut {
+  to { opacity: 0; }
+}

@@ -12,12 +12,10 @@ import { AdminAuthProvider, useAdminAuth } from './lib/admin/AdminAuth';
 import { AdminLoginView } from './views/admin/AdminLoginView';
 import { AdminDashboardView } from './views/admin/AdminDashboardView';
 import { getPlayerSession, type PlayerSession } from './lib/playerSession';
-import { PlayerPositionProvider } from './hooks/usePlayerPosition';
-import { ChaseProvider } from './hooks/useChaseProvider';
+import { GameProvider } from './hooks/useGameProvider';
 import './views/Views.css';
 import './components/tab-bar/TabBar.css';
 
-// Context for player session
 interface PlayerContextValue {
   session: PlayerSession | null;
   refreshSession: () => void;
@@ -40,7 +38,6 @@ function AppContent() {
   };
 
   useEffect(() => {
-    // Initial session load
     setSession(getPlayerSession());
 
     const handleRouteChange = () => {
@@ -58,52 +55,32 @@ function AppContent() {
   }, []);
 
   const renderView = () => {
-    // Admin routes - no player session required
     if (showAdmin) {
-      if (!isAuthenticated) {
-        return <AdminLoginView />;
-      }
+      if (!isAuthenticated) return <AdminLoginView />;
       return <AdminDashboardView />;
     }
 
-    // Join route - used to login, no session required
-    if (showJoin) {
-      return <JoinView />;
-    }
+    if (showJoin) return <JoinView />;
 
-    // All game routes require player session
-    if (!session) {
-      return <HomeView />;
-    }
+    if (!session) return <HomeView />;
 
     switch (activeTab) {
-      case 'home':
-        return <HomeView />;
-      case 'map':
-        return <MapView />;
-      case 'chat':
-        return <ChatView />;
-      case 'quests':
-        return <QuestsView />;
-      case 'shop':
-        return <ShopView />;
-      case 'profile':
-        return <ProfileView />;
-      default:
-        return <HomeView />;
+      case 'home': return <HomeView />;
+      case 'map': return <MapView />;
+      case 'chat': return <ChatView />;
+      case 'quests': return <QuestsView />;
+      case 'shop': return <ShopView />;
+      case 'profile': return <ProfileView />;
+      default: return <HomeView />;
     }
   };
 
   return (
     <PlayerContext.Provider value={{ session, refreshSession }}>
-      <PlayerPositionProvider>
-        <ChaseProvider>
-          <>
-            {renderView()}
-            {!showAdmin && !showJoin && session && <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />}
-          </>
-        </ChaseProvider>
-      </PlayerPositionProvider>
+      <GameProvider>
+        {renderView()}
+        {!showAdmin && !showJoin && session && <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />}
+      </GameProvider>
     </PlayerContext.Provider>
   );
 }
@@ -112,7 +89,7 @@ export function usePlayerSession() {
   return useContext(PlayerContext);
 }
 
-export { usePlayerPosition } from './hooks/usePlayerPosition';
+export { useGame } from './hooks/useGameProvider';
 
 function App() {
   return (

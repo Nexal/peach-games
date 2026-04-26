@@ -624,7 +624,8 @@
   width: 100%;
   max-width: 480px;
   display: flex;
-  justify-content: space-around;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 4px;
   padding: 12px 8px;
   padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
@@ -640,11 +641,14 @@
   background: transparent;
   border: 1px solid var(--glass-border);
   color: var(--color-text-muted);
-  padding: 10px 16px;
+  padding: 8px 12px;
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  flex: 1 1 auto;
+  min-width: calc(33% - 8px);
+  text-align: center;
 }
 
 .admin-tabs__item--active {
@@ -1207,6 +1211,124 @@
   margin-top: 10px;
   font-size: 0.85rem;
   color: var(--color-text-muted);
+}
+
+/* Admin Quest Cards */
+.admin-quests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-quest-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.admin-quest-card--done {
+  border-color: var(--color-perun);
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.admin-quest-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-quest-card__icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.admin-quest-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-quest-card__title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.admin-quest-card__desc {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-quest-card__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.admin-quest-card__points {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-perun);
+}
+
+.admin-quest-card__type {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.admin-quest-card__completions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-quest-card__completion {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border: 1px solid;
+  border-radius: 20px;
+  color: var(--color-text-main);
+}
+
+.admin-quest-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-quest-card__btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-main);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.admin-quest-card__btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.admin-quest-card__btn--danger {
+  color: #e74c3c;
+  border-color: #e74c3c;
 }
 
 /* Profile View */

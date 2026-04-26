@@ -10,14 +10,17 @@ import 'leaflet/dist/leaflet.css';
 type Game = Database['public']['Tables']['games']['Row'];
 type Klan = Database['public']['Tables']['klans']['Row'];
 type Player = Database['public']['Tables']['players']['Row'];
+type Quest = Database['public']['Tables']['quests']['Row'];
 
 export function AdminDashboardView() {
   const { logout } = useAdminAuth();
-  const [activeTab, setActiveTab] = useState<'games' | 'klans' | 'players' | 'chat' | 'map'>('games');
+  type AdminTab = 'games' | 'klans' | 'players' | 'quests' | 'chat' | 'map';
+  const [activeTab, setActiveTab] = useState<AdminTab>('games');
   const [games, setGames] = useState<Game[]>([]);
   const [klans, setKlans] = useState<Klan[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -27,6 +30,7 @@ export function AdminDashboardView() {
   useEffect(() => {
     if (selectedGameId) {
       loadKlans(selectedGameId);
+      loadQuests(selectedGameId);
     }
   }, [selectedGameId]);
 
@@ -50,10 +54,22 @@ export function AdminDashboardView() {
     if (data) setPlayers(data);
   };
 
+  const loadQuests = async (gameId: string) => {
+    const { data } = await supabase.from('quests').select('*').eq('game_id', gameId);
+    if (data) setQuests(data);
+  };
+
   useEffect(() => {
     loadGames();
     loadPlayers();
   }, []);
+
+  useEffect(() => {
+    if (selectedGameId) {
+      loadKlans(selectedGameId);
+      loadQuests(selectedGameId);
+    }
+  }, [selectedGameId]);
 
   const createGame = async (name: string) => {
     setLoading(true);
@@ -84,6 +100,59 @@ export function AdminDashboardView() {
     setLoading(false);
   };
 
+  const completeQuest = async (questId: string, klanId: string, customPoints?: number) => {
+    if (!selectedGameId || !questId || !klanId) return;
+    const quest = quests.find(q => q.id === questId);
+    const points = customPoints ?? quest?.reward_points ?? 0;
+
+    const { data: existing } = await supabase
+      .from('quest_completions')
+      .select('id')
+      .eq('quest_id', questId)
+      .eq('klan_id', klanId)
+      .eq('game_id', selectedGameId)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase.from('quest_completions').update({ completed_at: new Date().toISOString(), points_awarded: points }).eq('id', existing.id);
+    } else {
+      await supabase.from('quest_completions').insert({
+        quest_id: questId,
+        klan_id: klanId,
+        game_id: selectedGameId,
+        points_awarded: points,
+        completed_by_player_id: null,
+        completed_at: new Date().toISOString(),
+      });
+    }
+
+    if (quest?.type === 'chase') {
+      const { data: session } = await supabase
+        .from('chase_sessions')
+        .select('id')
+        .eq('quest_id', questId)
+        .eq('klan_id', klanId)
+        .single();
+      if (session) {
+        await supabase.from('chase_sessions').update({ completed_at: new Date().toISOString() }).eq('id', session.id);
+      }
+    }
+
+    const { data: klanData } = await supabase.from('klans').select('points').eq('id', klanId).maybeSingle();
+    if (klanData) {
+      await supabase.from('klans').update({ points: (klanData.points || 0) + points }).eq('id', klanId);
+    }
+
+    alert(`✅ Zaliczono quest "${quest?.title}" dla klanu (+${points} pkt)`);
+  };
+
+  const resetQuest = async (questId: string) => {
+    if (!selectedGameId || !confirm('Na pewno chcesz zresetować ten quest?')) return;
+    await supabase.from('quest_completions').delete().eq('quest_id', questId).eq('game_id', selectedGameId);
+    await supabase.from('chase_sessions').delete().eq('quest_id', questId);
+    alert('🔄 Quest zresetowany');
+  };
+
   return (
     <div className="view view--admin">
       <header className="admin-header">
@@ -111,6 +180,15 @@ export function AdminDashboardView() {
         {activeTab === 'players' && (
           <PlayersPanel players={players} klans={klans} gameId={selectedGameId} />
         )}
+        {activeTab === 'quests' && selectedGameId && (
+          <QuestsPanel
+            quests={quests}
+            klans={klans}
+            gameId={selectedGameId}
+            onComplete={completeQuest}
+            onReset={resetQuest}
+          />
+        )}
         {activeTab === 'chat' && (
           <ChatPanel games={games} klans={klans} />
         )}
@@ -137,6 +215,12 @@ export function AdminDashboardView() {
           onClick={() => setActiveTab('players')}
         >
           👤 Gracze
+        </button>
+        <button
+          className={`admin-tabs__item ${activeTab === 'quests' ? 'admin-tabs__item--active' : ''}`}
+          onClick={() => setActiveTab('quests')}
+        >
+          🏆 Questy
         </button>
         <button
           className={`admin-tabs__item ${activeTab === 'chat' ? 'admin-tabs__item--active' : ''}`}
@@ -463,6 +547,159 @@ function PlayersPanel({
                     </div>
                   </>
                 )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type QuestCompletion = Database['public']['Tables']['quest_completions']['Row'];
+
+function QuestsPanel({
+  quests,
+  klans,
+  gameId,
+  onComplete,
+  onReset,
+}: {
+  quests: Quest[];
+  klans: Klan[];
+  gameId: string;
+  onComplete: (questId: string, klanId: string, customPoints?: number) => void;
+  onReset: (questId: string) => void;
+}) {
+  const [selectedQuestId, setSelectedQuestId] = useState<string>('');
+  const [selectedKlanId, setSelectedKlanId] = useState<string>('');
+  const [customPoints, setCustomPoints] = useState<string>('');
+  const [completions, setCompletions] = useState<QuestCompletion[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from('quest_completions')
+      .select('*')
+      .eq('game_id', gameId)
+      .then(({ data }) => { if (data) setCompletions(data); });
+  }, [gameId]);
+
+  const selectedQuest = quests.find(q => q.id === selectedQuestId);
+  const defaultPoints = selectedQuest?.reward_points || 0;
+
+  const handleComplete = () => {
+    if (!selectedQuestId || !selectedKlanId) {
+      alert('Wybierz quest i klan');
+      return;
+    }
+    const pts = customPoints ? parseInt(customPoints) : undefined;
+    onComplete(selectedQuestId, selectedKlanId, pts);
+    setCustomPoints('');
+    supabase.from('quest_completions').select('*').eq('game_id', gameId).then(({ data }) => { if (data) setCompletions(data); });
+  };
+
+  if (!gameId) {
+    return <div className="admin-panel__empty">Wybierz grę aby zarządzać questami</div>;
+  }
+
+  return (
+    <div className="admin-panel">
+      <div className="admin-panel__section">
+        <h2 className="admin-panel__title">Zalicz quest ręcznie</h2>
+        <div className="admin-panel__row">
+          <select
+            value={selectedQuestId}
+            onChange={(e) => {
+              setSelectedQuestId(e.target.value);
+              setCustomPoints('');
+            }}
+            className="admin-panel__select"
+          >
+            <option value="">-- Wybierz quest --</option>
+            {quests.map(q => (
+              <option key={q.id} value={q.id}>
+                {q.type === 'chase' ? '🏇 ' : q.type === 'gps' ? '📍 ' : q.type === 'qr' ? '📱 ' : ''}
+                {q.title} ({q.reward_points} pkt)
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="admin-panel__row" style={{ marginTop: 12 }}>
+          <select
+            value={selectedKlanId}
+            onChange={(e) => setSelectedKlanId(e.target.value)}
+            className="admin-panel__select"
+          >
+            <option value="">-- Wybierz klan --</option>
+            {klans.filter(k => k.game_id === gameId).map(k => (
+              <option key={k.id} value={k.id}>
+                {k.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="admin-panel__row" style={{ marginTop: 12 }}>
+          <input
+            type="number"
+            value={customPoints}
+            onChange={(e) => setCustomPoints(e.target.value)}
+            placeholder={`Punkty (domyślnie: ${defaultPoints})`}
+            className="admin-panel__input"
+            style={{ maxWidth: 200 }}
+          />
+          <button onClick={handleComplete} className="button-glow" disabled={!selectedQuestId || !selectedKlanId}>
+            ✅ Zalicz
+          </button>
+        </div>
+      </div>
+
+      <div className="admin-panel__section">
+        <h2 className="admin-panel__title">Questy w grze ({quests.length})</h2>
+        <div className="admin-quests-list">
+          {quests.length === 0 && <p className="admin-panel__empty">Brak questów w tej grze</p>}
+          {quests.map(quest => {
+            const questCompletions = completions.filter(c => c.quest_id === quest.id);
+            const isCompleted = questCompletions.length > 0;
+            return (
+              <div key={quest.id} className={`admin-quest-card ${isCompleted ? 'admin-quest-card--done' : ''}`}>
+                <div className="admin-quest-card__header">
+                  <span className="admin-quest-card__icon">
+                    {quest.type === 'chase' ? '🏇' : quest.type === 'gps' ? '📍' : quest.type === 'qr' ? '📱' : quest.type === 'photo' ? '📷' : '🧩'}
+                  </span>
+                  <div className="admin-quest-card__info">
+                    <span className="admin-quest-card__title">{quest.title}</span>
+                    <span className="admin-quest-card__desc">{quest.description}</span>
+                  </div>
+                  <div className="admin-quest-card__meta">
+                    <span className="admin-quest-card__points">+{quest.reward_points} pkt</span>
+                    {quest.type && <span className="admin-quest-card__type">{quest.type}</span>}
+                  </div>
+                </div>
+                {questCompletions.length > 0 && (
+                  <div className="admin-quest-card__completions">
+                    {questCompletions.map(c => {
+                      const klan = klans.find(k => k.id === c.klan_id);
+                      return (
+                        <span key={c.id} className="admin-quest-card__completion" style={{ borderColor: klan?.theme_color }}>
+                          ✅ {klan?.name} (+{c.points_awarded} pkt)
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="admin-quest-card__actions">
+                  {quest.type === 'chase' && (
+                    <button
+                      onClick={() => onReset(quest.id)}
+                      className="admin-quest-card__btn"
+                      title="Zresetuj (usuwa wszystkie ukończenia)"
+                    >
+                      🔄 Reset
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
