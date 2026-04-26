@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { getPlayerSession } from '../lib/playerSession';
+import { useGame } from '../App';
 import type { PlayerSession } from '../lib/playerSession';
 
 export function HomeView() {
   const [session, setSession] = useState<PlayerSession | null>(null);
+  const { klanPoints } = useGame();
 
   useEffect(() => {
     setSession(getPlayerSession());
@@ -88,6 +90,7 @@ export function HomeView() {
             <li>📡 Sygnał Bogów: <span style={{ color: 'var(--color-mokosz)' }}>Aktywny</span></li>
             <li>🔮 Mroczny Rave: <span style={{ color: 'var(--color-weles)' }}>Oczekuje</span></li>
             <li>⚔️ Twój Klan: <span style={{ color: session.klan_color }}>{session.klan_name}</span></li>
+            <li>🔥 Ogniki Klanu: <span style={{ color: 'var(--color-perun)', fontWeight: 'bold' }}>{klanPoints}</span></li>
           </ul>
         </div>
       </main>

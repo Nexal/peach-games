@@ -200,7 +200,7 @@ function MapContent() {
                 <h3>{marker.title}</h3>
                 {marker.description && <p>{marker.description}</p>}
                 {marker.type === 'quest' && marker.reward_points && (
-                  <span className="map-popup__reward">+{marker.reward_points} pkt</span>
+                  <span className="map-popup__reward">+{marker.reward_points} 🔥</span>
                 )}
               </div>
             </Popup>

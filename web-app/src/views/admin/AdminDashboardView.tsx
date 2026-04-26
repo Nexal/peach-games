@@ -143,7 +143,7 @@ export function AdminDashboardView() {
       await supabase.from('klans').update({ points: (klanData.points || 0) + points }).eq('id', klanId);
     }
 
-    alert(`✅ Zaliczono quest "${quest?.title}" dla klanu (+${points} pkt)`);
+    alert(`✅ Zaliczono quest "${quest?.title}" dla klanu (+${points} 🔥)`);
   };
 
   const resetQuest = async (questId: string) => {
@@ -619,7 +619,7 @@ function QuestsPanel({
             {quests.map(q => (
               <option key={q.id} value={q.id}>
                 {q.type === 'chase' ? '🏇 ' : q.type === 'gps' ? '📍 ' : q.type === 'qr' ? '📱 ' : ''}
-                {q.title} ({q.reward_points} pkt)
+                {q.title} ({q.reward_points} 🔥)
               </option>
             ))}
           </select>
@@ -673,7 +673,7 @@ function QuestsPanel({
                     <span className="admin-quest-card__desc">{quest.description}</span>
                   </div>
                   <div className="admin-quest-card__meta">
-                    <span className="admin-quest-card__points">+{quest.reward_points} pkt</span>
+                    <span className="admin-quest-card__points">+{quest.reward_points} 🔥</span>
                     {quest.type && <span className="admin-quest-card__type">{quest.type}</span>}
                   </div>
                 </div>
@@ -683,7 +683,7 @@ function QuestsPanel({
                       const klan = klans.find(k => k.id === c.klan_id);
                       return (
                         <span key={c.id} className="admin-quest-card__completion" style={{ borderColor: klan?.theme_color }}>
-                          ✅ {klan?.name} (+{c.points_awarded} pkt)
+                          ✅ {klan?.name} (+{c.points_awarded} 🔥)
                         </span>
                       );
                     })}

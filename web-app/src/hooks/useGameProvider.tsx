@@ -29,6 +29,7 @@ interface GameContextValue {
   completeChase: (chaseId: string, questId: string) => Promise<void>;
   activateQuest: (questId: string) => Promise<void>;
   getMarkerPosition: (questId: string) => MarkerPosition;
+  klanPoints: number;
 }
 
 interface QuestState {
@@ -41,6 +42,7 @@ const GameContext = createContext<GameContextValue>({
   playerPosition: null,
   activeQuests: {},
   completionModal: null,
+  klanPoints: 0,
   dismissCompletion: () => {},
   completeChase: async () => {},
   activateQuest: async () => {},
@@ -105,6 +107,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [playerPosition, setPlayerPosition] = useState<MarkerPosition>(null);
   const [activeQuests, setActiveQuests] = useState<Record<string, QuestState>>({});
   const [completionModal, setCompletionModal] = useState<QuestCompletionData | null>(null);
+  const [klanPoints, setKlanPoints] = useState<number>(0);
   const lastPlayerPositionRef = useRef<MarkerPosition>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -305,6 +308,32 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     return () => { supabase.removeChannel(channel); };
   }, [session?.klan_id]);
 
+  useEffect(() => {
+    if (!session?.klan_id) return;
+
+    const fetchKlanPoints = async () => {
+      const { data } = await supabase
+        .from('klans').select('points').eq('id', session.klan_id).maybeSingle();
+      if (data) setKlanPoints(data.points || 0);
+    };
+
+    fetchKlanPoints();
+
+    const klanChannel = supabase
+      .channel(`klan_${session.klan_id}_points`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'klans',
+        filter: `id=eq.${session.klan_id}`,
+      }, (payload: any) => {
+        setKlanPoints(payload.new.points || 0);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(klanChannel); };
+  }, [session?.klan_id]);
+
   const completeChase = useCallback(async (chaseId: string, questId: string) => {
     if (!session?.id) return;
 
@@ -407,6 +436,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       playerPosition,
       activeQuests,
       completionModal,
+      klanPoints,
       dismissCompletion,
       completeChase,
       activateQuest,
@@ -432,7 +462,7 @@ function CompletionModal({ data, onDismiss }: { data: QuestCompletionData; onDis
         <p className="completion-quest-name">{data.quest_name}</p>
         <div className="completion-points-badge">
           <span className="completion-points-value">+{data.points}</span>
-          <span className="completion-points-label">pkt dla klanu</span>
+          <span className="completion-points-label">🔥 dla klanu</span>
         </div>
         <p className="completion-by">Ukończony przez {data.player_name}</p>
         <p className="completion-dismiss">Kliknij by zamknąć</p>

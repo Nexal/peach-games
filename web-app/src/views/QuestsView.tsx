@@ -145,7 +145,7 @@ function ChaseQuestPanel({
       </div>
 
       <div className="chase-quest__meta">
-        <span>🏆 +{quest.reward_points} pkt</span>
+        <span>🔥 +{quest.reward_points}</span>
         {quest.type && <span>🏇 Gonitwa</span>}
       </div>
 
@@ -191,7 +191,7 @@ function QuestCard({ quest }: { quest: QuestWithCompletion }) {
       </div>
 
       <div className="quest-card__meta">
-        <span>🏆 +{quest.reward_points} pkt</span>
+        <span>🔥 +{quest.reward_points}</span>
         {quest.type && <span>{quest.type.toUpperCase()}</span>}
         {quest.completed && quest.completed_at && (
           <span>{new Date(quest.completed_at).toLocaleDateString('pl-PL')}</span>
