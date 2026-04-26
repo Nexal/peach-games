@@ -50,7 +50,14 @@ export function ProfileView() {
 
   return (
     <div className="view view--profile">
-      <header className="view__header">
+      <header className="view__header view__header--relative">
+        <button
+          className="profile-close-btn"
+          onClick={() => window.history.back()}
+          title="Wróć"
+        >
+          ←
+        </button>
         <div
           className="profile-avatar"
           style={{ borderColor: session.klan_color }}

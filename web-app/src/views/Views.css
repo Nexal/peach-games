@@ -8,8 +8,20 @@
 
 .view__header {
   text-align: center;
-  margin-bottom: 1.5rem;
-  flex-shrink: 0;
+  position: relative;
+  padding-top: 10px;
+}
+
+.view__header--relative {
+  position: relative;
+}
+
+.view__header--relative .view__logo {
+  margin-bottom: 8px;
+}
+
+.view__header--relative .view__title {
+  margin-bottom: 4px;
 }
 
 .view__logo {
@@ -34,6 +46,20 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.view__title-main {
+  font-size: 1.8rem;
+  line-height: 1.2;
+}
+
+.view__title-sub {
+  font-size: 1rem;
+  background: none;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.7);
 }
 
 .view__title--small {
@@ -42,6 +68,8 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: flex;
+  flex-direction: column;
 }
 
 .view__subtitle {
@@ -1332,6 +1360,28 @@
 }
 
 /* Profile View */
+.profile-close-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-main);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.profile-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .profile-avatar {
   width: 80px;
   height: 80px;
@@ -1539,4 +1589,166 @@
   background: var(--color-bg-dark) !important;
   border: 1px solid var(--glass-border) !important;
   color: var(--color-text-main) !important;
+}
+
+/* Home Player Card */
+.home-player-card {
+  background: linear-gradient(145deg, rgba(30, 30, 40, 0.9), rgba(20, 20, 30, 0.95));
+  border: 2px solid var(--glass-border);
+  border-top: none;
+  border-radius: 20px;
+  padding: 24px;
+  padding-top: 2px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.home-player-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-perun), var(--color-weles), var(--color-mokosz));
+}
+
+.home-player-card__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-top: 8px;
+}
+
+.home-player-card__clan-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.home-player-card__clan-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.home-player-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-player-card__name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  line-height: 1.2;
+  color: var(--color-text-main);
+}
+
+.home-player-card__klan {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.home-player-card__ogniki {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(255, 215, 0, 0.25);
+}
+
+.home-player-card__ogniki-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.home-player-card__ogniki-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-perun);
+  line-height: 1;
+}
+
+@media (max-width: 400px) {
+  .home-player-card__header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .home-player-card__clan-badge {
+    width: 64px;
+    height: 64px;
+  }
+
+  .home-player-card__clan-icon {
+    font-size: 2.2rem;
+  }
+
+  .home-player-card__name {
+    font-size: 1.3rem;
+  }
+}
+  font-size: 1.2rem;
+  margin-top: 4px;
+}
+
+/* Home Actions Hint */
+.home-actions {
+  text-align: center;
+  padding: 24px 20px;
+}
+
+.home-actions__hint {
+  font-size: 1rem;
+  background: linear-gradient(45deg, var(--color-perun), #ff9500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.5;
+  letter-spacing: 0.5px;
+}
+
+.home-profile-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.home-profile-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.home-profile-btn:active {
+  transform: scale(0.95);
+}
+
+.home-profile-btn__icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }

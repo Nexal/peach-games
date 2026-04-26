@@ -31,6 +31,7 @@ function AppContent() {
   const { isAuthenticated } = useAdminAuth();
   const [showAdmin, setShowAdmin] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [session, setSession] = useState<PlayerSession | null>(null);
 
   const refreshSession = () => {
@@ -44,6 +45,7 @@ function AppContent() {
       const pathname = window.location.pathname;
       setShowAdmin(pathname === '/admin');
       setShowJoin(pathname === '/join');
+      setShowProfile(pathname === '/profile');
     };
     window.addEventListener('popstate', handleRouteChange);
     window.addEventListener('pushState', handleRouteChange);
@@ -61,6 +63,8 @@ function AppContent() {
     }
 
     if (showJoin) return <JoinView />;
+
+    if (showProfile) return <ProfileView />;
 
     if (!session) return <HomeView />;
 

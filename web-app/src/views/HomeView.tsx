@@ -3,6 +3,16 @@ import { getPlayerSession } from '../lib/playerSession';
 import { useGame } from '../App';
 import type { PlayerSession } from '../lib/playerSession';
 
+const CLAN_ICONS: Record<string, string> = {
+  perun: '⚡',
+  weles: '🐺',
+  mokosz: '🌿',
+};
+
+function getClanIcon(klanId: string): string {
+  return CLAN_ICONS[klanId] || '⚔️';
+}
+
 export function HomeView() {
   const [session, setSession] = useState<PlayerSession | null>(null);
   const { klanPoints } = useGame();
@@ -20,7 +30,10 @@ export function HomeView() {
             alt="PeachGames Logo"
             className="view__logo"
           />
-          <h1 className="view__title">Noc Kupały</h1>
+<h1 className="view__title">
+          <span className="view__title-main">Peach Games</span>
+          <span className="view__title-sub">Noc Kupały</span>
+        </h1>
           <p className="view__subtitle">Witaj Wędrowcze na ziemiach PeachGames</p>
         </header>
 
@@ -33,65 +46,56 @@ export function HomeView() {
             <p style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', marginBottom: '1.2rem' }}>
               Aby uzyskać dostęp do gry, użyj linku zaproszenia od Mistrza Gry.
             </p>
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-              Link powinien wyglądać mniej więcej tak:<br />
-              <code style={{ color: 'var(--color-perun)' }}>https://.../join?game=...</code>
-            </p>
-          </div>
-
-          <div className="glass-panel">
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '8px', margin: '0 0 8px 0' }}>
-              Status Systemu
-            </h3>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-              <li>📡 Sygnał Bogów: <span style={{ color: 'var(--color-mokosz)' }}>Aktywny</span></li>
-              <li>🔒 Dostęp gracza: <span style={{ color: '#ff4444' }}>Zablokowany</span></li>
-              <li>⚔️ Aktywne Klany: <span style={{ color: 'var(--color-perun)' }}>3</span></li>
-            </ul>
           </div>
         </main>
       </div>
     );
   }
 
+  const clanIcon = getClanIcon(session.klan_id);
+
   return (
     <div className="view view--home">
-      <header className="view__header">
+      <header className="view__header view__header--relative">
         <img
           src="/logo_peachgames_kupala.png"
           alt="PeachGames Logo"
           className="view__logo"
         />
-        <h1 className="view__title">Noc Kupały</h1>
-        <p className="view__subtitle">
-          Witaj, <span style={{ color: session.klan_color }}>{session.name}</span>!
-          Klan: {session.klan_name}
-        </p>
+<h1 className="view__title">
+          <span className="view__title-main">Peach Games</span>
+          <span className="view__title-sub">Noc Kupały</span>
+        </h1>
+        <p className="view__subtitle">Witaj na ziemiach Kupali</p>
+        <button
+          className="home-profile-btn"
+          onClick={() => window.history.pushState({}, '', '/profile')}
+          title="Profil"
+        >
+          <img src="/icons/profile.png" alt="Profil" className="home-profile-btn__icon" />
+        </button>
       </header>
 
       <main className="view__content">
-        <div className="glass-panel" style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--color-text-main)', margin: '0 0 10px 0' }}>
-            Runa Początku
-          </h2>
-          <p style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', marginBottom: '1.2rem' }}>
-            Zeskanuj kod aby poznać swój Klan i dołączyć do próby.
-          </p>
-          <button className="button-glow" style={{ width: '100%' }}>
-            Inicjuj Skaner
-          </button>
+        <div className="home-player-card" style={{ borderColor: session.klan_color }}>
+          <div className="home-player-card__header">
+            <div className="home-player-card__clan-badge" style={{ backgroundColor: session.klan_color }}>
+              <span className="home-player-card__clan-icon">{clanIcon}</span>
+            </div>
+            <div className="home-player-card__info">
+              <h2 className="home-player-card__name">{session.name}</h2>
+              <p className="home-player-card__klan">{session.klan_name}</p>
+            </div>
+          </div>
+
+          <div className="home-player-card__ogniki">
+            <span className="home-player-card__ogniki-icon">🔥</span>
+            <span className="home-player-card__ogniki-value">{klanPoints}</span>
+          </div>
         </div>
 
-        <div className="glass-panel">
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '8px', margin: '0 0 8px 0' }}>
-            Status Gry
-          </h3>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-            <li>📡 Sygnał Bogów: <span style={{ color: 'var(--color-mokosz)' }}>Aktywny</span></li>
-            <li>🔮 Mroczny Rave: <span style={{ color: 'var(--color-weles)' }}>Oczekuje</span></li>
-            <li>⚔️ Twój Klan: <span style={{ color: session.klan_color }}>{session.klan_name}</span></li>
-            <li>🔥 Ogniki Klanu: <span style={{ color: 'var(--color-perun)', fontWeight: 'bold' }}>{klanPoints}</span></li>
-          </ul>
+        <div className="home-actions">
+          <p className="home-actions__hint">🔥 Zbieraj ogniki, wznieś swój klan na szczyt!</p>
         </div>
       </main>
     </div>
