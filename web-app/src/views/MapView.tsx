@@ -1,5 +1,5 @@
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { usePlayerSession } from '../App';
 import { supabase } from '../lib/supabase';
@@ -7,11 +7,11 @@ import type { MapMarker } from '../types/map.types';
 import { DEFAULT_MAP_CONFIG, TILE_LAYERS } from '../types/map.types';
 import { LocationMarker, CenterOnLocationButton } from '../components/map/MapControls';
 import { AnimatedMarker, PulsingMarker } from '../components/map/AnimatedMarkers';
-import { usePlayerPosition } from '../hooks/usePlayerPosition';
+import { usePlayerPosition as usePosition } from '../hooks/usePlayerPosition';
+import { useChase } from '../hooks/useChaseProvider';
 import 'leaflet/dist/leaflet.css';
 import './MapView.css';
 
-// Base marker icon (orange/ campfire)
 const baseIcon = new L.Icon({
   iconUrl: 'data:image/svg+xml;base64,' + btoa(`
     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
@@ -25,7 +25,6 @@ const baseIcon = new L.Icon({
   popupAnchor: [0, -32],
 });
 
-// Quest marker icon (gold)
 const questIcon = new L.Icon({
   iconUrl: 'data:image/svg+xml;base64,' + btoa(`
     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
@@ -39,7 +38,6 @@ const questIcon = new L.Icon({
   popupAnchor: [0, -16],
 });
 
-// Clan base marker
 const clanIcon = new L.Icon({
   iconUrl: 'data:image/svg+xml;base64,' + btoa(`
     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
@@ -52,7 +50,6 @@ const clanIcon = new L.Icon({
   popupAnchor: [0, -16],
 });
 
-// Chase marker icon (pulsing red/horse)
 const chaseIcon = new L.Icon({
   iconUrl: 'data:image/svg+xml;base64,' + btoa(`
     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
@@ -67,12 +64,55 @@ const chaseIcon = new L.Icon({
   popupAnchor: [0, -20],
 });
 
+function getDistanceM(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const earthRadiusM = 6371000;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusM * c;
+}
+
+function ChaseMarker({ questId }: { questId: string }) {
+  const { position, session, onCatch } = useChase(questId);
+  const { position: playerPosition } = usePosition();
+
+  useEffect(() => {
+    if (!position || !session || !playerPosition) return;
+
+    const distance = getDistanceM(
+      playerPosition.lat, playerPosition.lng,
+      position.lat, position.lng
+    );
+
+    if (distance <= (session.catch_distance_m || 20)) {
+      onCatch(session.id);
+    }
+  }, [position, playerPosition, session, onCatch]);
+
+  if (!position) return null;
+
+  return (
+    <Marker position={position} icon={chaseIcon}>
+      <Popup>
+        <div className="map-popup map-popup--chase">
+          <h3>🐎 Gonitwa!</h3>
+          <p>Płań ku kóncu by schwytać!</p>
+        </div>
+      </Popup>
+    </Marker>
+  );
+}
+
 function MapContent() {
   const { session } = usePlayerSession();
   const [markers, setMarkers] = useState<MapMarker[]>([]);
+  const [chaseQuestId, setChaseQuestId] = useState<string | null>(null);
 
-  // Send player position to database every ~10 seconds
-  usePlayerPosition({ minDistance: 10 });
+  usePosition();
 
   useEffect(() => {
     if (!session?.game_id) return;
@@ -90,7 +130,7 @@ function MapContent() {
           position: [m.lat ?? 0, m.lng ?? 0] as [number, number],
           title: m.title,
           description: m.description ?? undefined,
-          type: m.type as 'quest' | 'base' | 'clan_base',
+          type: m.type as 'quest' | 'base' | 'clan_base' | 'chase',
           clan_id: m.klan_id ?? undefined,
           icon_url: m.icon_url ?? undefined,
           is_active: m.is_active ?? true,
@@ -103,7 +143,6 @@ function MapContent() {
 
     fetchMarkers();
 
-    // Subscribe to changes
     const channel = supabase
       .channel('map_markers_changes')
       .on('postgres_changes', {
@@ -121,6 +160,20 @@ function MapContent() {
     };
   }, [session?.game_id]);
 
+  useEffect(() => {
+    if (!session?.game_id || !session?.klan_id) return;
+
+    supabase
+      .from('quests')
+      .select('id')
+      .eq('game_id', session.game_id)
+      .eq('type', 'chase')
+      .limit(1)
+      .then(({ data }) => {
+        if (data?.[0]) setChaseQuestId(data[0].id);
+      });
+  }, [session?.game_id, session?.klan_id]);
+
   return (
     <>
       <TileLayer
@@ -128,14 +181,10 @@ function MapContent() {
         attribution={TILE_LAYERS.dark.attribution}
       />
 
-      {/* User's current location */}
       <LocationMarker watchPosition={true} />
-
-      {/* Animated markers - experimental */}
       <AnimatedMarker center={DEFAULT_MAP_CONFIG.center} orbitRadius={100} speed={0.5} />
       <PulsingMarker position={DEFAULT_MAP_CONFIG.center} />
 
-      {/* Base marker - always shown */}
       <Marker position={DEFAULT_MAP_CONFIG.center} icon={baseIcon}>
         <Popup>
           <div className="map-popup map-popup--base">
@@ -145,18 +194,19 @@ function MapContent() {
         </Popup>
       </Marker>
 
-      {/* Dynamic markers from database */}
+      {chaseQuestId && (
+        <ChaseMarker questId={chaseQuestId} />
+      )}
+
       {markers.map((marker) => {
         let icon = questIcon;
         if (marker.type === 'clan_base') icon = clanIcon;
         if (marker.type === 'chase') icon = chaseIcon;
 
-        // Filter by clan for quest markers (only show own clan's quests)
         if (marker.type === 'quest' && marker.clan_id && marker.clan_id !== session?.klan_id) {
           return null;
         }
 
-        // Chase markers - only show if own clan
         if (marker.type === 'chase' && marker.clan_id && marker.clan_id !== session?.klan_id) {
           return null;
         }
@@ -176,7 +226,6 @@ function MapContent() {
         );
       })}
 
-      {/* Center on location button */}
       <CenterOnLocationButton />
     </>
   );

@@ -15,7 +15,7 @@ type QuestWithCompletion = Quest & {
 
 export function QuestsView() {
   const { session } = usePlayerSession();
-  const playerPosition = usePlayerPosition();
+  const { position: playerPosition } = usePlayerPosition();
   const [quests, setQuests] = useState<QuestWithCompletion[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -133,25 +133,25 @@ function ChaseQuestPanel({
   quest: QuestWithCompletion;
   playerPosition: { lat: number; lng: number } | null;
 }) {
-  const { activeSession, activating, activate } =
-    useChaseQuest(quest, playerPosition);
+  const { activeSession, activating, activate } = useChaseQuest(quest, playerPosition);
 
   const isActive = !!activeSession;
 
   return (
-    <div className={`chase-quest ${isActive ? 'chase-quest--active' : ''}`}>
+    <div className={`chase-quest ${isActive ? 'chase-quest--active' : ''} ${quest.completed ? 'chase-quest--completed' : ''}`}>
       <div className="chase-quest__header">
-        <span className="chase-quest__icon">🏇</span>
+        <span className="chase-quest__icon">{quest.completed ? '✅' : '🏇'}</span>
         <div className="chase-quest__info">
           <h3 className="chase-quest__title">{quest.title}</h3>
           <p className="chase-quest__desc">{quest.description}</p>
         </div>
         <span
           className={`chase-quest__status ${
+            quest.completed ? 'chase-quest__status--completed' :
             isActive ? 'chase-quest__status--active' : 'chase-quest__status--inactive'
           }`}
         >
-          {isActive ? 'W TRAKCIE' : 'DOSTĘPNA'}
+          {quest.completed ? 'UKOŃCZONE!' : isActive ? 'W TRAKCIE' : 'DOSTĘPNA'}
         </span>
       </div>
 
@@ -166,19 +166,27 @@ function ChaseQuestPanel({
         </div>
       )}
 
-      <button
-        className="chase-quest__btn chase-quest__btn--activate"
-        onClick={activate}
-        disabled={!playerPosition || activating || isActive}
-      >
-        {!playerPosition
-          ? 'Włącz GPS aby aktywować'
-          : activating
-          ? 'Uruchamianie...'
-          : isActive
-          ? 'Gonitwa aktywna...'
-          : '🚀 Aktywuj gonitwę'}
-      </button>
+      {quest.completed && (
+        <div className="chase-quest__success">
+          🎉 Quest ukończony pomyślnie!
+        </div>
+      )}
+
+      {!quest.completed && (
+        <button
+          className="chase-quest__btn chase-quest__btn--activate"
+          onClick={activate}
+          disabled={!playerPosition || activating || isActive}
+        >
+          {!playerPosition
+            ? 'Włącz GPS aby aktywować'
+            : activating
+            ? 'Uruchamianie...'
+            : isActive
+            ? 'Gonitwa aktywna...'
+            : '🚀 Aktywuj gonitwę'}
+        </button>
+      )}
     </div>
   );
 }

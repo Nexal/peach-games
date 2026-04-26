@@ -57,108 +57,73 @@ function getDistanceM(
   return earthRadiusM * c;
 }
 
+type ChaseBroadcast = {
+  type: 'activated' | 'completed';
+  quest_id: string;
+  klan_id: string;
+  start_lat?: number;
+  start_lng?: number;
+  bearing?: number;
+  speed_mps?: number;
+  started_at?: string;
+};
+
 export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: number } | null) {
   const session = getPlayerSession();
   const [activeSession, setActiveSession] = useState<ChaseSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
-  const markerIdRef = useRef<string | null>(null);
+  const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const loadSession = useCallback(async () => {
-    if (!session?.klan_id || !session?.game_id) {
-      setLoading(false);
-      return;
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
+  }, []);
 
-    const { data, error } = await supabase
-      .from('chase_sessions')
-      .select('*')
-      .eq('quest_id', quest.id)
-      .eq('klan_id', session.klan_id)
-      .is('completed_at', null)
-      .limit(1);
+  const startTimer = useCallback((chaseSession: ChaseSession) => {
+    clearTimer();
 
-    if (error) {
-      console.error('[ChaseQuest] loadSession error', error);
-    }
+    const startedAt = new Date(chaseSession.started_at!).getTime();
+    const catchDistance = chaseSession.catch_distance_m || 20;
 
-    setActiveSession(data?.[0] || null);
-    setLoading(false);
-  }, [quest.id, session?.klan_id, session?.game_id]);
+    const tick = () => {
+      const now = Date.now();
+      const elapsedSeconds = (now - startedAt) / 1000;
 
-  useEffect(() => {
-    loadSession();
+      const pos = calculatePosition(
+        chaseSession.start_lat,
+        chaseSession.start_lng,
+        chaseSession.bearing,
+        elapsedSeconds,
+        chaseSession.speed_mps
+      );
+      setMarkerPosition(pos);
 
-    const channel = supabase
-      .channel(`chase-${quest.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'chase_sessions',
-          filter: `quest_id=eq.${quest.id}`,
-        },
-        () => {
-          loadSession();
+      if (playerPosition) {
+        const distance = getDistanceM(
+          playerPosition.lat,
+          playerPosition.lng,
+          pos.lat,
+          pos.lng
+        );
+
+        if (distance <= catchDistance) {
+          clearTimer();
+          handleComplete(chaseSession);
         }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [loadSession, quest.id]);
-
-  useEffect(() => {
-    if (!activeSession) {
-      return;
-    }
-
-    let intervalId: ReturnType<typeof setInterval>;
-
-    const startTracking = async () => {
-      const startLat = activeSession.start_lat;
-      const startLng = activeSession.start_lng;
-      const bearing = activeSession.bearing;
-      const speedMps = activeSession.speed_mps;
-      const startedAt = new Date(activeSession.started_at!).getTime();
-      const catchDistance = activeSession.catch_distance_m || 20;
-
-      const updatePosition = async () => {
-        const now = Date.now();
-        const elapsedSeconds = (now - startedAt) / 1000;
-
-        const pos = calculatePosition(startLat, startLng, bearing, elapsedSeconds, speedMps);
-
-        if (playerPosition) {
-          const distance = getDistanceM(
-            playerPosition.lat,
-            playerPosition.lng,
-            pos.lat,
-            pos.lng
-          );
-
-          if (distance <= catchDistance) {
-            clearInterval(intervalId);
-            await handleComplete();
-          }
-        }
-      };
-
-      updatePosition();
-      intervalId = setInterval(updatePosition, 1000);
+      }
     };
 
-    startTracking();
+    tick();
+    timerRef.current = setInterval(tick, 1000);
+  }, [playerPosition, clearTimer]);
 
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [activeSession, playerPosition]);
-
-  const handleComplete = async () => {
-    if (!activeSession || !session?.id) return;
+  const handleComplete = async (chaseSession: ChaseSession) => {
+    if (!session?.id) return;
 
     const { error } = await supabase
       .from('chase_sessions')
@@ -166,7 +131,7 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
         completed_at: new Date().toISOString(),
         completed_by_player_id: session.id,
       })
-      .eq('id', activeSession.id);
+      .eq('id', chaseSession.id);
 
     if (!error) {
       await supabase.from('quest_completions').insert({
@@ -176,7 +141,6 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
         metadata: {
           completed_by: session.id,
           player_name: session.name,
-          chase_session_id: activeSession.id,
         },
       });
 
@@ -186,26 +150,113 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
         .eq('id', session.klan_id)
         .limit(1);
 
-      if (klanData && klanData[0]) {
+      if (klanData?.[0]) {
         await supabase
           .from('klans')
           .update({
-            points: (klanData[0].points || 0) + (activeSession.reward_points || 0),
+            points: (klanData[0].points || 0) + (chaseSession.reward_points || 0),
           })
           .eq('id', session.klan_id);
       }
 
-      if (markerIdRef.current) {
-        await supabase
-          .from('map_markers')
-          .update({ is_active: false })
-          .eq('id', markerIdRef.current);
-        markerIdRef.current = null;
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'chase_update',
+          payload: {
+            type: 'completed',
+            quest_id: quest.id,
+            klan_id: session.klan_id,
+          } as ChaseBroadcast,
+        });
       }
 
       setActiveSession(null);
+      setMarkerPosition(null);
     }
   };
+
+  useEffect(() => {
+    const loadSession = async () => {
+      if (!session?.klan_id || !session?.game_id) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('chase_sessions')
+        .select('*')
+        .eq('quest_id', quest.id)
+        .eq('klan_id', session.klan_id)
+        .is('completed_at', null)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[ChaseQuest] loadSession error', error);
+      }
+
+      setActiveSession(data || null);
+      setLoading(false);
+
+      if (data) {
+        startTimer(data);
+      }
+    };
+
+    loadSession();
+
+    channelRef.current = supabase.channel(`chase-${quest.id}`);
+
+    channelRef.current
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'chase_sessions',
+        filter: `quest_id=eq.${quest.id}`,
+      }, () => {
+        loadSession();
+      })
+      .on('broadcast', { event: 'chase_update' }, (payload) => {
+        const msg = payload.payload as ChaseBroadcast;
+        if (msg.type === 'activated' && msg.quest_id === quest.id) {
+          const newSession: ChaseSession = {
+            id: '',
+            quest_id: quest.id,
+            klan_id: msg.klan_id,
+            game_id: session?.game_id || '',
+            start_lat: msg.start_lat!,
+            start_lng: msg.start_lng!,
+            bearing: msg.bearing!,
+            speed_mps: msg.speed_mps!,
+            started_at: msg.started_at!,
+            completed_at: null,
+            completed_by_player_id: null,
+            catch_distance_m: 20,
+            reward_points: 100,
+          };
+          setActiveSession(newSession);
+          startTimer(newSession);
+        } else if (msg.type === 'completed' && msg.quest_id === quest.id) {
+          clearTimer();
+          setActiveSession(null);
+          setMarkerPosition(null);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      clearTimer();
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
+  }, [quest.id, session?.klan_id, session?.game_id]);
+
+  useEffect(() => {
+    if (activeSession && !timerRef.current) {
+      startTimer(activeSession);
+    }
+  }, [activeSession, startTimer]);
 
   const activate = async () => {
     if (!session?.klan_id || !session?.game_id || !playerPosition) return;
@@ -213,13 +264,14 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
     setActivating(true);
 
     const randomBearing = Math.random() * 360;
-    const randomSpeed = 1.5 + Math.random() * 1.5;
+    const randomSpeed = 15 + Math.random() * 10; // 15-25 m/s for testing
     const offsetMeters = 150 + Math.random() * 100;
 
     const startLat = playerPosition.lat + (offsetMeters / 111000) * Math.cos(randomBearing * Math.PI / 180);
     const startLng = playerPosition.lng + (offsetMeters / (111000 * Math.cos(playerPosition.lat * Math.PI / 180))) * Math.sin(randomBearing * Math.PI / 180);
+    const startedAt = new Date().toISOString();
 
-    const { data: sessionData, error: sessionError } = await supabase
+    const { data, error } = await supabase
       .from('chase_sessions')
       .insert({
         quest_id: quest.id,
@@ -229,46 +281,44 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
         start_lng: startLng,
         bearing: randomBearing,
         speed_mps: randomSpeed,
+        started_at: startedAt,
       })
       .select()
-      .limit(1);
+      .maybeSingle();
 
-    if (sessionError || !sessionData || !sessionData[0]) {
-      console.error('[ChaseQuest] insert error', sessionError);
+    if (error || !data) {
+      console.error('[ChaseQuest] insert error', error);
       setActivating(false);
       return;
     }
 
-    const chaseSession = sessionData[0];
+    const newSession = data;
 
-    const { data: markerData, error: markerError } = await supabase
-      .from('map_markers')
-      .insert({
-        game_id: session.game_id,
-        klan_id: session.klan_id,
-        quest_id: quest.id,
-        type: 'chase',
-        title: 'Gooniec!',
-        description: 'Gonitwa w toku! Złap gońca!',
-        lat: startLat,
-        lng: startLng,
-        is_active: true,
-      })
-      .select()
-      .limit(1);
-
-    if (markerError) {
-      console.error('[ChaseQuest] marker insert error', markerError);
-    } else if (markerData && markerData[0]) {
-      markerIdRef.current = markerData[0].id;
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'chase_update',
+        payload: {
+          type: 'activated',
+          quest_id: quest.id,
+          klan_id: session.klan_id,
+          start_lat: startLat,
+          start_lng: startLng,
+          bearing: randomBearing,
+          speed_mps: randomSpeed,
+          started_at: startedAt,
+        } as ChaseBroadcast,
+      });
     }
 
-    setActiveSession(chaseSession);
+    setActiveSession(newSession);
+    startTimer(newSession);
     setActivating(false);
   };
 
   return {
     activeSession,
+    markerPosition,
     loading,
     activating,
     activate,

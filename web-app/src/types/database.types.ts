@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       chase_sessions: {
@@ -560,6 +535,7 @@ export type Database = {
           id: string
           reward_points: number | null
           title: string
+          trajectory: Json | null
           type: string
         }
         Insert: {
@@ -568,6 +544,7 @@ export type Database = {
           id?: string
           reward_points?: number | null
           title: string
+          trajectory?: Json | null
           type: string
         }
         Update: {
@@ -576,6 +553,7 @@ export type Database = {
           id?: string
           reward_points?: number | null
           title?: string
+          trajectory?: Json | null
           type?: string
         }
         Relationships: [
@@ -648,6 +626,14 @@ export type Database = {
       create_game: {
         Args: { game_description?: string; game_name: string }
         Returns: string
+      }
+      get_chase_position: {
+        Args: { chase_id: string }
+        Returns: {
+          distance_m: number
+          lat: number
+          lng: number
+        }[]
       }
       get_game_player_positions: {
         Args: { p_game_id: string }
@@ -810,9 +796,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

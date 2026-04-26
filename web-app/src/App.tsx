@@ -12,6 +12,8 @@ import { AdminAuthProvider, useAdminAuth } from './lib/admin/AdminAuth';
 import { AdminLoginView } from './views/admin/AdminLoginView';
 import { AdminDashboardView } from './views/admin/AdminDashboardView';
 import { getPlayerSession, type PlayerSession } from './lib/playerSession';
+import { PlayerPositionProvider } from './hooks/usePlayerPosition';
+import { ChaseProvider } from './hooks/useChaseProvider';
 import './views/Views.css';
 import './components/tab-bar/TabBar.css';
 
@@ -94,10 +96,14 @@ function AppContent() {
 
   return (
     <PlayerContext.Provider value={{ session, refreshSession }}>
-      <>
-        {renderView()}
-        {!showAdmin && !showJoin && session && <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />}
-      </>
+      <PlayerPositionProvider>
+        <ChaseProvider>
+          <>
+            {renderView()}
+            {!showAdmin && !showJoin && session && <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />}
+          </>
+        </ChaseProvider>
+      </PlayerPositionProvider>
     </PlayerContext.Provider>
   );
 }
@@ -105,6 +111,8 @@ function AppContent() {
 export function usePlayerSession() {
   return useContext(PlayerContext);
 }
+
+export { usePlayerPosition } from './hooks/usePlayerPosition';
 
 function App() {
   return (

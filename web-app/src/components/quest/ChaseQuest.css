@@ -13,6 +13,11 @@
   box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
 }
 
+.chase-quest--completed {
+  border-color: var(--color-mokosz);
+  opacity: 0.85;
+}
+
 .chase-quest__header {
   display: flex;
   align-items: center;
@@ -56,6 +61,12 @@
   background: rgba(255, 215, 0, 0.2);
   color: var(--color-perun);
   animation: pulse 2s infinite;
+}
+
+.chase-quest__status--completed {
+  background: rgba(46, 139, 87, 0.3);
+  color: var(--color-mokosz);
+  animation: none;
 }
 
 @keyframes pulse {
@@ -159,4 +170,14 @@
   font-size: 0.85rem;
   color: var(--color-text-muted);
   line-height: 1.5;
+}
+
+.chase-quest__success {
+  background: rgba(46, 139, 87, 0.2);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--color-mokosz);
+  text-align: center;
+  font-weight: 600;
 }
