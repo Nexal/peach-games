@@ -25,10 +25,66 @@
 }
 
 .view__logo {
-  width: 70px;
-  height: 70px;
+  width: 180px;
+  height: 180px;
   object-fit: contain;
   margin-bottom: 8px;
+}
+
+.logo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  animation: overlayIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.logo-overlay--closing {
+  animation: overlayOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.logo-overlay__img {
+  width: 300px;
+  height: 300px;
+  object-fit: contain;
+  animation: logoPulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 40px rgba(255, 200, 50, 0.5));
+}
+
+@keyframes overlayIn {
+  from {
+    clip-path: circle(0% at 50% 50%);
+  }
+  to {
+    clip-path: circle(100% at 50% 50%);
+  }
+}
+
+@keyframes overlayOut {
+  from {
+    clip-path: circle(100% at 50% 50%);
+  }
+  to {
+    clip-path: circle(0% at 50% 50%);
+  }
+}
+
+@keyframes logoPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 40px rgba(255, 200, 50, 0.5)); }
+  50% { transform: scale(1.05); filter: drop-shadow(0 0 60px rgba(255, 200, 50, 0.7)); }
+}
+
+.view--home:has(.logo-overlay) .view__content {
+  filter: brightness(0.1) blur(4px);
+  transition: filter 0.4s ease;
+}
+
+.view--home:has(.logo-overlay) .view__subtitle {
+  filter: brightness(0.1) blur(3px);
+  transition: filter 0.4s ease;
 }
 
 .view__icon {
@@ -1620,11 +1676,12 @@
   gap: 16px;
   margin-bottom: 20px;
   padding-top: 8px;
+  flex-wrap: nowrap;
 }
 
 .home-player-card__clan-badge {
-  width: 56px;
-  height: 56px;
+  width: 100px;
+  height: 100px;
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -1633,8 +1690,14 @@
 }
 
 .home-player-card__clan-icon {
-  font-size: 1.8rem;
+  font-size: 4rem;
   line-height: 1;
+}
+
+.home-player-card__clan-img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
 }
 
 .home-player-card__info {
@@ -1682,21 +1745,31 @@
 
 @media (max-width: 400px) {
   .home-player-card__header {
-    flex-direction: column;
-    text-align: center;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
   }
 
   .home-player-card__clan-badge {
-    width: 64px;
-    height: 64px;
+    width: 90px;
+    height: 90px;
   }
 
   .home-player-card__clan-icon {
-    font-size: 2.2rem;
+    font-size: 3.5rem;
+  }
+
+  .home-player-card__clan-img {
+    width: 82px;
+    height: 82px;
   }
 
   .home-player-card__name {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
+  }
+
+  .home-player-card__klan {
+    font-size: 0.8rem;
   }
 }
   font-size: 1.2rem;

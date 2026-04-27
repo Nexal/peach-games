@@ -3,18 +3,20 @@ import { getPlayerSession } from '../lib/playerSession';
 import { useGame } from '../App';
 import type { PlayerSession } from '../lib/playerSession';
 
-const CLAN_ICONS: Record<string, string> = {
-  perun: '⚡',
-  weles: '🐺',
-  mokosz: '🌿',
+const CLAN_ICONS: Record<string, { emoji: string; image?: string }> = {
+  'klan peruna': { emoji: '⚡', image: '/icons/perun_icon2_wyciete.png' },
+  'klan welesa': { emoji: '🐺', image: '/icons/weles_icon22-Photoroom.png' },
+  'klan mokoszy': { emoji: '🌿', image: '/icons/mokosz_icon12-removebg-preview.png' },
 };
 
-function getClanIcon(klanId: string): string {
-  return CLAN_ICONS[klanId] || '⚔️';
+function getClanIcon(klanName: string): { emoji: string; image?: string } {
+  const key = klanName.toLowerCase();
+  return CLAN_ICONS[key] || { emoji: '⚔️' };
 }
 
 export function HomeView() {
   const [session, setSession] = useState<PlayerSession | null>(null);
+  const [logoEnlarged, setLogoEnlarged] = useState(false);
   const { klanPoints } = useGame();
 
   useEffect(() => {
@@ -24,11 +26,22 @@ export function HomeView() {
   if (!session) {
     return (
       <div className="view view--home">
+        {logoEnlarged && (
+          <div className="logo-overlay" onClick={() => setLogoEnlarged(false)}>
+            <img
+              src="/logo_peachgames_kupala-Photoroom.png"
+              alt="PeachGames Logo"
+              className="logo-overlay__img"
+            />
+          </div>
+        )}
         <header className="view__header">
           <img
-            src="/logo_peachgames_kupala.png"
+            src="/logo_peachgames_kupala-Photoroom.png"
             alt="PeachGames Logo"
             className="view__logo"
+            onClick={() => setLogoEnlarged(true)}
+            style={{ cursor: 'pointer' }}
           />
 <h1 className="view__title">
           <span className="view__title-main">Peach Games</span>
@@ -52,15 +65,26 @@ export function HomeView() {
     );
   }
 
-  const clanIcon = getClanIcon(session.klan_id);
+  const clanIcon = getClanIcon(session.klan_name);
 
   return (
     <div className="view view--home">
+      {logoEnlarged && (
+        <div className="logo-overlay" onClick={() => setLogoEnlarged(false)}>
+          <img
+            src="/logo_peachgames_kupala-Photoroom.png"
+            alt="PeachGames Logo"
+            className="logo-overlay__img"
+          />
+        </div>
+      )}
       <header className="view__header view__header--relative">
         <img
-          src="/logo_peachgames_kupala.png"
+          src="/logo_peachgames_kupala-Photoroom.png"
           alt="PeachGames Logo"
           className="view__logo"
+          onClick={() => setLogoEnlarged(true)}
+          style={{ cursor: 'pointer' }}
         />
 <h1 className="view__title">
           <span className="view__title-main">Peach Games</span>
@@ -79,8 +103,12 @@ export function HomeView() {
       <main className="view__content">
         <div className="home-player-card" style={{ borderColor: session.klan_color }}>
           <div className="home-player-card__header">
-            <div className="home-player-card__clan-badge" style={{ backgroundColor: session.klan_color }}>
-              <span className="home-player-card__clan-icon">{clanIcon}</span>
+            <div className="home-player-card__clan-badge">
+              {clanIcon.image ? (
+                <img src={clanIcon.image} alt={session.klan_name} className="home-player-card__clan-img" />
+              ) : (
+                <span className="home-player-card__clan-icon">{clanIcon.emoji}</span>
+              )}
             </div>
             <div className="home-player-card__info">
               <h2 className="home-player-card__name">{session.name}</h2>
