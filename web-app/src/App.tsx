@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, useRef } from 'react';
 import { useTabNavigation } from './hooks/useTabNavigation';
 import { TabBar } from './components/tab-bar/TabBar';
 import { HomeView } from './views/HomeView';
@@ -33,6 +33,9 @@ function AppContent() {
   const [showJoin, setShowJoin] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [session, setSession] = useState<PlayerSession | null>(null);
+  const [showSplash, setShowSplash] = useState(false);
+  const [splashClosing, setSplashClosing] = useState(false);
+  const splashShownRef = useRef(false);
 
   const refreshSession = () => {
     setSession(getPlayerSession());
@@ -55,6 +58,26 @@ function AppContent() {
       window.removeEventListener('pushState', handleRouteChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (showJoin || showAdmin) return;
+    if (splashShownRef.current) return;
+    if (!session) return;
+
+    splashShownRef.current = true;
+    setShowSplash(true);
+    setSplashClosing(false);
+
+    const timer = setTimeout(() => {
+      setSplashClosing(true);
+      setTimeout(() => {
+        setShowSplash(false);
+        setSplashClosing(false);
+      }, 600);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [showJoin, showAdmin, session]);
 
   const renderView = () => {
     if (showAdmin) {
@@ -82,6 +105,15 @@ function AppContent() {
   return (
     <PlayerContext.Provider value={{ session, refreshSession }}>
       <GameProvider>
+        {showSplash && (
+          <div className={`logo-overlay ${splashClosing ? 'logo-overlay--closing' : ''}`}>
+            <img
+              src="/logo_peachgames_kupala-Photoroom.png"
+              alt="PeachGames Logo"
+              className="logo-overlay__img"
+            />
+          </div>
+        )}
         {renderView()}
         {!showAdmin && !showJoin && session && <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />}
       </GameProvider>
