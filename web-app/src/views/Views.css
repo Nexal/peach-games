@@ -117,7 +117,7 @@
 .view__title {
   font-size: 2rem;
   margin: 0;
-  background: linear-gradient(45deg, var(--color-perun), var(--color-weles));
+  background: linear-gradient(90deg, var(--color-perun) 0%, var(--color-weles) 55%, var(--color-mokosz) 70%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

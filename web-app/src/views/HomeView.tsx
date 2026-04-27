@@ -112,7 +112,7 @@ export function HomeView() {
             </div>
             <div className="home-player-card__info">
               <h2 className="home-player-card__name">{session.name}</h2>
-              <p className="home-player-card__klan">{session.klan_name}</p>
+              <p className="home-player-card__klan" style={{ color: session.klan_color }}>{session.klan_name}</p>
             </div>
           </div>
 
