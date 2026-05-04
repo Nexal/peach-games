@@ -7,21 +7,32 @@ import './QuestsView.css';
 
 type Quest = Database['public']['Tables']['quests']['Row'];
 
-type QuestWithCompletion = Quest & {
+type QuestWithState = Quest & {
   completed: boolean;
   completed_at?: string;
+  activated: boolean;
+  activated_at?: string;
 };
+
+type QuestState = 'unavailable' | 'available' | 'active' | 'completed';
+
+function getQuestState(q: QuestWithState, klanId: string | undefined): QuestState {
+  if (q.completed) return 'completed';
+  if (q.klan_id && q.klan_id !== klanId) return 'unavailable';
+  if (q.activated) return 'active';
+  return 'available';
+}
 
 export function QuestsView() {
   const { session } = usePlayerSession();
-  const { playerPosition, activateQuest, activeQuests } = useGame();
-  const [quests, setQuests] = useState<QuestWithCompletion[]>([]);
+  const [quests, setQuests] = useState<QuestWithState[]>([]);
   const [loading, setLoading] = useState(true);
-  const [qrQuest, setQrQuest] = useState<QuestWithCompletion | null>(null);
+  const [qrQuest, setQrQuest] = useState<QuestWithState | null>(null);
   const [qrFeedback, setQrFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [activating, setActivating] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session?.game_id) {
+    if (!session?.game_id || !session?.klan_id) {
       setLoading(false);
       return;
     }
@@ -32,8 +43,13 @@ export function QuestsView() {
   const loadQuests = async () => {
     if (!session?.game_id || !session?.klan_id) return;
 
-    const [questsRes, completionsRes] = await Promise.all([
+    const [questsRes, activationsRes, completionsRes] = await Promise.all([
       supabase.from('quests').select('*').eq('game_id', session.game_id),
+      (supabase as any)
+        .from('quest_activations')
+        .select('*')
+        .eq('klan_id', session.klan_id)
+        .eq('game_id', session.game_id),
       supabase
         .from('quest_completions')
         .select('*')
@@ -42,29 +58,56 @@ export function QuestsView() {
     ]);
 
     if (questsRes.data) {
-      const completions = completionsRes.data || [];
-      const questsWithStatus: QuestWithCompletion[] = questsRes.data.map((q) => {
+      const activations = (activationsRes.data as any[]) || [];
+      const completions = (completionsRes.data as any[]) || [];
+
+      const questsWithState: QuestWithState[] = questsRes.data.map((q) => {
+        const activation = activations.find((a) => a.quest_id === q.id);
         const completion = completions.find((c) => c.quest_id === q.id);
         return {
           ...q,
           completed: !!completion,
           completed_at: completion?.completed_at || undefined,
+          activated: !!activation,
+          activated_at: activation?.activated_at || undefined,
         };
       });
-      setQuests(questsWithStatus);
+
+      setQuests(questsWithState);
     }
     setLoading(false);
   };
 
+  const activateQuest = useCallback(async (questId: string) => {
+    if (!session?.game_id || !session?.klan_id) return;
+
+    setActivating(questId);
+
+    const { error } = await supabase.from('quest_activations').insert({
+      quest_id: questId,
+      klan_id: session.klan_id,
+      game_id: session.game_id,
+    });
+
+    setActivating(null);
+
+    if (error) {
+      console.error('[QuestsView] activateQuest error:', error);
+      return;
+    }
+
+    loadQuests();
+  }, [session, loadQuests]);
+
   const completeQRQuest = useCallback(async (questId: string, scannedCode: string) => {
     if (!session?.game_id || !session?.klan_id) return;
 
-    const quest = quests.find(q => q.id === questId);
+    const quest = quests.find((q) => q.id === questId);
     if (!quest) return;
 
     setQrQuest(null);
 
-    const qrSecret = (quest as unknown as { qr_secret?: string }).qr_secret;
+    const qrSecret = quest.qr_secret;
     if (!qrSecret || scannedCode !== qrSecret) {
       setQrFeedback({ type: 'error', text: 'Nieprawidłowy kod QR. Spróbuj ponownie.' });
       setTimeout(() => setQrFeedback(null), 3000);
@@ -73,7 +116,7 @@ export function QuestsView() {
 
     const points = quest.reward_points || 0;
 
-    const { error } = await supabase.from('quest_completions').insert({
+    const { error: completionError } = await supabase.from('quest_completions').insert({
       quest_id: questId,
       klan_id: session.klan_id,
       game_id: session.game_id,
@@ -81,11 +124,17 @@ export function QuestsView() {
       points_awarded: points,
     });
 
-    if (error) {
+    if (completionError) {
       setQrFeedback({ type: 'error', text: 'Błąd zapisu. Spróbuj ponownie.' });
       setTimeout(() => setQrFeedback(null), 3000);
       return;
     }
+
+    await supabase
+      .from('quest_activations')
+      .update({ completed_at: new Date().toISOString(), completed_by_player_id: session.id })
+      .eq('quest_id', questId)
+      .eq('klan_id', session.klan_id);
 
     const { data: klanData } = await supabase
       .from('klans')
@@ -103,7 +152,7 @@ export function QuestsView() {
     setQrFeedback({ type: 'success', text: `Quest ukończony! +${points} 🔥` });
     loadQuests();
     setTimeout(() => setQrFeedback(null), 4000);
-  }, [session, quests]);
+  }, [session, quests, loadQuests]);
 
   if (!session) {
     return (
@@ -153,15 +202,18 @@ export function QuestsView() {
           </div>
         )}
 
-        {chaseQuests.map((quest) => (
-          <ChaseQuestPanel
-            key={quest.id}
-            quest={quest}
-            playerPosition={playerPosition}
-            isActive={!!activeQuests[quest.id]}
-            onActivate={() => activateQuest(quest.id)}
-          />
-        ))}
+        {chaseQuests.map((quest) => {
+          const state = getQuestState(quest, session.klan_id);
+          return (
+            <ChaseQuestCard
+              key={quest.id}
+              quest={quest}
+              state={state}
+              isActivating={activating === quest.id}
+              onActivate={() => activateQuest(quest.id)}
+            />
+          );
+        })}
 
         {otherQuests.length === 0 && chaseQuests.length === 0 && (
           <div className="placeholder-panel glass-panel">
@@ -171,13 +223,19 @@ export function QuestsView() {
           </div>
         )}
 
-        {otherQuests.map((quest) => (
-          <QuestCard
-            key={quest.id}
-            quest={quest}
-            onScan={quest.type === 'qr' ? () => setQrQuest(quest) : undefined}
-          />
-        ))}
+        {otherQuests.map((quest) => {
+          const state = getQuestState(quest, session.klan_id);
+          return (
+            <QuestCard
+              key={quest.id}
+              quest={quest}
+              state={state}
+              isActivating={activating === quest.id}
+              onActivate={() => activateQuest(quest.id)}
+              onScan={() => setQrQuest(quest)}
+            />
+          );
+        })}
       </main>
 
       {qrQuest && (
@@ -190,88 +248,129 @@ export function QuestsView() {
   );
 }
 
-function ChaseQuestPanel({
+function ChaseQuestCard({
   quest,
-  playerPosition,
-  isActive,
+  state,
+  isActivating,
   onActivate,
 }: {
-  quest: QuestWithCompletion;
-  playerPosition: { lat: number; lng: number } | null;
-  isActive: boolean;
+  quest: QuestWithState;
+  state: QuestState;
+  isActivating: boolean;
   onActivate: () => void;
 }) {
+  const { playerPosition, activeQuests } = useGame();
+  const isChaseActive = !!activeQuests[quest.id];
+
   return (
-    <div className={`chase-quest ${isActive ? 'chase-quest--active' : ''} ${quest.completed ? 'chase-quest--completed' : ''}`}>
-      <div className="chase-quest__header">
-        <span className="chase-quest__icon">{quest.completed ? '✅' : '🏇'}</span>
-        <div className="chase-quest__info">
-          <h3 className="chase-quest__title">{quest.title}</h3>
-          <p className="chase-quest__desc">{quest.description}</p>
+    <div className={`quest-card quest-card--chase ${state === 'active' ? 'quest-card--active' : ''} ${state === 'completed' ? 'quest-card--completed' : ''}`}>
+      <div className="quest-card__header">
+        <span className="quest-card__icon">{state === 'completed' ? '✅' : '🏇'}</span>
+        <div className="quest-card__info">
+          <h3 className="quest-card__title">{quest.title}</h3>
+          <p className="quest-card__desc">{quest.description}</p>
         </div>
-        <span className={`chase-quest__status ${quest.completed ? 'chase-quest__status--completed' : isActive ? 'chase-quest__status--active' : 'chase-quest__status--inactive'}`}>
-          {quest.completed ? 'UKOŃCZONE!' : isActive ? 'W TRAKCIE' : 'DOSTĘPNA'}
+        <span className="quest-card__status">
+          {state === 'completed' ? 'UKOŃCZONE' : state === 'active' ? 'W TRAKCIE' : state === 'available' ? 'DOSTĘPNA' : 'NIEDOSTĘPNA'}
         </span>
       </div>
 
-      <div className="chase-quest__meta">
+      <div className="quest-card__meta">
         <span>🔥 +{quest.reward_points}</span>
-        {quest.type && <span>🏇 Gonitwa</span>}
+        <span>🏇 Gonitwa</span>
       </div>
 
-      {isActive && (
-        <div className="chase-quest__instructions">🚴 Gonitwa aktywna! Sprawdź mapę - znacznik się porusza!</div>
+      {state === 'active' && isChaseActive && (
+        <div className="quest-card__instructions">🚴 Gonitwa aktywna! Sprawdź mapę - znacznik się porusza!</div>
       )}
 
-      {quest.completed && (
-        <div className="chase-quest__success">🎉 Quest ukończony pomyślnie!</div>
+      {state === 'completed' && (
+        <div className="quest-card__success">🎉 Quest ukończony pomyślnie!</div>
       )}
 
-      {!quest.completed && (
+      {state === 'available' && (
         <button
-          className="chase-quest__btn chase-quest__btn--activate"
+          className="quest-card__action-btn"
           onClick={onActivate}
-          disabled={!playerPosition || isActive}
+          disabled={!playerPosition || isActivating}
         >
-          {!playerPosition ? 'Włącz GPS aby aktywować' : isActive ? 'Gonitwa aktywna...' : '🚀 Aktywuj gonitwę'}
+          {!playerPosition ? '📍 Włącz GPS aby aktywować' : isActivating ? '⏳ Aktywowanie...' : '🚀 Aktywuj gonitwę'}
         </button>
       )}
     </div>
   );
 }
 
-function QuestCard({ quest, onScan }: { quest: QuestWithCompletion; onScan?: () => void }) {
+function QuestCard({
+  quest,
+  state,
+  isActivating,
+  onActivate,
+  onScan,
+}: {
+  quest: QuestWithState;
+  state: QuestState;
+  isActivating: boolean;
+  onActivate: () => void;
+  onScan: () => void;
+}) {
   const typeIcons: Record<string, string> = {
     gps: '📍',
     qr: '📱',
     photo: '📷',
     logic: '🧩',
-    chase: '🏇',
+  };
+
+  const typeLabels: Record<string, string> = {
+    gps: 'Lokacja',
+    qr: 'QR Kod',
+    photo: 'Fotografia',
+    logic: 'Logika',
   };
 
   return (
-    <div className={`quest-card ${quest.completed ? 'quest-card--completed' : ''}`}>
+    <div className={`quest-card ${state === 'active' ? 'quest-card--active' : ''} ${state === 'completed' ? 'quest-card--completed' : ''}`}>
       <div className="quest-card__header">
         <span className="quest-card__icon">{typeIcons[quest.type] || '❓'}</span>
         <div className="quest-card__info">
           <h3 className="quest-card__title">{quest.title}</h3>
           <p className="quest-card__desc">{quest.description}</p>
         </div>
-        {quest.completed && <span className="quest-card__badge">✓ UKOŃCZONE</span>}
+        <span className={`quest-card__status ${state !== 'active' && state !== 'completed' ? 'quest-card__status--available' : ''}`}>
+          {state === 'completed' ? 'UKOŃCZONE' : state === 'active' ? 'W TRAKCIE' : state === 'available' ? 'DOSTĘPNA' : 'NEDOSTĘPNA'}
+        </span>
       </div>
 
       <div className="quest-card__meta">
         <span>🔥 +{quest.reward_points}</span>
-        {quest.type && <span>{quest.type.toUpperCase()}</span>}
-        {quest.completed && quest.completed_at && (
+        {quest.type && <span>{typeLabels[quest.type] || quest.type.toUpperCase()}</span>}
+        {state === 'completed' && quest.completed_at && (
           <span>{new Date(quest.completed_at).toLocaleDateString('pl-PL')}</span>
         )}
       </div>
 
-      {onScan && !quest.completed && (
-        <button className="quest-card__scan-btn" onClick={onScan}>
+      {state === 'completed' && (
+        <div className="quest-card__success">🎉 Quest ukończony pomyślnie!</div>
+      )}
+
+      {state === 'available' && (
+        <button
+          className="quest-card__action-btn"
+          onClick={onActivate}
+          disabled={isActivating}
+        >
+          {isActivating ? '⏳ Aktywowanie...' : '🚀 Aktywuj'}
+        </button>
+      )}
+
+      {state === 'active' && quest.type === 'qr' && (
+        <button className="quest-card__action-btn" onClick={onScan}>
           📱 Skanuj kod QR
         </button>
+      )}
+
+      {state === 'active' && quest.type !== 'qr' && (
+        <div className="quest-card__instructions">📍 Udaj się na miejsce wskazane na mapie</div>
       )}
     </div>
   );

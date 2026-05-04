@@ -1,0 +1,1 @@
+ALTER TABLE map_markers DROP COLUMN IF EXISTS quest_activation_id;

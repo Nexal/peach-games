@@ -3,7 +3,7 @@ export interface MapMarker {
   position: [number, number]; // [lat, lng]
   title: string;
   description?: string;
-  type: 'quest' | 'base' | 'clan_base' | 'chase';
+  type: 'quest' | 'base' | 'clan_base' | 'chase' | 'qr';
   clan_id?: string;
   icon_url?: string;
   is_active: boolean;

@@ -1,0 +1,2 @@
+ALTER TABLE quests DROP COLUMN IF EXISTS target_lat;
+ALTER TABLE quests DROP COLUMN IF EXISTS target_lng;

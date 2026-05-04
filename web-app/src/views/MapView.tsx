@@ -62,6 +62,26 @@ const chaseIcon = new L.Icon({
   popupAnchor: [0, -20],
 });
 
+const qrIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="7" height="7" fill="#9B59B6" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" fill="#9B59B6" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" fill="#9B59B6" rx="1"/>
+      <rect x="5" y="5" width="3" height="3" fill="#fff"/>
+      <rect x="16" y="5" width="3" height="3" fill="#fff"/>
+      <rect x="5" y="16" width="3" height="3" fill="#fff"/>
+      <rect x="14" y="14" width="3" height="3" fill="#fff" opacity="0.5"/>
+      <rect x="18" y="14" width="3" height="3" fill="#fff" opacity="0.5"/>
+      <rect x="14" y="18" width="3" height="3" fill="#fff" opacity="0.5"/>
+      <rect x="18" y="18" width="3" height="3" fill="#fff" opacity="0.5"/>
+    </svg>
+  `),
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+  popupAnchor: [0, -18],
+});
+
 function getDistanceM(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const earthRadiusM = 6371000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -107,27 +127,28 @@ function ChaseMarker({ questId }: { questId: string }) {
 
 function MapContent() {
   const { session } = usePlayerSession();
-  const { activeQuests, playerPosition } = useGame();
+  useGame(); // Ensure GameProvider is active
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [chaseQuestIds, setChaseQuestIds] = useState<string[]>([]);
+  const [activeQRQuestIds, setActiveQRQuestIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!session?.game_id) return;
 
     const fetchMarkers = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('map_markers')
         .select('*')
         .eq('game_id', session.game_id)
         .eq('is_active', true);
 
       if (data) {
-        setMarkers(data.map(m => ({
+        setMarkers(data.map((m: any) => ({
           id: m.id,
           position: [m.lat ?? 0, m.lng ?? 0] as [number, number],
           title: m.title,
           description: m.description ?? undefined,
-          type: m.type as 'quest' | 'base' | 'clan_base' | 'chase',
+          type: m.type as 'quest' | 'base' | 'clan_base' | 'chase' | 'qr',
           clan_id: m.klan_id ?? undefined,
           icon_url: m.icon_url ?? undefined,
           is_active: m.is_active ?? true,
@@ -165,6 +186,20 @@ function MapContent() {
       });
   }, [session?.game_id]);
 
+  useEffect(() => {
+    if (!session?.game_id || !session?.klan_id) return;
+
+    (supabase as any)
+      .from('quest_activations')
+      .select('quest_id')
+      .eq('game_id', session.game_id)
+      .eq('klan_id', session.klan_id)
+      .is('completed_at', null)
+      .then(({ data }: { data: any }) => {
+        if (data) setActiveQRQuestIds(data.map((a: any) => a.quest_id));
+      });
+  }, [session?.game_id, session?.klan_id]);
+
   return (
     <>
       <TileLayer url={TILE_LAYERS.dark.url} attribution={TILE_LAYERS.dark.attribution} />
@@ -189,9 +224,11 @@ function MapContent() {
         let icon = questIcon;
         if (marker.type === 'clan_base') icon = clanIcon;
         if (marker.type === 'chase') icon = chaseIcon;
+        if (marker.type === 'qr') icon = qrIcon;
 
         if (marker.type === 'quest' && marker.clan_id && marker.clan_id !== session?.klan_id) return null;
         if (marker.type === 'chase' && marker.clan_id && marker.clan_id !== session?.klan_id) return null;
+        if (marker.type === 'qr' && marker.quest_id && !activeQRQuestIds.includes(marker.quest_id)) return null;
 
         return (
           <Marker key={marker.id} position={marker.position} icon={icon}>

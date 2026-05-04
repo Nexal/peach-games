@@ -24,8 +24,13 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+.quest-card--active {
+  border-color: var(--color-perun);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+}
+
 .quest-card--completed {
-  opacity: 0.7;
+  opacity: 0.75;
   border-color: var(--color-mokosz);
 }
 
@@ -57,15 +62,31 @@
   line-height: 1.4;
 }
 
-.quest-card__badge {
+.quest-card__status {
   padding: 4px 10px;
-  background: rgba(46, 139, 87, 0.3);
-  color: var(--color-mokosz);
   border-radius: 6px;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   flex-shrink: 0;
+  background: rgba(46, 139, 87, 0.3);
+  color: var(--color-mokosz);
+}
+
+.quest-card__status--available {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-muted);
+}
+
+.quest-card--active .quest-card__status {
+  background: rgba(255, 215, 0, 0.2);
+  color: var(--color-perun);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 .quest-card__meta {
@@ -82,23 +103,49 @@
   gap: 4px;
 }
 
-.quest-card__scan-btn {
-  width: 100%;
-  padding: 10px 0;
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 180, 0, 0.15));
-  border: 1px solid rgba(255, 215, 0, 0.3);
+.quest-card__instructions {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px 16px;
   border-radius: 10px;
-  color: var(--color-perun);
-  font-family: 'Metamorphous', serif;
   font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
+  color: var(--color-text-muted);
+  line-height: 1.5;
 }
 
-.quest-card__scan-btn:hover {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 180, 0, 0.25));
-  border-color: rgba(255, 215, 0, 0.5);
+.quest-card__success {
+  background: rgba(46, 139, 87, 0.2);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--color-mokosz);
+  text-align: center;
+  font-weight: 600;
+}
+
+.quest-card__action-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Metamorphous', serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: linear-gradient(135deg, var(--color-perun), #b8860b);
+  color: #000;
+}
+
+.quest-card__action-btn:hover:not(:disabled) {
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.quest-card__action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .qr-feedback {
@@ -127,5 +174,3 @@
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-/* Chase Quest Styles are in ChaseQuest.css */

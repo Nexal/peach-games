@@ -24,10 +24,13 @@ interface QuestCompletionData {
 interface GameContextValue {
   playerPosition: MarkerPosition;
   activeQuests: Record<string, QuestState>;
+  activeQRQuests: Record<string, { questId: string; targetLat: number; targetLng: number }>;
   completionModal: QuestCompletionData | null;
   dismissCompletion: () => void;
   completeChase: (chaseId: string, questId: string) => Promise<void>;
   activateQuest: (questId: string) => Promise<void>;
+  activateQRQuest: (questId: string, targetLat: number, targetLng: number) => void;
+  deactivateQRQuest: (questId: string) => void;
   getMarkerPosition: (questId: string) => MarkerPosition;
   klanPoints: number;
 }
@@ -41,11 +44,14 @@ interface QuestState {
 const GameContext = createContext<GameContextValue>({
   playerPosition: null,
   activeQuests: {},
+  activeQRQuests: {},
   completionModal: null,
   klanPoints: 0,
   dismissCompletion: () => {},
   completeChase: async () => {},
   activateQuest: async () => {},
+  activateQRQuest: () => {},
+  deactivateQRQuest: () => {},
   getMarkerPosition: () => null,
 });
 
@@ -106,6 +112,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const { session } = usePlayerSession();
   const [playerPosition, setPlayerPosition] = useState<MarkerPosition>(null);
   const [activeQuests, setActiveQuests] = useState<Record<string, QuestState>>({});
+  const [activeQRQuests, setActiveQRQuests] = useState<Record<string, { questId: string; targetLat: number; targetLng: number }>>({});
   const [completionModal, setCompletionModal] = useState<QuestCompletionData | null>(null);
   const [klanPoints, setKlanPoints] = useState<number>(0);
   const lastPlayerPositionRef = useRef<MarkerPosition>(null);
@@ -431,15 +438,33 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     return activeQuests[questId]?.position || null;
   }, [activeQuests]);
 
+  const activateQRQuest = useCallback((questId: string, targetLat: number, targetLng: number) => {
+    setActiveQRQuests(prev => ({
+      ...prev,
+      [questId]: { questId, targetLat, targetLng },
+    }));
+  }, []);
+
+  const deactivateQRQuest = useCallback((questId: string) => {
+    setActiveQRQuests(prev => {
+      const next = { ...prev };
+      delete next[questId];
+      return next;
+    });
+  }, []);
+
   return (
     <GameContext.Provider value={{
       playerPosition,
       activeQuests,
+      activeQRQuests,
       completionModal,
       klanPoints,
       dismissCompletion,
       completeChase,
       activateQuest,
+      activateQRQuest,
+      deactivateQRQuest,
       getMarkerPosition,
     }}>
       {children}
