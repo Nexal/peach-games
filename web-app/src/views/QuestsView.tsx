@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { usePlayerSession, useGame } from '../App';
+import { QRScannerModal } from '../components/quest/QRScannerModal';
 import type { Database } from '../types/database.types';
 import './QuestsView.css';
 
@@ -16,6 +17,8 @@ export function QuestsView() {
   const { playerPosition, activateQuest, activeQuests } = useGame();
   const [quests, setQuests] = useState<QuestWithCompletion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [qrQuest, setQrQuest] = useState<QuestWithCompletion | null>(null);
+  const [qrFeedback, setQrFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     if (!session?.game_id) {
@@ -52,6 +55,55 @@ export function QuestsView() {
     }
     setLoading(false);
   };
+
+  const completeQRQuest = useCallback(async (questId: string, scannedCode: string) => {
+    if (!session?.game_id || !session?.klan_id) return;
+
+    const quest = quests.find(q => q.id === questId);
+    if (!quest) return;
+
+    setQrQuest(null);
+
+    const qrSecret = (quest as unknown as { qr_secret?: string }).qr_secret;
+    if (!qrSecret || scannedCode !== qrSecret) {
+      setQrFeedback({ type: 'error', text: 'Nieprawidłowy kod QR. Spróbuj ponownie.' });
+      setTimeout(() => setQrFeedback(null), 3000);
+      return;
+    }
+
+    const points = quest.reward_points || 0;
+
+    const { error } = await supabase.from('quest_completions').insert({
+      quest_id: questId,
+      klan_id: session.klan_id,
+      game_id: session.game_id,
+      completed_by_player_id: session.id,
+      points_awarded: points,
+    });
+
+    if (error) {
+      setQrFeedback({ type: 'error', text: 'Błąd zapisu. Spróbuj ponownie.' });
+      setTimeout(() => setQrFeedback(null), 3000);
+      return;
+    }
+
+    const { data: klanData } = await supabase
+      .from('klans')
+      .select('points')
+      .eq('id', session.klan_id)
+      .maybeSingle();
+
+    if (klanData) {
+      await supabase
+        .from('klans')
+        .update({ points: (klanData.points || 0) + points })
+        .eq('id', session.klan_id);
+    }
+
+    setQrFeedback({ type: 'success', text: `Quest ukończony! +${points} 🔥` });
+    loadQuests();
+    setTimeout(() => setQrFeedback(null), 4000);
+  }, [session, quests]);
 
   if (!session) {
     return (
@@ -94,6 +146,13 @@ export function QuestsView() {
       </header>
 
       <main className="view__content">
+        {qrFeedback && (
+          <div className={`qr-feedback qr-feedback--${qrFeedback.type}`}>
+            {qrFeedback.type === 'success' ? '🎉 ' : '⚠️ '}
+            {qrFeedback.text}
+          </div>
+        )}
+
         {chaseQuests.map((quest) => (
           <ChaseQuestPanel
             key={quest.id}
@@ -113,9 +172,20 @@ export function QuestsView() {
         )}
 
         {otherQuests.map((quest) => (
-          <QuestCard key={quest.id} quest={quest} />
+          <QuestCard
+            key={quest.id}
+            quest={quest}
+            onScan={quest.type === 'qr' ? () => setQrQuest(quest) : undefined}
+          />
         ))}
       </main>
+
+      {qrQuest && (
+        <QRScannerModal
+          onScan={(code) => completeQRQuest(qrQuest.id, code)}
+          onClose={() => setQrQuest(null)}
+        />
+      )}
     </div>
   );
 }
@@ -170,7 +240,7 @@ function ChaseQuestPanel({
   );
 }
 
-function QuestCard({ quest }: { quest: QuestWithCompletion }) {
+function QuestCard({ quest, onScan }: { quest: QuestWithCompletion; onScan?: () => void }) {
   const typeIcons: Record<string, string> = {
     gps: '📍',
     qr: '📱',
@@ -197,6 +267,12 @@ function QuestCard({ quest }: { quest: QuestWithCompletion }) {
           <span>{new Date(quest.completed_at).toLocaleDateString('pl-PL')}</span>
         )}
       </div>
+
+      {onScan && !quest.completed && (
+        <button className="quest-card__scan-btn" onClick={onScan}>
+          📱 Skanuj kod QR
+        </button>
+      )}
     </div>
   );
 }

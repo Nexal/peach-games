@@ -71,6 +71,11 @@ peach-games-playwright                            # Playwright manual testing
 peach-games-themes                                # Notion theme proposals
 ```
 
+## Manual Testing
+
+- **Dev mode login:** Navigate to `http://localhost:5173/join?dev=true` — bypasses game invite link requirement, shows all games and players for quick session switching
+- **Playwright browser tests:** Use `playwright_browser_*` tools pointing at `http://192.168.0.195:5173` (dev server with `--host`). Cloudflare tunnel (`npx cloudflared tunnel`) for HTTPS/camera access if needed.
+
 ## Relevant Context Files
 
 - `web-app/.opencode/peach-games-context.md` — full session context (tech stack, DB schema, gotchas, session flow)

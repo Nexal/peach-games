@@ -10,6 +10,7 @@ export default defineConfig({
       '.loca.lt',
       '.lgtunnel.info',
       '.trycloudflare.com',
+      '.ts.net',
     ],
   },
 })

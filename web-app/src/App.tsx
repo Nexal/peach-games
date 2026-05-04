@@ -74,7 +74,7 @@ function AppContent() {
         setShowSplash(false);
         setSplashClosing(false);
       }, 600);
-    }, 5000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [showJoin, showAdmin, session]);
