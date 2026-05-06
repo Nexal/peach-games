@@ -589,7 +589,6 @@
 }
 
 /* Placeholder views */
-.view--quests .view__content,
 .view--shop .view__content,
 .view--profile .view__content {
   justify-content: center;
