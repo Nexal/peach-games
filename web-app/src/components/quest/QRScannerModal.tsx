@@ -25,7 +25,7 @@ export function QRScannerModal({ onScan, onClose }: QRScannerModalProps) {
       const videos = el.querySelectorAll('video');
       if (videos.length > 1) {
         for (let i = 1; i < videos.length; i++) {
-          videos[i].remove();
+          try { videos[i].remove(); } catch { /* already detached */ }
         }
       }
     }
@@ -34,9 +34,13 @@ export function QRScannerModal({ onScan, onClose }: QRScannerModalProps) {
   const stopScanner = useCallback(() => {
     if (scannerRef.current) {
       try {
-        if (scannerRef.current.getState() === Html5QrcodeScannerState.SCANNING) {
-          scannerRef.current.stop();
+        const state = scannerRef.current.getState();
+        if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+          scannerRef.current.stop().catch(() => {});
         }
+      } catch { /* ignore */ }
+      try {
+        scannerRef.current.clear();
       } catch { /* ignore */ }
       scannerRef.current = null;
     }

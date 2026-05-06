@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { usePlayerSession, useGame } from '../App';
 import { QRScannerModal } from '../components/quest/QRScannerModal';
+import { useQRScanner } from '../hooks/useQRScanner';
 import type { Database } from '../types/database.types';
 import './QuestsView.css';
 
@@ -42,7 +43,6 @@ export function QuestsView() {
   const [quests, setQuests] = useState<QuestWithState[]>([]);
   const [loading, setLoading] = useState(true);
   const [qrQuest, setQrQuest] = useState<QuestWithState | null>(null);
-  const [qrFeedback, setQrFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [activating, setActivating] = useState<string | null>(null);
 
   useEffect(() => {
@@ -148,6 +148,8 @@ export function QuestsView() {
     setLoading(false);
   };
 
+  const { scan, feedback } = useQRScanner(loadQuests);
+
   const activateQuest = useCallback(async (questId: string) => {
     if (!session?.game_id || !session?.klan_id) return;
 
@@ -168,122 +170,6 @@ export function QuestsView() {
 
     loadQuests();
   }, [session, loadQuests]);
-
-  const scanQRForTask = useCallback(async (questId: string, scannedCode: string) => {
-    if (!session?.game_id || !session?.klan_id) return;
-
-    const quest = quests.find((q) => q.id === questId);
-    if (!quest) return;
-
-    setQrQuest(null);
-
-    const activation = await (supabase as any)
-      .from('quest_activations')
-      .select('id')
-      .eq('quest_id', questId)
-      .eq('klan_id', session.klan_id)
-      .is('completed_at', null)
-      .limit(1);
-
-    if (!activation.data || activation.data.length === 0) {
-      setQrFeedback({ type: 'error', text: 'Brak aktywnej aktywacji tego questa.' });
-      setTimeout(() => setQrFeedback(null), 3000);
-      return;
-    }
-
-    const activationId = activation.data[0].id;
-
-    const { data: markerData } = await (supabase as any)
-      .from('map_markers')
-      .select('id, task_id, qr_secret')
-      .eq('quest_id', questId)
-      .eq('type', 'qr')
-      .eq('qr_secret', scannedCode)
-      .limit(1);
-
-    if (!markerData || markerData.length === 0) {
-      setQrFeedback({ type: 'error', text: 'Nieprawidłowy kod QR.' });
-      setTimeout(() => setQrFeedback(null), 3000);
-      return;
-    }
-
-    const marker = markerData[0];
-    const currentTask = quest.tasks[quest.currentTaskIndex];
-    if (!currentTask || marker.task_id !== currentTask.id) {
-      setQrFeedback({ type: 'error', text: 'Ten kod nie należy do aktualnego zadania.' });
-      setTimeout(() => setQrFeedback(null), 3000);
-      return;
-    }
-
-    if (currentTask.scannedMarkerIds.includes(marker.id)) {
-      setQrFeedback({ type: 'error', text: 'Ten kod został już zeskanowany.' });
-      setTimeout(() => setQrFeedback(null), 3000);
-      return;
-    }
-
-    const updatedScannedIds = [...currentTask.scannedMarkerIds, marker.id];
-    const allScanned = updatedScannedIds.length >= currentTask.totalMarkers;
-
-    const { error: updateError } = await (supabase as any)
-      .from('task_completions')
-      .upsert({
-        quest_activation_id: activationId,
-        task_id: currentTask.id,
-        completed_at: allScanned ? new Date().toISOString() : null,
-        completed_by_player_id: session.id,
-        metadata: { scanned_marker_ids: updatedScannedIds },
-      }, { onConflict: 'quest_activation_id, task_id' });
-
-    if (updateError) {
-      setQrFeedback({ type: 'error', text: 'Błąd zapisu.' });
-      setTimeout(() => setQrFeedback(null), 3000);
-      return;
-    }
-
-    if (allScanned) {
-      const nextTaskIndex = quest.currentTaskIndex + 1;
-      const allTasksDone = nextTaskIndex >= quest.tasks.length;
-
-      if (allTasksDone) {
-        const totalPoints = quest.tasks.reduce((sum, t) => sum + (t.reward_points || 0), 0);
-
-        await (supabase as any).from('quest_completions').insert({
-          quest_id: questId,
-          klan_id: session.klan_id,
-          game_id: session.game_id,
-          completed_by_player_id: session.id,
-          points_awarded: totalPoints,
-        });
-
-        await (supabase as any)
-          .from('quest_activations')
-          .update({ completed_at: new Date().toISOString(), completed_by_player_id: session.id })
-          .eq('id', activationId);
-
-        const { data: klanData } = await (supabase as any)
-          .from('klans')
-          .select('points')
-          .eq('id', session.klan_id)
-          .maybeSingle();
-
-        if (klanData) {
-          await (supabase as any)
-            .from('klans')
-            .update({ points: (klanData.points || 0) + totalPoints })
-            .eq('id', session.klan_id);
-        }
-
-        setQrFeedback({ type: 'success', text: `Quest ukończony! +${totalPoints} 🔥` });
-      } else {
-        setQrFeedback({ type: 'success', text: `Zadanie ukończone! +${currentTask.reward_points} 🔥` });
-      }
-    } else {
-      setQrFeedback({ type: 'success', text: `Zeskanowano ${updatedScannedIds.length}/${currentTask.totalMarkers} kodów.` });
-    }
-
-    loadQuests();
-    setTimeout(() => setQrFeedback(null), 4000);
-  }, [session, quests, loadQuests]);
 
   if (!session) {
     return (
@@ -326,9 +212,9 @@ export function QuestsView() {
       </header>
 
       <main className="view__content">
-        {qrFeedback && (
-          <div className={`qr-feedback qr-feedback--${qrFeedback.type}`}>
-            {qrFeedback.text}
+        {feedback && (
+          <div className={`qr-feedback qr-feedback--${feedback.type}`}>
+            {feedback.text}
           </div>
         )}
 
@@ -370,7 +256,11 @@ export function QuestsView() {
 
       {qrQuest && (
         <QRScannerModal
-          onScan={(code) => scanQRForTask(qrQuest.id, code)}
+          onScan={(code) => {
+            const questId = qrQuest.id;
+            setQrQuest(null);
+            scan(questId, code);
+          }}
           onClose={() => setQrQuest(null)}
         />
       )}

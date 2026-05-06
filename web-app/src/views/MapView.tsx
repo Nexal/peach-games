@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { usePlayerSession, useGame } from '../App';
@@ -7,6 +7,8 @@ import type { MapMarker } from '../types/map.types';
 import { DEFAULT_MAP_CONFIG, TILE_LAYERS } from '../types/map.types';
 import { LocationMarker, CenterOnLocationButton } from '../components/map/MapControls';
 import { AnimatedMarker, PulsingMarker } from '../components/map/AnimatedMarkers';
+import { QRScannerModal } from '../components/quest/QRScannerModal';
+import { useQRScanner } from '../hooks/useQRScanner';
 import 'leaflet/dist/leaflet.css';
 import './MapView.css';
 
@@ -127,10 +129,39 @@ function ChaseMarker({ questId }: { questId: string }) {
 
 function MapContent() {
   const { session } = usePlayerSession();
-  useGame(); // Ensure GameProvider is active
+  useGame();
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [chaseQuestIds, setChaseQuestIds] = useState<string[]>([]);
   const [currentTaskIds, setCurrentTaskIds] = useState<string[]>([]);
+  const [scanningMarker, setScanningMarker] = useState<MapMarker | null>(null);
+  const [taskProgress, setTaskProgress] = useState<Record<string, { scanned: number; total: number }>>({});
+  const [taskRefresh, setTaskRefresh] = useState(0);
+  const { scan, feedback } = useQRScanner(useCallback(() => {
+    if (!session?.game_id) return;
+    (supabase as any)
+      .from('map_markers')
+      .select('*')
+      .eq('game_id', session.game_id)
+      .eq('is_active', true)
+      .then(({ data }: { data: any }) => {
+        if (data) {
+          setMarkers(data.map((m: any) => ({
+            id: m.id,
+            position: [m.lat ?? 0, m.lng ?? 0] as [number, number],
+            title: m.title,
+            description: m.description ?? undefined,
+            type: m.type as 'quest' | 'base' | 'clan_base' | 'chase' | 'qr',
+            clan_id: m.klan_id ?? undefined,
+            icon_url: m.icon_url ?? undefined,
+            is_active: m.is_active ?? true,
+            quest_id: m.quest_id ?? undefined,
+            task_id: m.task_id ?? undefined,
+            reward_points: m.reward_points ?? undefined,
+          })));
+          setTaskRefresh(t => t + 1);
+        }
+      });
+  }, [session?.game_id]));
 
   useEffect(() => {
     if (!session?.game_id) return;
@@ -175,7 +206,7 @@ function MapContent() {
     return () => { supabase.removeChannel(channel); };
   }, [session?.game_id]);
 
-useEffect(() => {
+  useEffect(() => {
     if (!session?.game_id || !session?.klan_id) return;
 
     const fetchCurrentTasks = async () => {
@@ -188,18 +219,38 @@ useEffect(() => {
 
       if (!activations || activations.length === 0) {
         setCurrentTaskIds([]);
+        setTaskProgress({});
         return;
       }
 
       const questIds = activations.map((a: any) => a.quest_id);
       const activationIds = activations.map((a: any) => a.id);
 
-      const [{ data: tasks }, { data: taskCompletions }] = await Promise.all([
+      const [
+        { data: tasks },
+        { data: taskCompletions },
+        { data: qrMarkers },
+      ] = await Promise.all([
         (supabase as any).from('tasks').select('*').in('quest_id', questIds).order('sort_order'),
         (supabase as any).from('task_completions').select('*').in('quest_activation_id', activationIds),
+        (supabase as any).from('map_markers').select('id, task_id').in('quest_id', questIds).eq('type', 'qr').eq('is_active', true),
       ]);
 
-      if (!tasks) { setCurrentTaskIds([]); return; }
+      if (!tasks) { setCurrentTaskIds([]); setTaskProgress({}); return; }
+
+      const completions = (taskCompletions || []) as any[];
+
+      const progress: Record<string, { scanned: number; total: number }> = {};
+      for (const task of tasks as any[]) {
+        const taskCompletion = completions.find(
+          (c: any) => c.task_id === task.id && !c.completed_at,
+        );
+        const scanned = taskCompletion?.metadata?.scanned_marker_ids?.length || 0;
+        const total = (qrMarkers || []).filter((m: any) => m.task_id === task.id).length;
+        if (total > 0) {
+          progress[task.id] = { scanned, total };
+        }
+      }
 
       const questTasks: Record<any, any[]> = {};
       for (const t of tasks) {
@@ -207,7 +258,6 @@ useEffect(() => {
         questTasks[t.quest_id].push(t);
       }
 
-      const completions = (taskCompletions || []) as any[];
       const completedTaskIds = new Set(completions.filter((c: any) => c.completed_at).map((c: any) => c.task_id));
 
       const taskIds: string[] = [];
@@ -218,6 +268,7 @@ useEffect(() => {
       }
 
       setCurrentTaskIds(taskIds);
+      setTaskProgress(progress);
     };
 
     fetchCurrentTasks();
@@ -229,7 +280,7 @@ useEffect(() => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [session?.game_id, session?.klan_id]);
+  }, [session?.game_id, session?.klan_id, taskRefresh]);
 
   useEffect(() => {
     if (!session?.game_id) return;
@@ -278,6 +329,8 @@ useEffect(() => {
         if (marker.type === 'quest' && marker.clan_id && marker.clan_id !== session?.klan_id) return null;
         if (marker.type === 'chase' && marker.clan_id && marker.clan_id !== session?.klan_id) return null;
 
+        const progress = marker.task_id ? taskProgress[marker.task_id] : undefined;
+
         return (
           <Marker key={marker.id} position={marker.position} icon={icon}>
             <Popup>
@@ -287,6 +340,22 @@ useEffect(() => {
                 {marker.type === 'quest' && marker.reward_points && (
                   <span className="map-popup__reward">+{marker.reward_points} 🔥</span>
                 )}
+                {marker.type === 'qr' && marker.quest_id && (
+                  <div className="map-popup__qr-scan">
+                    {progress && (
+                      <span className="map-popup__qr-progress">
+                        {progress.scanned}/{progress.total} kodów
+                      </span>
+                    )}
+                    <button
+                      className="map-popup__scan-btn"
+                      style={{ '--clan-color': session?.klan_color || '#9B59B6' } as React.CSSProperties}
+                      onClick={() => setScanningMarker(marker)}
+                    >
+                      📱 Skanuj QR
+                    </button>
+                  </div>
+                )}
               </div>
             </Popup>
           </Marker>
@@ -294,6 +363,23 @@ useEffect(() => {
       })}
 
       <CenterOnLocationButton />
+
+      {scanningMarker && (
+        <QRScannerModal
+          onScan={(code) => {
+            const questId = scanningMarker.quest_id!;
+            scan(questId, code);
+            setScanningMarker(null);
+          }}
+          onClose={() => setScanningMarker(null)}
+        />
+      )}
+
+      {feedback && (
+        <div className={`map-qr-feedback map-qr-feedback--${feedback.type}`}>
+          {feedback.text}
+        </div>
+      )}
     </>
   );
 }
