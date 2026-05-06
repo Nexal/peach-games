@@ -26,10 +26,16 @@
         "npx",
         "@playwright/mcp"
       ]
+    },
+    "supabase": {
+      "type": "remote",
+      "url": "https://mcp.supabase.com/mcp?project_ref=xmanqwjuqylwhizkqjsi",
+      "enabled": true
     }
   },
   "plugin": [
-    "opencode-websearch-cited@1.2.0"
+    "opencode-websearch-cited@1.2.0",
+    "@mohak34/opencode-notifier@latest"
   ],
   "permission": {
     "websearch": "allow"
