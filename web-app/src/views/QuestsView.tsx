@@ -53,6 +53,19 @@ export function QuestsView() {
     loadQuests();
   }, [session?.game_id, session?.klan_id]);
 
+  useEffect(() => {
+    if (!session?.game_id || !session?.klan_id) return;
+
+    const channel = supabase
+      .channel('quests_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_activations', filter: `klan_id=eq.${session.klan_id}` }, loadQuests)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, loadQuests)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_completions', filter: `klan_id=eq.${session.klan_id}` }, loadQuests)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [session?.game_id, session?.klan_id]);
+
   const loadQuests = async () => {
     if (!session?.game_id || !session?.klan_id) return;
 
