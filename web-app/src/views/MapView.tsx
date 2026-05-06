@@ -143,6 +143,7 @@ function MapContent() {
         .eq('is_active', true);
 
       if (data) {
+        console.log('[MapView] map_markers fetched:', data.length, 'markers');
         setMarkers(data.map((m: any) => ({
           id: m.id,
           position: [m.lat ?? 0, m.lng ?? 0] as [number, number],
@@ -173,31 +174,39 @@ function MapContent() {
     return () => { supabase.removeChannel(channel); };
   }, [session?.game_id]);
 
-  useEffect(() => {
-    if (!session?.game_id) return;
-
-    supabase
-      .from('quests')
-      .select('id')
-      .eq('game_id', session.game_id)
-      .eq('type', 'chase')
-      .then(({ data }) => {
-        if (data) setChaseQuestIds(data.map(q => q.id));
-      });
-  }, [session?.game_id]);
-
-  useEffect(() => {
+useEffect(() => {
     if (!session?.game_id || !session?.klan_id) return;
 
-    (supabase as any)
-      .from('quest_activations')
-      .select('quest_id')
-      .eq('game_id', session.game_id)
-      .eq('klan_id', session.klan_id)
-      .is('completed_at', null)
-      .then(({ data }: { data: any }) => {
-        if (data) setActiveQRQuestIds(data.map((a: any) => a.quest_id));
-      });
+    const fetchActiveQRQuests = () => {
+      (supabase as any)
+        .from('quest_activations')
+        .select('quest_id')
+        .eq('game_id', session.game_id)
+        .eq('klan_id', session.klan_id)
+        .is('completed_at', null)
+        .then(({ data }: { data: any }) => {
+          if (data) {
+          console.log('[MapView] quest_activations fetched:', data.length, 'activations');
+          setActiveQRQuestIds(data.map((a: any) => a.quest_id));
+        } else {
+          console.log('[MapView] quest_activations: no data');
+        }
+        });
+    };
+
+    fetchActiveQRQuests();
+
+    const channel = supabase
+      .channel('quest_activations_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'quest_activations',
+        filter: `game_id=eq.${session.game_id}`,
+      }, fetchActiveQRQuests)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [session?.game_id, session?.klan_id]);
 
   return (
@@ -226,9 +235,25 @@ function MapContent() {
         if (marker.type === 'chase') icon = chaseIcon;
         if (marker.type === 'qr') icon = qrIcon;
 
+        if (marker.type === 'qr') {
+          const markerQuestId = marker.quest_id;
+          const isActive = markerQuestId ? activeQRQuestIds.includes(markerQuestId) : false;
+          console.log('[MapView] QR marker:', {
+            markerTitle: marker.title,
+            markerQuestId,
+            activeQRQuestIds,
+            isActive,
+            includesResult: markerQuestId ? activeQRQuestIds.includes(markerQuestId) : 'no quest_id'
+          });
+          if (!isActive) {
+            console.log('[MapView] QR marker filtered out:', marker.title);
+            return null;
+          }
+          console.log('[MapView] QR marker RENDERING:', marker.title);
+        }
+
         if (marker.type === 'quest' && marker.clan_id && marker.clan_id !== session?.klan_id) return null;
         if (marker.type === 'chase' && marker.clan_id && marker.clan_id !== session?.klan_id) return null;
-        if (marker.type === 'qr' && marker.quest_id && !activeQRQuestIds.includes(marker.quest_id)) return null;
 
         return (
           <Marker key={marker.id} position={marker.position} icon={icon}>

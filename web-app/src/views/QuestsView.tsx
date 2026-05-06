@@ -12,6 +12,8 @@ type QuestWithState = Quest & {
   completed_at?: string;
   activated: boolean;
   activated_at?: string;
+  scannedMarkers: string[];
+  totalMarkers: number;
 };
 
 type QuestState = 'unavailable' | 'available' | 'active' | 'completed';
@@ -43,7 +45,7 @@ export function QuestsView() {
   const loadQuests = async () => {
     if (!session?.game_id || !session?.klan_id) return;
 
-    const [questsRes, activationsRes, completionsRes] = await Promise.all([
+    const [questsRes, activationsRes, completionsRes, markersRes, scansRes] = await Promise.all([
       supabase.from('quests').select('*').eq('game_id', session.game_id),
       (supabase as any)
         .from('quest_activations')
@@ -55,21 +57,43 @@ export function QuestsView() {
         .select('*')
         .eq('klan_id', session.klan_id)
         .eq('game_id', session.game_id),
+      (supabase as any)
+        .from('map_markers')
+        .select('id, quest_id')
+        .eq('game_id', session.game_id)
+        .eq('type', 'qr'),
+      (supabase as any)
+        .from('quest_marker_scans')
+        .select('map_marker_id, quest_activation_id')
+        .eq('klan_id', session.klan_id),
     ]);
 
     if (questsRes.data) {
       const activations = (activationsRes.data as any[]) || [];
       const completions = (completionsRes.data as any[]) || [];
+      const markers = (markersRes.data as any[]) || [];
+      const scans = (scansRes.data as any[]) || [];
 
       const questsWithState: QuestWithState[] = questsRes.data.map((q) => {
-        const activation = activations.find((a) => a.quest_id === q.id);
-        const completion = completions.find((c) => c.quest_id === q.id);
+        const activation = activations.find((a: any) => a.quest_id === q.id);
+        const completion = completions.find((c: any) => c.quest_id === q.id);
+        const questMarkers = markers.filter((m: any) => m.quest_id === q.id);
+        const totalMarkers = questMarkers.length;
+
+        let scannedMarkers: string[] = [];
+        if (activation) {
+          const scanned = scans.filter((s: any) => s.quest_activation_id === activation.id);
+          scannedMarkers = scanned.map((s: any) => s.map_marker_id);
+        }
+
         return {
           ...q,
           completed: !!completion,
           completed_at: completion?.completed_at || undefined,
-          activated: !!activation,
+          activated: !!activation && !completion,
           activated_at: activation?.activated_at || undefined,
+          scannedMarkers,
+          totalMarkers,
         };
       });
 
@@ -107,49 +131,107 @@ export function QuestsView() {
 
     setQrQuest(null);
 
-    const qrSecret = quest.qr_secret;
-    if (!qrSecret || scannedCode !== qrSecret) {
+    const { data: markers, error: markersError } = await (supabase as any)
+      .from('map_markers')
+      .select('id, quest_id, qr_secret')
+      .eq('quest_id', questId)
+      .eq('type', 'qr');
+
+    if (markersError || !markers) {
+      setQrFeedback({ type: 'error', text: 'Błąd pobierania markerów.' });
+      setTimeout(() => setQrFeedback(null), 3000);
+      return;
+    }
+
+    const marker = (markers as any[]).find((m: any) => m.qr_secret === scannedCode);
+    if (!marker) {
       setQrFeedback({ type: 'error', text: 'Nieprawidłowy kod QR. Spróbuj ponownie.' });
       setTimeout(() => setQrFeedback(null), 3000);
       return;
     }
 
-    const points = quest.reward_points || 0;
+    const { data: activations, error: activationError } = await (supabase as any)
+      .from('quest_activations')
+      .select('id')
+      .eq('quest_id', questId)
+      .eq('klan_id', session.klan_id)
+      .is('completed_at', null)
+      .limit(1);
 
-    const { error: completionError } = await supabase.from('quest_completions').insert({
-      quest_id: questId,
-      klan_id: session.klan_id,
-      game_id: session.game_id,
-      completed_by_player_id: session.id,
-      points_awarded: points,
-    });
-
-    if (completionError) {
-      setQrFeedback({ type: 'error', text: 'Błąd zapisu. Spróbuj ponownie.' });
+    if (activationError || !activations || activations.length === 0) {
+      setQrFeedback({ type: 'error', text: 'Brak aktywacji dla tego questa.' });
       setTimeout(() => setQrFeedback(null), 3000);
       return;
     }
 
-    await supabase
-      .from('quest_activations')
-      .update({ completed_at: new Date().toISOString(), completed_by_player_id: session.id })
-      .eq('quest_id', questId)
-      .eq('klan_id', session.klan_id);
+    const activation = activations[0];
 
-    const { data: klanData } = await supabase
-      .from('klans')
-      .select('points')
-      .eq('id', session.klan_id)
-      .maybeSingle();
+    const { error: scanError } = await (supabase as any)
+      .from('quest_marker_scans')
+      .insert({
+        quest_activation_id: activation.id,
+        map_marker_id: marker.id,
+        scanned_by_player_id: session.id,
+      });
 
-    if (klanData) {
-      await supabase
-        .from('klans')
-        .update({ points: (klanData.points || 0) + points })
-        .eq('id', session.klan_id);
+    if (scanError) {
+      if (scanError.code === '23505') {
+        setQrFeedback({ type: 'error', text: 'Ten kod QR został już zeskanowany.' });
+      } else {
+        setQrFeedback({ type: 'error', text: 'Błąd zapisu skanu.' });
+      }
+      setTimeout(() => setQrFeedback(null), 3000);
+      return;
     }
 
-    setQrFeedback({ type: 'success', text: `Quest ukończony! +${points} 🔥` });
+    const { data: allScans, error: scansError } = await (supabase as any)
+      .from('quest_marker_scans')
+      .select('map_marker_id')
+      .eq('quest_activation_id', activation.id);
+
+    if (scansError) {
+      setQrFeedback({ type: 'error', text: 'Błąd weryfikacji.' });
+      setTimeout(() => setQrFeedback(null), 3000);
+      return;
+    }
+
+    const scannedCount = (allScans as any[]).length;
+    const totalMarkers = quest.totalMarkers;
+
+    if (scannedCount >= totalMarkers) {
+      const points = quest.reward_points || 0;
+
+      await (supabase as any)
+        .from('quest_activations')
+        .update({ completed_at: new Date().toISOString(), completed_by_player_id: session.id })
+        .eq('id', activation.id);
+
+      await supabase.from('quest_completions').insert({
+        quest_id: questId,
+        klan_id: session.klan_id,
+        game_id: session.game_id,
+        completed_by_player_id: session.id,
+        points_awarded: points,
+      });
+
+      const { data: klanData } = await supabase
+        .from('klans')
+        .select('points')
+        .eq('id', session.klan_id)
+        .maybeSingle();
+
+      if (klanData) {
+        await supabase
+          .from('klans')
+          .update({ points: (klanData.points || 0) + points })
+          .eq('id', session.klan_id);
+      }
+
+      setQrFeedback({ type: 'success', text: `Quest ukończony! +${points} 🔥` });
+    } else {
+      setQrFeedback({ type: 'success', text: `Zeskanowano ${scannedCount}/${totalMarkers} kodów QR.` });
+    }
+
     loadQuests();
     setTimeout(() => setQrFeedback(null), 4000);
   }, [session, quests, loadQuests]);
@@ -364,9 +446,22 @@ function QuestCard({
       )}
 
       {state === 'active' && quest.type === 'qr' && (
-        <button className="quest-card__action-btn" onClick={onScan}>
-          📱 Skanuj kod QR
-        </button>
+        <>
+          <div className="quest-card__progress">
+            <span className="quest-card__progress-label">
+              📱 {quest.scannedMarkers.length}/{quest.totalMarkers} kodów QR
+            </span>
+            <div className="quest-card__progress-bar">
+              <div
+                className="quest-card__progress-fill"
+                style={{ width: `${(quest.scannedMarkers.length / quest.totalMarkers) * 100}%` }}
+              />
+            </div>
+          </div>
+          <button className="quest-card__action-btn" onClick={onScan}>
+            📱 Skanuj kolejny kod QR
+          </button>
+        </>
       )}
 
       {state === 'active' && quest.type !== 'qr' && (

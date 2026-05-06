@@ -235,6 +235,7 @@ export type Database = {
           lat: number
           lng: number
           quest_id: string | null
+          qr_secret: string | null
           reward_points: number | null
           title: string
           type: string
@@ -251,6 +252,7 @@ export type Database = {
           lat: number
           lng: number
           quest_id?: string | null
+          qr_secret?: string | null
           reward_points?: number | null
           title: string
           type: string
@@ -267,6 +269,7 @@ export type Database = {
           lat?: number
           lng?: number
           quest_id?: string | null
+          qr_secret?: string | null
           reward_points?: number | null
           title?: string
           type?: string
@@ -278,13 +281,6 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "map_markers_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games_status"
             referencedColumns: ["id"]
           },
           {
@@ -647,6 +643,52 @@ export type Database = {
             columns: ["quest_id"]
             isOneToOne: false
             referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quest_marker_scans: {
+        Row: {
+          id: string
+          map_marker_id: string
+          quest_activation_id: string
+          scanned_at: string | null
+          scanned_by_player_id: string | null
+        }
+        Insert: {
+          id?: string
+          map_marker_id: string
+          quest_activation_id: string
+          scanned_at?: string | null
+          scanned_by_player_id?: string | null
+        }
+        Update: {
+          id?: string
+          map_marker_id?: string
+          quest_activation_id?: string
+          scanned_at?: string | null
+          scanned_by_player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_marker_scans_map_marker_id_fkey"
+            columns: ["map_marker_id"]
+            isOneToOne: false
+            referencedRelation: "map_markers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_marker_scans_quest_activation_id_fkey"
+            columns: ["quest_activation_id"]
+            isOneToOne: false
+            referencedRelation: "quest_activations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_marker_scans_scanned_by_player_id_fkey"
+            columns: ["scanned_by_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]
