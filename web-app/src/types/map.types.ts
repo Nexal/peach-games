@@ -8,6 +8,7 @@ export interface MapMarker {
   icon_url?: string;
   is_active: boolean;
   quest_id?: string;
+  task_id?: string;
   reward_points?: number;
 }
 

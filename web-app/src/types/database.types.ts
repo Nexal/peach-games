@@ -234,9 +234,10 @@ export type Database = {
           klan_id: string | null
           lat: number
           lng: number
-          quest_id: string | null
           qr_secret: string | null
+          quest_id: string | null
           reward_points: number | null
+          task_id: string | null
           title: string
           type: string
           updated_at: string | null
@@ -251,9 +252,10 @@ export type Database = {
           klan_id?: string | null
           lat: number
           lng: number
-          quest_id?: string | null
           qr_secret?: string | null
+          quest_id?: string | null
           reward_points?: number | null
+          task_id?: string | null
           title: string
           type: string
           updated_at?: string | null
@@ -268,9 +270,10 @@ export type Database = {
           klan_id?: string | null
           lat?: number
           lng?: number
-          quest_id?: string | null
           qr_secret?: string | null
+          quest_id?: string | null
           reward_points?: number | null
+          task_id?: string | null
           title?: string
           type?: string
           updated_at?: string | null
@@ -281,6 +284,13 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_markers_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
             referencedColumns: ["id"]
           },
           {
@@ -295,6 +305,13 @@ export type Database = {
             columns: ["quest_id"]
             isOneToOne: false
             referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_markers_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -468,6 +485,72 @@ export type Database = {
           },
         ]
       }
+      quest_activations: {
+        Row: {
+          activated_at: string | null
+          completed_at: string | null
+          completed_by_player_id: string | null
+          game_id: string
+          id: string
+          klan_id: string
+          quest_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          completed_at?: string | null
+          completed_by_player_id?: string | null
+          game_id: string
+          id?: string
+          klan_id: string
+          quest_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          completed_at?: string | null
+          completed_by_player_id?: string | null
+          game_id?: string
+          id?: string
+          klan_id?: string
+          quest_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_activations_completed_by_player_id_fkey"
+            columns: ["completed_by_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_activations_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_activations_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_activations_klan_id_fkey"
+            columns: ["klan_id"]
+            isOneToOne: false
+            referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_activations_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quest_completions: {
         Row: {
           completed_at: string | null
@@ -500,6 +583,13 @@ export type Database = {
           quest_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "quest_completions_completed_by_player_id_fkey"
+            columns: ["completed_by_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quest_completions_game_id_fkey"
             columns: ["game_id"]
@@ -588,107 +678,89 @@ export type Database = {
           },
         ]
       }
-      quest_activations: {
+      task_completions: {
         Row: {
-          activated_at: string | null
           completed_at: string | null
           completed_by_player_id: string | null
-          game_id: string
           id: string
-          klan_id: string
-          quest_id: string
+          metadata: Json | null
+          quest_activation_id: string
+          task_id: string
         }
         Insert: {
-          activated_at?: string | null
           completed_at?: string | null
           completed_by_player_id?: string | null
-          game_id: string
           id?: string
-          klan_id: string
-          quest_id: string
+          metadata?: Json | null
+          quest_activation_id: string
+          task_id: string
         }
         Update: {
-          activated_at?: string | null
           completed_at?: string | null
           completed_by_player_id?: string | null
-          game_id?: string
           id?: string
-          klan_id?: string
-          quest_id?: string
+          metadata?: Json | null
+          quest_activation_id?: string
+          task_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "quest_activations_completed_by_player_id_fkey"
+            foreignKeyName: "task_completions_completed_by_player_id_fkey"
             columns: ["completed_by_player_id"]
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "quest_activations_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_activations_klan_id_fkey"
-            columns: ["klan_id"]
-            isOneToOne: false
-            referencedRelation: "klans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_activations_quest_id_fkey"
-            columns: ["quest_id"]
-            isOneToOne: false
-            referencedRelation: "quests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      quest_marker_scans: {
-        Row: {
-          id: string
-          map_marker_id: string
-          quest_activation_id: string
-          scanned_at: string | null
-          scanned_by_player_id: string | null
-        }
-        Insert: {
-          id?: string
-          map_marker_id: string
-          quest_activation_id: string
-          scanned_at?: string | null
-          scanned_by_player_id?: string | null
-        }
-        Update: {
-          id?: string
-          map_marker_id?: string
-          quest_activation_id?: string
-          scanned_at?: string | null
-          scanned_by_player_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_marker_scans_map_marker_id_fkey"
-            columns: ["map_marker_id"]
-            isOneToOne: false
-            referencedRelation: "map_markers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_marker_scans_quest_activation_id_fkey"
+            foreignKeyName: "task_completions_quest_activation_id_fkey"
             columns: ["quest_activation_id"]
             isOneToOne: false
             referencedRelation: "quest_activations"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "quest_marker_scans_scanned_by_player_id_fkey"
-            columns: ["scanned_by_player_id"]
+            foreignKeyName: "task_completions_task_id_fkey"
+            columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "players"
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          description: string | null
+          id: string
+          quest_id: string
+          reward_points: number | null
+          sort_order: number
+          title: string
+          type: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          quest_id: string
+          reward_points?: number | null
+          sort_order?: number
+          title: string
+          type: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          quest_id?: string
+          reward_points?: number | null
+          sort_order?: number
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
             referencedColumns: ["id"]
           },
         ]

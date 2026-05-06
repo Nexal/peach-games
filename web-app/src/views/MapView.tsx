@@ -130,7 +130,7 @@ function MapContent() {
   useGame(); // Ensure GameProvider is active
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [chaseQuestIds, setChaseQuestIds] = useState<string[]>([]);
-  const [activeQRQuestIds, setActiveQRQuestIds] = useState<string[]>([]);
+  const [currentTaskIds, setCurrentTaskIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!session?.game_id) return;
@@ -154,6 +154,7 @@ function MapContent() {
           icon_url: m.icon_url ?? undefined,
           is_active: m.is_active ?? true,
           quest_id: m.quest_id ?? undefined,
+          task_id: m.task_id ?? undefined,
           reward_points: m.reward_points ?? undefined,
         })));
       }
@@ -177,37 +178,71 @@ function MapContent() {
 useEffect(() => {
     if (!session?.game_id || !session?.klan_id) return;
 
-    const fetchActiveQRQuests = () => {
-      (supabase as any)
+    const fetchCurrentTasks = async () => {
+      const { data: activations } = await (supabase as any)
         .from('quest_activations')
-        .select('quest_id')
+        .select('id, quest_id')
         .eq('game_id', session.game_id)
         .eq('klan_id', session.klan_id)
-        .is('completed_at', null)
-        .then(({ data }: { data: any }) => {
-          if (data) {
-          console.log('[MapView] quest_activations fetched:', data.length, 'activations');
-          setActiveQRQuestIds(data.map((a: any) => a.quest_id));
-        } else {
-          console.log('[MapView] quest_activations: no data');
+        .is('completed_at', null);
+
+      if (!activations || activations.length === 0) {
+        setCurrentTaskIds([]);
+        return;
+      }
+
+      const questIds = activations.map((a: any) => a.quest_id);
+      const activationIds = activations.map((a: any) => a.id);
+
+      const [{ data: tasks }, { data: taskCompletions }] = await Promise.all([
+        (supabase as any).from('tasks').select('*').in('quest_id', questIds).order('sort_order'),
+        (supabase as any).from('task_completions').select('*').in('quest_activation_id', activationIds),
+      ]);
+
+      if (!tasks) { setCurrentTaskIds([]); return; }
+
+      const questTasks: Record<any, any[]> = {};
+      for (const t of tasks) {
+        if (!questTasks[t.quest_id]) questTasks[t.quest_id] = [];
+        questTasks[t.quest_id].push(t);
+      }
+
+      const completions = (taskCompletions || []) as any[];
+      const completedTaskIds = new Set(completions.filter((c: any) => c.completed_at).map((c: any) => c.task_id));
+
+      const taskIds: string[] = [];
+      for (const [, taskList] of Object.entries(questTasks)) {
+        for (const task of taskList as any[]) {
+          if (!completedTaskIds.has(task.id)) { taskIds.push(task.id); break; }
         }
-        });
+      }
+
+      setCurrentTaskIds(taskIds);
     };
 
-    fetchActiveQRQuests();
+    fetchCurrentTasks();
 
     const channel = supabase
-      .channel('quest_activations_changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'quest_activations',
-        filter: `game_id=eq.${session.game_id}`,
-      }, fetchActiveQRQuests)
+      .channel('quest_activations_tasks_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_activations', filter: `game_id=eq.${session.game_id}` }, fetchCurrentTasks)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, fetchCurrentTasks)
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [session?.game_id, session?.klan_id]);
+
+  useEffect(() => {
+    if (!session?.game_id) return;
+
+    (supabase as any)
+      .from('quests')
+      .select('id')
+      .eq('game_id', session.game_id)
+      .eq('type', 'chase')
+      .then(({ data }: { data: any }) => {
+        if (data) setChaseQuestIds(data.map((q: any) => q.id));
+      });
+  }, [session?.game_id]);
 
   return (
     <>
@@ -236,20 +271,8 @@ useEffect(() => {
         if (marker.type === 'qr') icon = qrIcon;
 
         if (marker.type === 'qr') {
-          const markerQuestId = marker.quest_id;
-          const isActive = markerQuestId ? activeQRQuestIds.includes(markerQuestId) : false;
-          console.log('[MapView] QR marker:', {
-            markerTitle: marker.title,
-            markerQuestId,
-            activeQRQuestIds,
-            isActive,
-            includesResult: markerQuestId ? activeQRQuestIds.includes(markerQuestId) : 'no quest_id'
-          });
-          if (!isActive) {
-            console.log('[MapView] QR marker filtered out:', marker.title);
-            return null;
-          }
-          console.log('[MapView] QR marker RENDERING:', marker.title);
+          const isActive = marker.task_id ? currentTaskIds.includes(marker.task_id) : false;
+          if (!isActive) return null;
         }
 
         if (marker.type === 'quest' && marker.clan_id && marker.clan_id !== session?.klan_id) return null;
