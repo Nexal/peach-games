@@ -22,7 +22,6 @@ const SHOP_ITEMS: ShopItem[] = [
 export function ShopView() {
   const { klanPoints } = useGame();
   const { session } = usePlayerSession();
-  const [items, setItems] = useState<ShopItem[]>(SHOP_ITEMS);
   const [ownedItems, setOwnedItems] = useState<string[]>([]);
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
@@ -31,10 +30,10 @@ export function ShopView() {
 
     supabase
       .from('clan_items')
-      .select('item_id')
+      .select('name')
       .eq('klan_id', session.klan_id)
       .then(({ data }) => {
-        if (data) setOwnedItems(data.map(i => i.item_id));
+        if (data) setOwnedItems(data.map(i => i.name));
       });
   }, [session?.klan_id]);
 
@@ -44,7 +43,7 @@ export function ShopView() {
       alert(`Za mało punktów! Potrzebujesz ${item.price - klanPoints} więcej.`);
       return;
     }
-    if (ownedItems.includes(item.id)) {
+    if (ownedItems.includes(item.name)) {
       alert('Ten przedmiot jest już w posiadaniu klanu.');
       return;
     }
@@ -56,13 +55,16 @@ export function ShopView() {
       await Promise.all([
         supabase.from('clan_items').insert({
           klan_id: session.klan_id,
-          item_id: item.id,
-          purchased_at: new Date().toISOString(),
+          name: item.name,
+          type: item.type,
+          description: item.description,
+          target_type: 'klan',
+          effect: JSON.parse('{}'),
         }),
         supabase.from('klans').update({ points: newPoints }).eq('id', session.klan_id),
       ]);
 
-      setOwnedItems(prev => [...prev, item.id]);
+      setOwnedItems(prev => [...prev, item.name]);
       alert(`✅ Zakupiono "${item.name}"!`);
     } catch (err) {
       console.error('Purchase error:', err);
@@ -86,7 +88,7 @@ export function ShopView() {
 
       <main className="view__content">
         <div className="shop-items">
-          {items.map(item => {
+          {SHOP_ITEMS.map(item => {
             const owned = ownedItems.includes(item.id);
             const canAfford = klanPoints >= item.price;
             const isPurchasing = purchasing === item.id;

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      chapter_quest_links: {
+        Row: {
+          chapter_id: string
+          id: string
+          quest_id: string
+        }
+        Insert: {
+          chapter_id: string
+          id?: string
+          quest_id: string
+        }
+        Update: {
+          chapter_id?: string
+          id?: string
+          quest_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_quest_links_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "story_chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_quest_links_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chase_sessions: {
         Row: {
           bearing: number
@@ -627,6 +660,7 @@ export type Database = {
           id: string
           klan_id: string | null
           qr_secret: string | null
+          requires_chapter_id: string | null
           reward_points: number | null
           title: string
           trajectory: Json | null
@@ -638,6 +672,7 @@ export type Database = {
           id?: string
           klan_id?: string | null
           qr_secret?: string | null
+          requires_chapter_id?: string | null
           reward_points?: number | null
           title: string
           trajectory?: Json | null
@@ -649,6 +684,7 @@ export type Database = {
           id?: string
           klan_id?: string | null
           qr_secret?: string | null
+          requires_chapter_id?: string | null
           reward_points?: number | null
           title?: string
           trajectory?: Json | null
@@ -674,6 +710,67 @@ export type Database = {
             columns: ["klan_id"]
             isOneToOne: false
             referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quests_requires_chapter_id_fkey"
+            columns: ["requires_chapter_id"]
+            isOneToOne: false
+            referencedRelation: "story_chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_chapters: {
+        Row: {
+          audio_url: string | null
+          chapter_number: number
+          created_at: string
+          game_id: string
+          id: string
+          is_opened: boolean
+          opened_at: string | null
+          story_text: string
+          title: string
+          video_url: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          chapter_number: number
+          created_at?: string
+          game_id: string
+          id?: string
+          is_opened?: boolean
+          opened_at?: string | null
+          story_text?: string
+          title: string
+          video_url?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          chapter_number?: number
+          created_at?: string
+          game_id?: string
+          id?: string
+          is_opened?: boolean
+          opened_at?: string | null
+          story_text?: string
+          title?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_chapters_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_chapters_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
             referencedColumns: ["id"]
           },
         ]
@@ -729,6 +826,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          correct_answer: string | null
           description: string | null
           id: string
           quest_id: string
@@ -738,6 +836,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          correct_answer?: string | null
           description?: string | null
           id?: string
           quest_id: string
@@ -747,6 +846,7 @@ export type Database = {
           type: string
         }
         Update: {
+          correct_answer?: string | null
           description?: string | null
           id?: string
           quest_id?: string

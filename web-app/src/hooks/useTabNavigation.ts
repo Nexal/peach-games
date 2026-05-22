@@ -1,6 +1,13 @@
 import { useState } from 'react';
 
-export type TabId = 'home' | 'map' | 'chat' | 'quests' | 'shop';
+export type TabId = 'home' | 'map' | 'chat' | 'quests' | 'shop' | 'profile';
+
+interface Tab {
+  id: TabId;
+  label: string;
+  icon: string;
+  iconSrc?: string;
+}
 
 const tabs: Tab[] = [
   { id: 'home', label: 'ᚡᛁᛊᛏᚨ', icon: '', iconSrc: '/icons/home.png' },

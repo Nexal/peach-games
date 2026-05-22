@@ -5,8 +5,6 @@ import type { Database } from '../types/database.types';
 import '../styles/CompletionModal.css';
 
 type ChaseSession = Database['public']['Tables']['chase_sessions']['Row'];
-type Quest = Database['public']['Tables']['quests']['Row'];
-type QuestCompletion = Database['public']['Tables']['quest_completions']['Row'];
 
 type MarkerPosition = { lat: number; lng: number } | null;
 
@@ -418,7 +416,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           : questData.trajectory)
       : null;
 
-    const startedAt = new Date(data.started_at).getTime();
+    const startedAt = data.started_at ? new Date(data.started_at).getTime() : Date.now();
     const elapsedSeconds = (Date.now() - startedAt) / 1000;
     const position = trajectory
       ? calculatePositionFromTrajectory(trajectory, elapsedSeconds, data.speed_mps)
@@ -501,7 +499,7 @@ export function useGame() {
 }
 
 export function useChase(questId: string) {
-  const { activeQuests, completeChase, getMarkerPosition } = useContext(GameContext);
+  const { activeQuests, completeChase } = useContext(GameContext);
   const [position, setPosition] = useState<MarkerPosition>(null);
   const [session, setSession] = useState<ChaseSession | null>(null);
 
