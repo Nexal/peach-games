@@ -38,8 +38,15 @@ export function PlayerPositionProvider({ children }: { children: React.ReactNode
   const [position, setPosition] = useState<PositionUpdate | null>(null);
 
   useEffect(() => {
-    if (!session?.id || !session?.game_id) return;
-    if (!('geolocation' in navigator)) return;
+    console.log('[PlayerPositionProvider] useEffect triggered, session:', session?.id, session?.game_id);
+    if (!session?.id || !session?.game_id) {
+      console.log('[PlayerPositionProvider] No session or game_id, skipping geolocation');
+      return;
+    }
+    if (!('geolocation' in navigator)) {
+      console.warn('[PlayerPositionProvider] Geolocation not supported');
+      return;
+    }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -52,7 +59,8 @@ export function PlayerPositionProvider({ children }: { children: React.ReactNode
 
         const playerId = session?.player_id || session?.id;
         if (playerId && session?.game_id) {
-          supabase.from('player_positions').upsert({
+          console.log('[PlayerPosition] Saving position:', playerId, session.game_id, newPosition.lat, newPosition.lng);
+          const { error } = await supabase.from('player_positions').upsert({
             player_id: playerId,
             game_id: session.game_id,
             lat: newPosition.lat,
@@ -60,6 +68,8 @@ export function PlayerPositionProvider({ children }: { children: React.ReactNode
             accuracy: newPosition.accuracy,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'player_id,game_id' });
+          if (error) console.error('[PlayerPosition] Upsert error:', error);
+          else console.log('[PlayerPosition] Position saved successfully');
         }
       },
       (err) => console.warn('Provider initial geolocation error:', err),
@@ -88,6 +98,7 @@ export function PlayerPositionProvider({ children }: { children: React.ReactNode
           if (distance >= 10) {
             const playerId = session?.player_id || session?.id;
             if (playerId && session?.game_id) {
+              console.log('[PlayerPosition] Watch update:', playerId, newPosition.lat, newPosition.lng);
               supabase.from('player_positions').upsert({
                 player_id: playerId,
                 game_id: session.game_id,
@@ -95,7 +106,9 @@ export function PlayerPositionProvider({ children }: { children: React.ReactNode
                 lng: newPosition.lng,
                 accuracy: newPosition.accuracy,
                 updated_at: new Date().toISOString(),
-              }, { onConflict: 'player_id,game_id' });
+              }, { onConflict: 'player_id,game_id' }).then(({ error }) => {
+                if (error) console.error('[PlayerPosition] Watch upsert error:', error);
+              });
             }
             return newPosition;
           }
