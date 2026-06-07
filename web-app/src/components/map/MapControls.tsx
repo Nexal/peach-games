@@ -44,10 +44,7 @@ export function LocationMarker({ watchPosition = true }: LocationMarkerProps) {
     };
 
     const errorCallback = (err: GeolocationPositionError) => {
-      console.warn('Geolocation error:', err.message, 'code:', err.code, 'protocol:', window.location.protocol);
-      if (err.code === 1 && window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-        console.error('Geolocation blocked: Chrome requires HTTPS. Run ./start-tunnel.sh for HTTPS access.');
-      }
+      console.warn('Geolocation error:', err.message, 'code:', err.code);
     };
 
     const options: PositionOptions = {
@@ -80,11 +77,6 @@ export function CenterOnLocationButton({ icon = '📍', size = 44 }: CenterOnLoc
   const handleClick = () => {
     if (!('geolocation' in navigator)) {
       setError('Brak wsparcia');
-      return;
-    }
-
-    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-      setError('🔒 Lokalizacja wymaga HTTPS. Uruchom tunel: ./start-tunnel.sh');
       return;
     }
 
@@ -126,9 +118,7 @@ export function CenterOnLocationButton({ icon = '📍', size = 44 }: CenterOnLoc
 function getErrorMessage(error: GeolocationPositionError): string {
   switch (error.code) {
     case error.PERMISSION_DENIED:
-      return window.location.protocol !== 'https:' && window.location.hostname !== 'localhost'
-        ? '🔒 Lokalizacja wymaga HTTPS. Uruchom tunel: ./start-tunnel.sh'
-        : 'Brak pozwolenia na lokalizację';
+      return '🔒 Lokalizacja zablokowana. Odblokuj w ustawieniach przeglądarki (ikona 🔒/🌐 w pasku adresu)';
     case error.POSITION_UNAVAILABLE:
       return 'Lok. niedostępna';
     case error.TIMEOUT:
