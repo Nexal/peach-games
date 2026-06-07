@@ -329,3 +329,29 @@
   80% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* Clan member markers */
+.clan-member-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.map-popup--clan-member h3 {
+  color: var(--clan-color, #9B59B6);
+  font-size: 0.9rem;
+}
+
+.map-popup--clan-member p {
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+/* Clan toggle button */
+.map-clan-toggle {
+  font-size: 1rem;
+}
+
+.map-clan-toggle--active {
+  background: rgba(155, 89, 182, 0.3);
+  border-color: var(--clan-color, #9B59B6);
+}

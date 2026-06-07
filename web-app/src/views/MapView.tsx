@@ -9,6 +9,8 @@ import { AnimatedMarker, PulsingMarker } from '../components/map/AnimatedMarkers
 import { QRScannerModal } from '../components/quest/QRScannerModal';
 import { MediaUploadModal } from '../components/quest/MediaUploadModal';
 import { useQRScanner } from '../hooks/useQRScanner';
+import { useClanMemberPositions } from '../hooks/usePlayerPosition';
+import L from 'leaflet';
 import {
   baseIcon,
   questIcon,
@@ -74,6 +76,13 @@ function MapContent() {
   const [photoActivations, setPhotoActivations] = useState<Record<string, string>>({});
   const [taskProgress, setTaskProgress] = useState<Record<string, { scanned: number; total: number }>>({});
   const [taskRefresh, setTaskRefresh] = useState(0);
+  const [showClanMembers, setShowClanMembers] = useState(true);
+
+  const clanMembers = useClanMemberPositions(
+    session?.game_id,
+    session?.klan_id,
+    session?.player_id || session?.id
+  );
   const { scan, feedback } = useQRScanner(useCallback(() => {
     if (!session?.game_id) return;
     (supabase as any)
@@ -265,6 +274,38 @@ function MapContent() {
         <ChaseMarker key={id} questId={id} />
       ))}
 
+      {showClanMembers && clanMembers.map((member) => (
+        <Marker
+          key={member.player_id}
+          position={[member.lat, member.lng]}
+          icon={L.divIcon({
+            className: 'clan-member-marker',
+            html: `<div style="
+              width: 20px;
+              height: 20px;
+              background: ${session?.klan_color || '#9B59B6'};
+              border: 2px solid #fff;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 10px;
+              font-weight: bold;
+              color: #fff;
+            ">${member.player_name.charAt(0).toUpperCase()}</div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+          })}
+        >
+          <Popup>
+            <div className="map-popup map-popup--clan-member">
+              <h3>{member.player_name}</h3>
+              <p><strong>Online:</strong> {new Date(member.updated_at).toLocaleTimeString()}</p>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+
       {markers.map((marker) => {
         let icon = questIcon;
         if (marker.type === 'clan_base') icon = clanIcon;
@@ -338,6 +379,17 @@ function MapContent() {
       })}
 
       <CenterOnLocationButton />
+
+      <div className="map-controls">
+        <button
+          onClick={() => setShowClanMembers(prev => !prev)}
+          className={`map-control-button map-clan-toggle ${showClanMembers ? 'map-clan-toggle--active' : ''}`}
+          title={showClanMembers ? 'Ukryj członków klanu' : 'Pokaż członków klanu'}
+          style={{ width: 44, height: 44 }}
+        >
+          {showClanMembers ? '👥' : '‍♂️'}
+        </button>
+      </div>
 
       {scanningMarker && (
         <QRScannerModal

@@ -215,3 +215,73 @@ export function useGamePlayerPositions(gameId: string | undefined) {
 
   return { positions, loading, error };
 }
+
+export interface ClanMemberPosition {
+  player_id: string;
+  player_name: string;
+  lat: number;
+  lng: number;
+  accuracy: number | null;
+  updated_at: string;
+}
+
+export function useClanMemberPositions(gameId: string | undefined, klanId: string | undefined, currentPlayerId: string | undefined) {
+  const [members, setMembers] = useState<ClanMemberPosition[]>([]);
+
+  useEffect(() => {
+    if (!gameId || !klanId || !currentPlayerId) return;
+
+    const fetchMembers = async () => {
+      const { data } = await supabase
+        .from('player_positions')
+        .select(`
+          player_id,
+          lat,
+          lng,
+          accuracy,
+          updated_at,
+          players:player_id (
+            id,
+            name
+          )
+        `)
+        .eq('game_id', gameId)
+        .gt('updated_at', new Date(Date.now() - 5 * 60 * 1000).toISOString())
+        .order('updated_at', { ascending: false });
+
+      if (data) {
+        const filtered = (data as any[])
+          .filter((p: any) => p.player_id !== currentPlayerId)
+          .map((p: any) => ({
+            player_id: p.player_id,
+            player_name: p.players?.name || 'Nieznany',
+            lat: p.lat,
+            lng: p.lng,
+            accuracy: p.accuracy,
+            updated_at: p.updated_at,
+          }));
+        setMembers(filtered);
+      }
+    };
+
+    fetchMembers();
+
+    const channel = supabase
+      .channel('clan_member_positions')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'player_positions',
+        filter: `game_id=eq.${gameId}`,
+      }, () => {
+        fetchMembers();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gameId, klanId, currentPlayerId]);
+
+  return members;
+}
