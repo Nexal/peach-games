@@ -16,6 +16,18 @@ export function LocationMarker({ watchPosition = true }: LocationMarkerProps) {
       return;
     }
 
+    // Diagnostic: check permission state
+    if ('permissions' in navigator) {
+      navigator.permissions.query({ name: 'geolocation' as PermissionName }).then((result) => {
+        console.log('[LocationMarker] Geolocation permission state:', result.state);
+        result.addEventListener('change', () => {
+          console.log('[LocationMarker] Geolocation permission changed to:', result.state);
+        });
+      }).catch((err) => {
+        console.warn('[LocationMarker] Could not query permission state:', err);
+      });
+    }
+
     const successCallback = (pos: GeolocationPosition) => {
       const latlng: L.LatLngExpression = {
         lat: pos.coords.latitude,
@@ -74,10 +86,24 @@ export function CenterOnLocationButton({ icon = '📍', size = 44 }: CenterOnLoc
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleClick = () => {
+  const handleClick = async () => {
     if (!('geolocation' in navigator)) {
       setError('Brak wsparcia');
       return;
+    }
+
+    // Diagnostic: check permission state before requesting
+    if ('permissions' in navigator) {
+      try {
+        const result = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+        console.log('[CenterButton] Geolocation permission state:', result.state);
+        if (result.state === 'denied') {
+          setError('🔒 Lokalizacja zablokowana. Wejdź w chrome://settings/content/location i włącz');
+          return;
+        }
+      } catch {
+        // permissions API not available
+      }
     }
 
     setLoading(true);
@@ -118,7 +144,7 @@ export function CenterOnLocationButton({ icon = '📍', size = 44 }: CenterOnLoc
 function getErrorMessage(error: GeolocationPositionError): string {
   switch (error.code) {
     case error.PERMISSION_DENIED:
-      return '🔒 Lokalizacja zablokowana. Odblokuj w ustawieniach przeglądarki (ikona 🔒/🌐 w pasku adresu)';
+      return '📍 Lokalizacja zablokowana. Sprawdź: 1) GPS włączony w ustawieniach telefonu 2) Chrome ma pozwolenie na lokalizację w Ustawienia → Aplikacje → Chrome → Uprawnienia';
     case error.POSITION_UNAVAILABLE:
       return 'Lok. niedostępna';
     case error.TIMEOUT:

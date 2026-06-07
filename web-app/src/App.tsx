@@ -13,6 +13,7 @@ import { AdminLoginView } from './views/admin/AdminLoginView';
 import { AdminDashboardView } from './views/admin/AdminDashboardView';
 import { getPlayerSession, type PlayerSession } from './lib/playerSession';
 import { GameProvider } from './hooks/useGameProvider';
+import { PlayerPositionProvider } from './hooks/usePlayerPosition';
 import './views/Views.css';
 import './components/tab-bar/TabBar.css';
 
@@ -104,7 +105,8 @@ function AppContent() {
 
   return (
     <PlayerContext.Provider value={{ session, refreshSession }}>
-      <GameProvider>
+      <PlayerPositionProvider>
+        <GameProvider>
         {showSplash && (
           <div className={`logo-overlay ${splashClosing ? 'logo-overlay--closing' : ''}`}>
             <img
@@ -116,7 +118,8 @@ function AppContent() {
         )}
         {renderView()}
         {!showAdmin && !showJoin && session && <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />}
-      </GameProvider>
+        </GameProvider>
+      </PlayerPositionProvider>
     </PlayerContext.Provider>
   );
 }
