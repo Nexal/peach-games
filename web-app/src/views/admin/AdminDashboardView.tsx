@@ -14,7 +14,7 @@ type Quest = Database['public']['Tables']['quests']['Row'];
 
 export function AdminDashboardView() {
   const { logout } = useAdminAuth();
-  type AdminTab = 'games' | 'klans' | 'players' | 'quests' | 'chat' | 'map';
+  type AdminTab = 'games' | 'klans' | 'players' | 'quests' | 'submissions' | 'chat' | 'map';
   const [activeTab, setActiveTab] = useState<AdminTab>('games');
   const [games, setGames] = useState<Game[]>([]);
   const [klans, setKlans] = useState<Klan[]>([]);
@@ -22,6 +22,9 @@ export function AdminDashboardView() {
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pendingSubmissions, setPendingSubmissions] = useState<any[]>([]);
+  const [allSubmissions, setAllSubmissions] = useState<any[]>([]);
+  const [submissionCount, setSubmissionCount] = useState(0);
 
   useEffect(() => {
     loadGames();
@@ -59,6 +62,24 @@ export function AdminDashboardView() {
     if (data) setQuests(data);
   };
 
+  const loadSubmissionsDirect = async (gameId: string) => {
+    // Get klan IDs for this game first, then fetch submissions
+    const { data: klansData } = await supabase.from('klans').select('id').eq('game_id', gameId);
+    if (!klansData || klansData.length === 0) return;
+    const klanIds = klansData.map(k => k.id);
+    const { data } = await (supabase as any)
+      .from('submissions')
+      .select('*, tasks!inner(title, type), klans!inner(name, theme_color), quest_activations!inner(quests!inner(title))')
+      .in('klan_id', klanIds)
+      .order('submitted_at', { ascending: false });
+    if (data) {
+      const pending = data.filter((s: any) => s.status === 'pending');
+      setPendingSubmissions(pending);
+      setAllSubmissions(data);
+      setSubmissionCount(pending.length);
+    }
+  };
+
   useEffect(() => {
     loadGames();
     loadPlayers();
@@ -66,9 +87,25 @@ export function AdminDashboardView() {
 
   useEffect(() => {
     if (selectedGameId) {
-      loadKlans(selectedGameId);
-      loadQuests(selectedGameId);
+      loadKlans(selectedGameId).then(() => {
+        loadQuests(selectedGameId);
+        loadSubmissionsDirect(selectedGameId);
+      });
     }
+  }, [selectedGameId]);
+
+  useEffect(() => {
+    if (!selectedGameId) return;
+    const channel = supabase
+      .channel('admin:submissions')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'submissions' }, () => {
+        loadSubmissionsDirect(selectedGameId);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'submissions' }, () => {
+        loadSubmissionsDirect(selectedGameId);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [selectedGameId]);
 
   const createGame = async (name: string) => {
@@ -153,6 +190,51 @@ export function AdminDashboardView() {
     alert('🔄 Quest zresetowany');
   };
 
+  const handleApproveSubmission = async (submissionId: string, taskId: string, questActivationId: string, klanId: string) => {
+    const { data: submission } = await (supabase as any)
+      .from('submissions')
+      .select('*, tasks!inner(reward_points)')
+      .eq('id', submissionId)
+      .single();
+    if (!submission) return;
+
+    const points = submission.tasks?.reward_points || 0;
+
+    // Update submission status
+    await supabase.from('submissions').update({
+      status: 'approved',
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: 'admin',
+    }).eq('id', submissionId);
+
+    // Create task completion
+    await (supabase as any).from('task_completions').upsert({
+      quest_activation_id: questActivationId,
+      task_id: taskId,
+      completed_at: new Date().toISOString(),
+      metadata: { media_url: submission.media_url, submission_id: submissionId },
+    }, { onConflict: 'quest_activation_id,task_id' });
+
+    // Update klan points
+    const { data: klanData } = await supabase.from('klans').select('points').eq('id', klanId).maybeSingle();
+    if (klanData) {
+      await supabase.from('klans').update({ points: (klanData.points || 0) + points }).eq('id', klanId);
+    }
+
+    if (selectedGameId) loadSubmissionsDirect(selectedGameId);
+    alert(`✅ Zatwierdzono zgłoszenie (+${points} 🔥)`);
+  };
+
+  const handleRejectSubmission = async (submissionId: string, comment: string) => {
+    await supabase.from('submissions').update({
+      status: 'rejected',
+      admin_comment: comment,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: 'admin',
+    }).eq('id', submissionId);
+
+    if (selectedGameId) loadSubmissionsDirect(selectedGameId);
+  };
   return (
     <div className="view view--admin">
       <header className="admin-header">
@@ -189,6 +271,18 @@ export function AdminDashboardView() {
             onReset={resetQuest}
           />
         )}
+        {activeTab === 'submissions' && selectedGameId && (
+          <SubmissionsPanel
+            submissions={pendingSubmissions}
+            allSubmissions={allSubmissions}
+            klans={klans}
+            gameId={selectedGameId}
+            onApprove={(submissionId, taskId, questActivationId, klanId) =>
+              handleApproveSubmission(submissionId, taskId, questActivationId, klanId)
+            }
+            onReject={(submissionId, comment) => handleRejectSubmission(submissionId, comment)}
+          />
+        )}
         {activeTab === 'chat' && (
           <ChatPanel games={games} klans={klans} />
         )}
@@ -221,6 +315,12 @@ export function AdminDashboardView() {
           onClick={() => setActiveTab('quests')}
         >
           🏆 Questy
+        </button>
+        <button
+          className={`admin-tabs__item ${activeTab === 'submissions' ? 'admin-tabs__item--active' : ''}`}
+          onClick={() => setActiveTab('submissions')}
+        >
+          ✅ Zatwierdź{submissionCount > 0 ? ` (${submissionCount})` : ''}
         </button>
         <button
           className={`admin-tabs__item ${activeTab === 'chat' ? 'admin-tabs__item--active' : ''}`}
@@ -704,6 +804,131 @@ function QuestsPanel({
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SubmissionsPanel({
+  submissions,
+  allSubmissions,
+  klans,
+  gameId,
+  onApprove,
+  onReject,
+}: {
+  submissions: any[];
+  allSubmissions: any[];
+  klans: Klan[];
+  gameId: string;
+  onApprove: (id: string, taskId: string, activationId: string, klanId: string) => void;
+  onReject: (id: string, comment: string) => void;
+}) {
+  const [rejectComment, setRejectComment] = useState<Record<string, string>>({});
+  const [showHistory, setShowHistory] = useState(false);
+
+  const reviewedSubmissions = allSubmissions.filter((s: any) => s.status !== 'pending');
+
+  if (!gameId) {
+    return <div className="admin-panel__empty">Wybierz grę aby przeglądać zgłoszenia</div>;
+  }
+
+  return (
+    <div className="admin-panel">
+      <div className="admin-panel__section">
+        <h2 className="admin-panel__title">⏳ Oczekujące ({submissions.length})</h2>
+        {submissions.length === 0 && <p className="admin-panel__empty">Brak oczekujących zgłoszeń</p>}
+        {submissions.map((sub: any) => {
+          const klan = klans.find(k => k.id === sub.klan_id);
+          const taskTitle = sub.tasks?.title || 'Nieznane zadanie';
+          const questTitle = sub.quest_activations?.quests?.title || 'Nieznany quest';
+          return (
+            <div key={sub.id} className="admin-submission-card">
+              <div className="admin-submission-card__header">
+                <div className="admin-submission-card__info">
+                  <span className="admin-submission-card__quest">{questTitle}</span>
+                  <span className="admin-submission-card__task">{taskTitle}</span>
+                  <span className="admin-submission-card__klan" style={{ color: klan?.theme_color }}>
+                    {klan?.name || 'Brak klanu'}
+                  </span>
+                  <span className="admin-submission-card__time">
+                    {new Date(sub.submitted_at).toLocaleString('pl-PL')}
+                  </span>
+                </div>
+                <span className={`admin-submission-card__badge admin-submission-card__badge--${sub.media_type}`}>
+                  {sub.media_type === 'photo' ? '📷 Zdjęcie' : '🎥 Wideo'}
+                </span>
+              </div>
+              <div className="admin-submission-card__media">
+                {sub.media_type === 'photo' ? (
+                  <img src={sub.media_url} alt="Zgłoszenie" className="admin-submission-card__image" />
+                ) : (
+                  <video src={sub.media_url} controls className="admin-submission-card__video" />
+                )}
+              </div>
+              <div className="admin-submission-card__actions">
+                <button
+                  className="admin-submission-card__btn admin-submission-card__btn--approve"
+                  onClick={() => onApprove(sub.id, sub.task_id, sub.quest_activation_id, sub.klan_id)}
+                >
+                  ✅ Zatwierdź
+                </button>
+                <button
+                  className="admin-submission-card__btn admin-submission-card__btn--reject"
+                  onClick={() => {
+                    const comment = rejectComment[sub.id] || '';
+                    onReject(sub.id, comment);
+                    setRejectComment(prev => ({ ...prev, [sub.id]: '' }));
+                  }}
+                >
+                  ❌ Odrzuć
+                </button>
+                <input
+                  type="text"
+                  value={rejectComment[sub.id] || ''}
+                  onChange={(e) => setRejectComment(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                  placeholder="Komentarz (opcjonalnie)..."
+                  className="admin-submission-card__comment"
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="admin-panel__section">
+        <button
+          className="admin-panel__toggle"
+          onClick={() => setShowHistory(!showHistory)}
+        >
+          {showHistory ? '▼' : '▶'} Historia ({reviewedSubmissions.length})
+        </button>
+        {showHistory && reviewedSubmissions.length === 0 && (
+          <p className="admin-panel__empty">Brak historii</p>
+        )}
+        {showHistory && reviewedSubmissions.map((sub: any) => {
+          const klan = klans.find(k => k.id === sub.klan_id);
+          return (
+            <div key={sub.id} className={`admin-submission-card admin-submission-card--reviewed admin-submission-card--${sub.status}`}>
+              <div className="admin-submission-card__header">
+                <div className="admin-submission-card__info">
+                  <span className="admin-submission-card__quest">{sub.tasks?.title || ''}</span>
+                  <span className="admin-submission-card__klan" style={{ color: klan?.theme_color }}>
+                    {klan?.name || ''}
+                  </span>
+                </div>
+                <span className={`admin-submission-card__badge admin-submission-card__badge--${sub.status}`}>
+                  {sub.status === 'approved' ? '✅' : '❌'} {sub.status === 'approved' ? 'Zatwierdzone' : 'Odrzucone'}
+                </span>
+              </div>
+              {sub.admin_comment && (
+                <div className="admin-submission-card__admin-comment">
+                  💬 {sub.admin_comment}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

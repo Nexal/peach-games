@@ -7,6 +7,7 @@ import { DEFAULT_MAP_CONFIG, TILE_LAYERS } from '../types/map.types';
 import { LocationMarker, CenterOnLocationButton } from '../components/map/MapControls';
 import { AnimatedMarker, PulsingMarker } from '../components/map/AnimatedMarkers';
 import { QRScannerModal } from '../components/quest/QRScannerModal';
+import { MediaUploadModal } from '../components/quest/MediaUploadModal';
 import { useQRScanner } from '../hooks/useQRScanner';
 import {
   baseIcon,
@@ -14,6 +15,7 @@ import {
   clanIcon,
   chaseIcon,
   qrIcon,
+  photoIcon,
 } from '../components/map/markerIcons';
 import 'leaflet/dist/leaflet.css';
 import './MapView.css';
@@ -68,6 +70,8 @@ function MapContent() {
   const [chaseQuestIds, setChaseQuestIds] = useState<string[]>([]);
   const [currentTaskIds, setCurrentTaskIds] = useState<string[]>([]);
   const [scanningMarker, setScanningMarker] = useState<MapMarker | null>(null);
+  const [uploadingMarker, setUploadingMarker] = useState<MapMarker | null>(null);
+  const [photoActivations, setPhotoActivations] = useState<Record<string, string>>({});
   const [taskProgress, setTaskProgress] = useState<Record<string, { scanned: number; total: number }>>({});
   const [taskRefresh, setTaskRefresh] = useState(0);
   const { scan, feedback } = useQRScanner(useCallback(() => {
@@ -114,7 +118,7 @@ function MapContent() {
           position: [m.lat ?? 0, m.lng ?? 0] as [number, number],
           title: m.title,
           description: m.description ?? undefined,
-          type: m.type as 'quest' | 'base' | 'clan_base' | 'chase' | 'qr',
+          type: m.type as 'quest' | 'base' | 'clan_base' | 'chase' | 'qr' | 'photo',
           clan_id: m.klan_id ?? undefined,
           icon_url: m.icon_url ?? undefined,
           is_active: m.is_active ?? true,
@@ -167,7 +171,7 @@ function MapContent() {
       ] = await Promise.all([
         (supabase as any).from('tasks').select('*').in('quest_id', questIds).order('sort_order'),
         (supabase as any).from('task_completions').select('*').in('quest_activation_id', activationIds),
-        (supabase as any).from('map_markers').select('id, task_id').in('quest_id', questIds).eq('type', 'qr').eq('is_active', true),
+        (supabase as any).from('map_markers').select('id, task_id, type').in('quest_id', questIds).in('type', ['qr', 'photo']).eq('is_active', true),
       ]);
 
       if (!tasks) { setCurrentTaskIds([]); setTaskProgress({}); return; }
@@ -203,6 +207,18 @@ function MapContent() {
 
       setCurrentTaskIds(taskIds);
       setTaskProgress(progress);
+
+      // Map task_id -> quest_activation_id for photo tasks
+      const activationMap: Record<string, string> = {};
+      for (const task of tasks as any[]) {
+        const activation = activations.find(
+          (a: any) => a.quest_id === task.quest_id && !a.completed_at
+        );
+        if (activation && task.type === 'photo') {
+          activationMap[task.id] = activation.id;
+        }
+      }
+      setPhotoActivations(activationMap);
     };
 
     fetchCurrentTasks();
@@ -254,8 +270,9 @@ function MapContent() {
         if (marker.type === 'clan_base') icon = clanIcon;
         if (marker.type === 'chase') icon = chaseIcon;
         if (marker.type === 'qr') icon = qrIcon;
+        if (marker.type === 'photo') icon = photoIcon;
 
-        if (marker.type === 'qr') {
+        if (marker.type === 'qr' || marker.type === 'photo') {
           const isActive = marker.task_id ? currentTaskIds.includes(marker.task_id) : false;
           if (!isActive) return null;
         }
@@ -290,6 +307,30 @@ function MapContent() {
                     </button>
                   </div>
                 )}
+                {marker.type === 'photo' && marker.quest_id && (
+                  <div className="map-popup__qr-scan">
+                    <button
+                      className="map-popup__scan-btn"
+                      style={{ '--clan-color': session?.klan_color || '#9B59B6' } as React.CSSProperties}
+                      onClick={async () => {
+                        const { data: existing } = await (supabase as any)
+                          .from('submissions')
+                          .select('id')
+                          .eq('task_id', marker.task_id!)
+                          .eq('klan_id', session!.klan_id!)
+                          .eq('status', 'pending')
+                          .maybeSingle();
+                        if (existing) {
+                          alert('⏳ To zadanie ma już oczekujące zgłoszenie. Poczekaj na weryfikację przez Boga.');
+                          return;
+                        }
+                        setUploadingMarker(marker);
+                      }}
+                    >
+                      📷 Wyślij dowód
+                    </button>
+                  </div>
+                )}
               </div>
             </Popup>
           </Marker>
@@ -306,6 +347,17 @@ function MapContent() {
             setScanningMarker(null);
           }}
           onClose={() => setScanningMarker(null)}
+        />
+      )}
+
+      {uploadingMarker && session?.klan_id && (
+        <MediaUploadModal
+          taskId={uploadingMarker.task_id!}
+          questActivationId={photoActivations[uploadingMarker.task_id!] || ''}
+          klanId={session.klan_id}
+          gameId={session.game_id}
+          onClose={() => setUploadingMarker(null)}
+          onSubmit={() => setUploadingMarker(null)}
         />
       )}
 

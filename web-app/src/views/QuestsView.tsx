@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { usePlayerSession, useGame } from '../App';
 import { QRScannerModal } from '../components/quest/QRScannerModal';
+import { MediaUploadModal } from '../components/quest/MediaUploadModal';
 import { useQRScanner } from '../hooks/useQRScanner';
 import type { Database } from '../types/database.types';
 import './QuestsView.css';
 
 type Quest = Database['public']['Tables']['quests']['Row'];
+type Submission = Database['public']['Tables']['submissions']['Row'];
 
 interface TaskProgress {
   id: string;
@@ -25,6 +27,7 @@ interface QuestWithState extends Quest {
   completed_at?: string;
   activated: boolean;
   activated_at?: string;
+  activationId: string | null;
   tasks: TaskProgress[];
   currentTaskIndex: number;
 }
@@ -44,29 +47,20 @@ export function QuestsView() {
   const [loading, setLoading] = useState(true);
   const [qrQuest, setQrQuest] = useState<QuestWithState | null>(null);
   const [activating, setActivating] = useState<string | null>(null);
+  const [uploadTask, setUploadTask] = useState<{ taskId: string; questActivationId: string } | null>(null);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
 
-  useEffect(() => {
-    if (!session?.game_id || !session?.klan_id) {
-      setLoading(false);
-      return;
-    }
-    loadQuests();
-  }, [session?.game_id, session?.klan_id]);
-
-  useEffect(() => {
+  const loadSubmissions = useCallback(async () => {
     if (!session?.game_id || !session?.klan_id) return;
-
-    const channel = supabase
-      .channel('quests_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_activations', filter: `klan_id=eq.${session.klan_id}` }, loadQuests)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, loadQuests)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_completions', filter: `klan_id=eq.${session.klan_id}` }, loadQuests)
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    const { data } = await (supabase as any)
+      .from('submissions')
+      .select('*')
+      .eq('klan_id', session.klan_id)
+      .order('submitted_at', { ascending: false });
+    if (data) setSubmissions(data);
   }, [session?.game_id, session?.klan_id]);
 
-  const loadQuests = async () => {
+  const loadQuests = useCallback(async () => {
     if (!session?.game_id || !session?.klan_id) return;
 
     const [questsRes, activationsRes, completionsRes, tasksRes, taskCompletionsRes, markersRes] = await Promise.all([
@@ -138,6 +132,7 @@ export function QuestsView() {
           completed_at: completion?.completed_at || undefined,
           activated: !!activation && !completion,
           activated_at: activation?.activated_at || undefined,
+          activationId: activation?.id || null,
           tasks,
           currentTaskIndex,
         };
@@ -146,7 +141,56 @@ export function QuestsView() {
       setQuests(questsWithState);
     }
     setLoading(false);
-  };
+  }, [session?.game_id, session?.klan_id]);
+
+  useEffect(() => {
+    if (!session?.game_id || !session?.klan_id) {
+      setLoading(false);
+      return;
+    }
+    loadQuests();
+    loadSubmissions();
+  }, [session?.game_id, session?.klan_id]);
+
+  useEffect(() => {
+    if (!session?.game_id || !session?.klan_id) return;
+
+    console.log('[QuestsView] Setting up realtime subscription for klan:', session.klan_id);
+
+    const channel = supabase
+      .channel('quests_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_activations', filter: `klan_id=eq.${session.klan_id}` }, () => {
+        console.log('[QuestsView] quest_activations event received');
+        loadQuests();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, () => {
+        console.log('[QuestsView] task_completions event received');
+        loadQuests();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_completions', filter: `klan_id=eq.${session.klan_id}` }, () => {
+        console.log('[QuestsView] quest_completions event received');
+        loadQuests();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, (payload: any) => {
+        console.log('[QuestsView] submissions event received:', payload.event, payload.new, payload.old);
+        const sub = payload.new || payload.old;
+        if (sub?.klan_id === session.klan_id) {
+          console.log('[QuestsView] Submission event for OUR klan:', sub.id, sub.status);
+          loadSubmissions();
+          loadQuests();
+        } else {
+          console.log('[QuestsView] Submission event for DIFFERENT klan:', sub?.klan_id, 'our klan:', session.klan_id);
+        }
+      })
+      .subscribe((status) => {
+        console.log('[QuestsView] Realtime status:', status);
+      });
+
+    return () => {
+      console.log('[QuestsView] Cleaning up realtime subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [session?.game_id, session?.klan_id, loadSubmissions, loadQuests]);
 
   const { scan, feedback } = useQRScanner(loadQuests);
 
@@ -249,6 +293,12 @@ export function QuestsView() {
               isActivating={activating === quest.id}
               onActivate={() => activateQuest(quest.id)}
               onScan={() => setQrQuest(quest)}
+              onUploadPhoto={(taskId: string) => {
+                if (quest.activationId) {
+                  setUploadTask({ taskId, questActivationId: quest.activationId });
+                }
+              }}
+              submissions={submissions}
             />
           );
         })}
@@ -262,6 +312,20 @@ export function QuestsView() {
             scan(questId, code);
           }}
           onClose={() => setQrQuest(null)}
+        />
+      )}
+
+      {uploadTask && session?.klan_id && (
+        <MediaUploadModal
+          taskId={uploadTask.taskId}
+          questActivationId={uploadTask.questActivationId}
+          klanId={session.klan_id}
+          gameId={session.game_id}
+          onClose={() => setUploadTask(null)}
+          onSubmit={() => {
+            setUploadTask(null);
+            loadSubmissions();
+          }}
         />
       )}
     </div>
@@ -327,12 +391,16 @@ function QuestCard({
   isActivating,
   onActivate,
   onScan,
+  onUploadPhoto,
+  submissions,
 }: {
   quest: QuestWithState;
   state: QuestState;
   isActivating: boolean;
   onActivate: () => void;
   onScan: () => void;
+  onUploadPhoto: (taskId: string) => void;
+  submissions: Submission[];
 }) {
   const typeIcons: Record<string, string> = {
     gps: '📍',
@@ -422,6 +490,33 @@ function QuestCard({
           📱 Skanuj kod QR ({currentTask.scannedMarkerIds.length}/{currentTask.totalMarkers})
         </button>
       )}
+
+      {state === 'active' && currentTask && !currentTask.completed && currentTask.type === 'photo' && (() => {
+        const taskSubmission = submissions.find(s => s.task_id === currentTask.id && s.status === 'pending');
+        const rejectedSubmission = submissions.find(s => s.task_id === currentTask.id && s.status === 'rejected');
+        if (taskSubmission) {
+          return (
+            <div className="quest-card__submission-status quest-card__submission-status--pending">
+              ⏳ Oczekuje na weryfikację przez Boga
+            </div>
+          );
+        }
+        if (rejectedSubmission) {
+          return (
+            <div className="quest-card__submission-status quest-card__submission-status--rejected">
+              ❌ Odrzucone: {rejectedSubmission.admin_comment || 'Brak komentarza'}
+              <button className="quest-card__action-btn quest-card__action-btn--retry" onClick={() => onUploadPhoto(currentTask.id)}>
+                🔄 Wyślij ponownie
+              </button>
+            </div>
+          );
+        }
+        return (
+          <button className="quest-card__action-btn" onClick={() => onUploadPhoto(currentTask.id)}>
+            📷 Wyślij dowód (zdjęcie lub wideo)
+          </button>
+        );
+      })()}
 
       {state === 'active' && quest.type !== 'qr' && quest.tasks.length === 0 && (
         <div className="quest-card__instructions">📍 Udaj się na miejsce wskazane na mapie</div>

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       chapter_quest_links: {
@@ -775,6 +800,80 @@ export type Database = {
           },
         ]
       }
+      submissions: {
+        Row: {
+          admin_comment: string | null
+          id: string
+          klan_id: string
+          media_type: string
+          media_url: string
+          player_id: string | null
+          quest_activation_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string | null
+          task_id: string
+        }
+        Insert: {
+          admin_comment?: string | null
+          id?: string
+          klan_id: string
+          media_type: string
+          media_url: string
+          player_id?: string | null
+          quest_activation_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          task_id: string
+        }
+        Update: {
+          admin_comment?: string | null
+          id?: string
+          klan_id?: string
+          media_type?: string
+          media_url?: string
+          player_id?: string | null
+          quest_activation_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_klan_id_fkey"
+            columns: ["klan_id"]
+            isOneToOne: false
+            referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_quest_activation_id_fkey"
+            columns: ["quest_activation_id"]
+            isOneToOne: false
+            referencedRelation: "quest_activations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_completions: {
         Row: {
           completed_at: string | null
@@ -1088,6 +1187,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

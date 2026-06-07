@@ -1840,3 +1840,168 @@
   height: 24px;
   object-fit: contain;
 }
+
+/* Submissions Panel */
+.admin-submission-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.admin-submission-card--reviewed {
+  opacity: 0.7;
+}
+
+.admin-submission-card--approved {
+  border-color: var(--color-mokosz);
+}
+
+.admin-submission-card--rejected {
+  border-color: #ef4444;
+}
+
+.admin-submission-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-submission-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-submission-card__quest {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.admin-submission-card__task {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.admin-submission-card__klan {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.admin-submission-card__time {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.admin-submission-card__badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-submission-card__badge--photo {
+  background: rgba(255, 107, 53, 0.2);
+  color: #FF6B35;
+}
+
+.admin-submission-card__badge--video {
+  background: rgba(155, 89, 182, 0.2);
+  color: #9B59B6;
+}
+
+.admin-submission-card__badge--approved {
+  background: rgba(46, 139, 87, 0.2);
+  color: var(--color-mokosz);
+}
+
+.admin-submission-card__badge--rejected {
+  background: rgba(220, 38, 38, 0.2);
+  color: #ef4444;
+}
+
+.admin-submission-card__media {
+  margin-bottom: 12px;
+}
+
+.admin-submission-card__image {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.admin-submission-card__video {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+}
+
+.admin-submission-card__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-submission-card__btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: opacity 0.2s;
+}
+
+.admin-submission-card__btn:hover {
+  opacity: 0.8;
+}
+
+.admin-submission-card__btn--approve {
+  background: var(--color-mokosz);
+  color: #fff;
+}
+
+.admin-submission-card__btn--reject {
+  background: rgba(220, 38, 38, 0.3);
+  color: #ef4444;
+}
+
+.admin-submission-card__comment {
+  flex: 1;
+  min-width: 150px;
+  padding: 8px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.admin-submission-card__admin-comment {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-top: 8px;
+}
+
+.admin-panel__toggle {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 8px 0;
+  font-weight: 600;
+}
+
+.admin-panel__toggle:hover {
+  color: #fff;
+}

@@ -35,6 +35,13 @@ export const qrIcon = new L.Icon({
   popupAnchor: [0, -18],
 });
 
+export const photoIcon = new L.Icon({
+  iconUrl: '/markers/photo.svg',
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+  popupAnchor: [0, -18],
+});
+
 /*
  * Aby użyć PNG zamiast SVG, umieść pliki w `/public/markers/png/`
  * i podmień `iconUrl` np. na `'/markers/png/quest.png'`.
