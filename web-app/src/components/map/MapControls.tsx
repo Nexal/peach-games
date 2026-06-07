@@ -79,9 +79,10 @@ export function LocationMarker({ watchPosition = true }: LocationMarkerProps) {
 interface CenterOnLocationButtonProps {
   icon?: string;
   size?: number;
+  children?: React.ReactNode;
 }
 
-export function CenterOnLocationButton({ icon = '📍', size = 44 }: CenterOnLocationButtonProps) {
+export function CenterOnLocationButton({ icon = '📍', size = 44, children }: CenterOnLocationButtonProps) {
   const map = useMap();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,6 +137,7 @@ export function CenterOnLocationButton({ icon = '📍', size = 44 }: CenterOnLoc
       >
         {loading ? '⏳' : icon}
       </button>
+      {children}
       {error && <span className="map-control-error">{error}</span>}
     </div>
   );

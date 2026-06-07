@@ -378,18 +378,16 @@ function MapContent() {
         );
       })}
 
-      <CenterOnLocationButton />
-
-      <div className="map-controls">
+      <CenterOnLocationButton>
         <button
           onClick={() => setShowClanMembers(prev => !prev)}
           className={`map-control-button map-clan-toggle ${showClanMembers ? 'map-clan-toggle--active' : ''}`}
           title={showClanMembers ? 'Ukryj członków klanu' : 'Pokaż członków klanu'}
           style={{ width: 44, height: 44 }}
         >
-          {showClanMembers ? '👥' : '‍♂️'}
+          {showClanMembers ? '👥' : '‍️'}
         </button>
-      </div>
+      </CenterOnLocationButton>
 
       {scanningMarker && (
         <QRScannerModal
