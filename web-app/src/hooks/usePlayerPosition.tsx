@@ -60,16 +60,17 @@ export function PlayerPositionProvider({ children }: { children: React.ReactNode
         const playerId = session?.player_id || session?.id;
         if (playerId && session?.game_id) {
           console.log('[PlayerPosition] Saving position:', playerId, session.game_id, newPosition.lat, newPosition.lng);
-          const { error } = await supabase.from('player_positions').upsert({
+          supabase.from('player_positions').upsert({
             player_id: playerId,
             game_id: session.game_id,
             lat: newPosition.lat,
             lng: newPosition.lng,
             accuracy: newPosition.accuracy,
             updated_at: new Date().toISOString(),
-          }, { onConflict: 'player_id,game_id' });
-          if (error) console.error('[PlayerPosition] Upsert error:', error);
-          else console.log('[PlayerPosition] Position saved successfully');
+          }, { onConflict: 'player_id,game_id' }).then(({ error }) => {
+            if (error) console.error('[PlayerPosition] Upsert error:', error);
+            else console.log('[PlayerPosition] Position saved successfully');
+          });
         }
       },
       (err) => console.warn('Provider initial geolocation error:', err),
