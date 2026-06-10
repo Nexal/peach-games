@@ -1433,11 +1433,11 @@ function MapPanel({ gameId, klans }: MapPanelProps) {
           lng,
           accuracy,
           updated_at,
-          players:player_id (
+          players!inner (
             id,
             name,
             klan_id,
-            klans:klan_id (
+            klans!inner (
               id,
               name,
               theme_color
