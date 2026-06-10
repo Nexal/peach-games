@@ -1519,24 +1519,24 @@ function MapPanel({ gameId, klans }: MapPanelProps) {
               className: 'admin-player-marker',
               html: `
                 <div style="
-                  width: 36px;
-                  height: 36px;
+                  width: 20px;
+                  height: 20px;
                   background: ${klanColor};
-                  border: 3px solid #fff;
+                  border: 2px solid #fff;
                   border-radius: 50%;
                   display: flex;
                   align-items: center;
                   justify-content: center;
                   font-weight: bold;
-                  font-size: 12px;
+                  font-size: 8px;
                   color: #fff;
-                  box-shadow: 0 0 12px ${klanColor};
+                  box-shadow: 0 0 8px ${klanColor};
                 ">
                   ${playerName.charAt(0).toUpperCase()}
                 </div>
               `,
-              iconSize: [36, 36],
-              iconAnchor: [18, 18],
+              iconSize: [20, 20],
+              iconAnchor: [10, 10],
             });
 
             return (

@@ -240,27 +240,28 @@ export function useClanMemberPositions(gameId: string | undefined, klanId: strin
           lng,
           accuracy,
           updated_at,
-          players:player_id (
+          players!inner (
             id,
-            name
+            name,
+            klan_id
           )
         `)
         .eq('game_id', gameId)
+        .eq('players.klan_id', klanId)
+        .neq('player_id', currentPlayerId)
         .gt('updated_at', new Date(Date.now() - 5 * 60 * 1000).toISOString())
         .order('updated_at', { ascending: false });
 
       if (data) {
-        const filtered = (data as any[])
-          .filter((p: any) => p.player_id !== currentPlayerId)
-          .map((p: any) => ({
-            player_id: p.player_id,
-            player_name: p.players?.name || 'Nieznany',
-            lat: p.lat,
-            lng: p.lng,
-            accuracy: p.accuracy,
-            updated_at: p.updated_at,
-          }));
-        setMembers(filtered);
+        const transformed = (data as any[]).map((p: any) => ({
+          player_id: p.player_id,
+          player_name: p.players?.name || 'Nieznany',
+          lat: p.lat,
+          lng: p.lng,
+          accuracy: p.accuracy,
+          updated_at: p.updated_at,
+        }));
+        setMembers(transformed);
       }
     };
 
