@@ -47,39 +47,29 @@ function AppContent() {
   useEffect(() => {
     const verifyAndSetSession = async () => {
       const pathname = window.location.pathname;
-      console.log('[App] verifyAndSetSession start, pathname:', pathname);
-      
       if (pathname === '/join' || pathname === '/admin') {
-        console.log('[App] Skipping session verify for /join or /admin');
         setSession(null);
         return;
       }
 
       const stored = getPlayerSession();
-      console.log('[App] stored session:', stored);
-      
       if (!stored?.id || !stored?.game_id) {
-        console.log('[App] No stored session, setting null');
         setSession(null);
         return;
       }
 
-      const { data: player, error } = await supabase
+      const { data: player } = await supabase
         .from('players')
         .select('id, name, klan_id, joined_at, klans(id, name, theme_color)')
         .eq('id', stored.id)
         .single();
 
-      console.log('[App] player fetch result:', { player, error });
-
       if (!player || !player.joined_at) {
-        console.log('[App] Player not found or joined_at is null, clearing session');
         clearPlayerSession();
         setSession(null);
         return;
       }
 
-      console.log('[App] Setting session for player:', player.name);
       setSession({
         id: player.id,
         player_id: player.id,
@@ -110,31 +100,17 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    console.log('[App] splash useEffect triggered, session:', session, 'showJoin:', showJoin, 'showAdmin:', showAdmin, 'splashShownRef:', splashShownRef.current);
-    
-    if (showJoin || showAdmin) {
-      console.log('[App] Skipping splash for /join or /admin');
-      return;
-    }
-    if (splashShownRef.current) {
-      console.log('[App] Splash already shown, skipping');
-      return;
-    }
-    if (!session) {
-      console.log('[App] No session, skipping splash');
-      return;
-    }
+    if (showJoin || showAdmin) return;
+    if (splashShownRef.current) return;
+    if (!session) return;
 
-    console.log('[App] Showing splash');
     splashShownRef.current = true;
     setShowSplash(true);
     setSplashClosing(false);
 
     splashTimerRef.current = setTimeout(() => {
-      console.log('[App] Splash closing after 2s');
       setSplashClosing(true);
       setTimeout(() => {
-        console.log('[App] Splash hidden');
         setShowSplash(false);
         setSplashClosing(false);
       }, 600);

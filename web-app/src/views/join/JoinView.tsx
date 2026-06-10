@@ -121,20 +121,16 @@ export function JoinView() {
     const finalName = customName.trim() || player.name;
     const klan = klans.find(k => k.id === player.klan_id);
 
-    console.log('[JoinView] handleJoin start, player:', player.id, 'name:', finalName);
-
     const { error: updateError } = await supabase
       .from('players')
       .update({ name: finalName, joined_at: new Date().toISOString() })
       .eq('id', selectedPlayerId);
 
     if (updateError) {
-      console.error('[JoinView] update error:', updateError);
       setError('Błąd podczas zapisywania. Spróbuj ponownie.');
       return;
     }
 
-    console.log('[JoinView] player updated, setting session');
     setPlayerSession({
       id: player.id,
       name: finalName,
@@ -144,7 +140,6 @@ export function JoinView() {
       game_id: selectedGameId || '',
     });
 
-    console.log('[JoinView] redirecting to /');
     window.location.href = '/';
   };
 
