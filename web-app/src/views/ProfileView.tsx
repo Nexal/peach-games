@@ -14,9 +14,11 @@ export function ProfileView() {
   }, []);
 
   const handleLogout = () => {
+    if (!session) return;
+    const gameId = session.game_id;
     clearPlayerSession();
     setSession(null);
-    window.location.reload();
+    window.location.href = gameId ? `/join?game=${gameId}` : '/';
   };
 
   if (!session) {

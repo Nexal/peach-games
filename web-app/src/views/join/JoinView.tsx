@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { setPlayerSession, getPlayerSession } from '../../lib/playerSession';
+import { setPlayerSession, getPlayerSession, clearPlayerSession } from '../../lib/playerSession';
 import type { Database } from '../../types/database.types';
 import './JoinView.css';
 
@@ -19,10 +19,37 @@ export function JoinView() {
   const [isDevMode, setIsDevMode] = useState(false);
 
   useEffect(() => {
-    const session = getPlayerSession();
-    if (session) {
-      window.location.href = '/';
-    }
+    const checkAutoLogin = async () => {
+      const stored = getPlayerSession();
+      if (!stored?.id || !stored?.game_id) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const gameParam = params.get('game');
+
+      if (gameParam && stored.game_id !== gameParam) return;
+
+      const { data: player } = await supabase
+        .from('players')
+        .select('id, name, klan_id, joined_at, klans(id, name, theme_color)')
+        .eq('id', stored.id)
+        .single();
+
+      if (player?.joined_at) {
+        setPlayerSession({
+          id: player.id,
+          name: player.name,
+          klan_id: player.klan_id || '',
+          klan_name: (player.klans as any)?.name || 'Nieznany',
+          klan_color: (player.klans as any)?.theme_color || '#888',
+          game_id: stored.game_id,
+        });
+        window.location.href = '/';
+      } else {
+        clearPlayerSession();
+      }
+    };
+
+    checkAutoLogin();
   }, []);
 
   useEffect(() => {
@@ -94,16 +121,20 @@ export function JoinView() {
     const finalName = customName.trim() || player.name;
     const klan = klans.find(k => k.id === player.klan_id);
 
+    console.log('[JoinView] handleJoin start, player:', player.id, 'name:', finalName);
+
     const { error: updateError } = await supabase
       .from('players')
       .update({ name: finalName, joined_at: new Date().toISOString() })
       .eq('id', selectedPlayerId);
 
     if (updateError) {
+      console.error('[JoinView] update error:', updateError);
       setError('Błąd podczas zapisywania. Spróbuj ponownie.');
       return;
     }
 
+    console.log('[JoinView] player updated, setting session');
     setPlayerSession({
       id: player.id,
       name: finalName,
@@ -113,6 +144,7 @@ export function JoinView() {
       game_id: selectedGameId || '',
     });
 
+    console.log('[JoinView] redirecting to /');
     window.location.href = '/';
   };
 
