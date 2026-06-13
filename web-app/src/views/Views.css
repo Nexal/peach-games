@@ -1788,18 +1788,20 @@
   border-radius: 100px 100px 0 0;
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
+  position: relative;
+  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
 }
 
 .home-hero__clan-icon {
-  width: 112px;
-  height: 160px;
+  width: 140px;
+  height: 200px;
   border-radius: 16px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 12px;
-  background: rgba(0, 0, 0, 0.6);
 }
 
 .home-hero__clan-icon img {
@@ -1809,16 +1811,17 @@
 }
 
 .home-hero__clan-icon span {
-  font-size: 4rem;
+  font-size: 5rem;
   line-height: 1;
 }
 
 .home-hero__clan-name {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  white-space: nowrap;
   text-align: center;
   color: var(--klan-color, #fff);
+  max-width: 120px;
+  line-height: 1.2;
 }
 
 .home-hero__player-name {
