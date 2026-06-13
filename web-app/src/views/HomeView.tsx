@@ -99,7 +99,7 @@ export function HomeView() {
           className="view__logo view__logo--small"
           onClick={() => setLogoEnlarged(true)}
         />
-        <span className="view__title-compact">Peach Games</span>
+        <span className="view__title-compact">Noc Kupały</span>
         <button
           className="home-profile-btn"
           onClick={() => window.history.pushState({}, '', '/profile')}

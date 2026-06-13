@@ -1676,28 +1676,37 @@
 }
 
 .view__header--compact {
-  flex-direction: column;
-  justify-content: flex-start;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 16px 16px 8px;
   position: relative;
 }
 
 .view__logo--small {
-  width: 80px;
-  height: 80px;
+  width: 56px;
+  height: 56px;
 }
 
 .view__title-compact {
   font-family: 'Metamorphous', serif;
-  font-size: 1.4rem;
+  font-size: 1.8rem;
   background: linear-gradient(90deg, var(--color-perun), var(--color-weles), var(--color-mokosz));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-weight: 700;
   letter-spacing: 2px;
+}
+
+.view__title-sub-compact {
+  font-family: 'Metamorphous', serif;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 4px;
+  text-transform: uppercase;
 }
 
 .view__content--home-centered {
@@ -1714,17 +1723,18 @@
 .home-hero {
   position: relative;
   width: 100%;
-  max-width: 400px;
-  height: 55vh;
+  height: 45vh;
   margin-top: 4px;
 }
 
 .home-hero__avatar-wrap {
-  width: 100%;
+  width: 90%;
   height: 100%;
+  /* aspect-ratio: 1; */
   overflow: hidden;
   border-radius: 50%;
   position: relative;
+  margin: 0 auto;
   border: 4px solid var(--klan-color, #fff);
   box-shadow:
     0 0 20px color-mix(in srgb, var(--klan-color, #fff) 40%, transparent),
@@ -1764,13 +1774,13 @@
 /* Info row at 80% height, overlapping the fading avatar */
 .home-hero__info {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 5%;
+  left: -15px;
+  right: 15px;
+  bottom: -15%;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 20px;
+  gap: 50px;
+  /* padding: 0 20px; */
   z-index: 2;
 }
 
@@ -1794,7 +1804,7 @@
 }
 
 .home-hero__clan-icon {
-  width: 140px;
+  width: 120px;
   height: 130px;
   border-radius: 16px;
   overflow: hidden;
