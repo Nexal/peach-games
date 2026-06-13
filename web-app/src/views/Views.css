@@ -1766,7 +1766,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 15%;
+  bottom: 5%;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -1789,24 +1789,24 @@
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
   position: relative;
-  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
 }
 
 .home-hero__clan-icon {
   width: 140px;
-  height: 200px;
+  height: 130px;
   border-radius: 16px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px;
+  padding: 6px;
 }
 
 .home-hero__clan-icon img {
-  width: 100%;
-  height: 100%;
+  width: 140%;
+  height: 140%;
   object-fit: contain;
 }
 
@@ -1816,7 +1816,7 @@
 }
 
 .home-hero__clan-name {
-  font-size: 0.9rem;
+  font-size: 1.2rem;
   font-weight: 700;
   text-align: center;
   color: var(--klan-color, #fff);
