@@ -1723,16 +1723,21 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 50%;
   position: relative;
+  border: 4px solid var(--klan-color, #fff);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--klan-color, #fff) 40%, transparent),
+    0 0 40px color-mix(in srgb, var(--klan-color, #fff) 20%, transparent),
+    inset 0 0 15px color-mix(in srgb, var(--klan-color, #fff) 15%, transparent);
 }
 
 .home-hero__avatar {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
 }
 
 .home-hero__avatar-placeholder {
@@ -1742,8 +1747,8 @@
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.05);
-  mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
 }
 
 .home-hero__avatar-placeholder img {

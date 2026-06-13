@@ -110,7 +110,7 @@ export function HomeView() {
       </header>
 
       <main className="view__content view__content--home-centered">
-        <div className="home-hero">
+        <div className="home-hero" style={{ '--klan-color': session.klan_color } as React.CSSProperties}>
           <div className="home-hero__avatar-wrap">
             {avatarUrl ? (
               <img
