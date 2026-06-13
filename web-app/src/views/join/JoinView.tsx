@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { setPlayerSession, getPlayerSession, clearPlayerSession } from '../../lib/playerSession';
-import { getClanPrompt } from '../../lib/clanPrompts';
 import { transformPhoto } from '../../lib/geminiTransform';
 import type { Database } from '../../types/database.types';
 import './JoinView.css';
@@ -198,12 +197,12 @@ export function JoinView() {
 
         const originalUrl = urlData.publicUrl;
 
-        const prompt = (klan && getClanPrompt(klan.name)) || '';
+        const clanName = klan?.name || '';
 
-        if (prompt && photoPreview) {
+        if (clanName && photoPreview) {
           const base64Data = photoPreview.split(',')[1];
 
-          const transformedBase64 = await transformPhoto(base64Data, prompt);
+          const transformedBase64 = await transformPhoto(base64Data, clanName);
 
           if (transformedBase64) {
             const transformedPath = `${selectedPlayerId}_avatar.png`;

@@ -1,28 +1,14 @@
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string;
-const GEMINI_MODEL = 'gemini-2.0-flash-exp-image-generation';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-const TRANSFORM_TIMEOUT = 30000;
-
-interface GeminiResponse {
-  candidates?: Array<{
-    content?: {
-      parts?: Array<{
-        inlineData?: {
-          mimeType: string;
-          data: string;
-        };
-        text?: string;
-      }>;
-    };
-  }>;
-}
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/transform-avatar`;
+const TRANSFORM_TIMEOUT = 35000;
 
 export async function transformPhoto(
   imageBase64: string,
-  prompt: string
+  clanName: string
 ): Promise<string | null> {
-  if (!GEMINI_API_KEY) {
-    console.warn('[GeminiTransform] No API key configured, using original photo');
+  if (!SUPABASE_URL) {
+    console.warn('[GeminiTransform] No Supabase URL configured');
     return null;
   }
 
@@ -30,47 +16,28 @@ export async function transformPhoto(
   const timeoutId = setTimeout(() => controller.abort(), TRANSFORM_TIMEOUT);
 
   try {
-    const requestBody = {
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType: 'image/jpeg',
-                data: imageBase64,
-              },
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        candidateCount: 1,
-      },
-    };
-
-    const response = await fetch(GEMINI_API_URL, {
+    const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ imageBase64, clanName }),
       signal: controller.signal,
     });
 
     if (!response.ok) {
-      console.error('[GeminiTransform] API error:', response.status, await response.text());
+      console.error('[GeminiTransform] Edge function error:', response.status);
       return null;
     }
 
-    const data: GeminiResponse = await response.json();
+    const data = await response.json();
 
-    for (const part of data.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData?.data) {
-        return part.inlineData.data;
-      }
+    if (data.transformedBase64) {
+      return data.transformedBase64;
     }
 
-    console.warn('[GeminiTransform] No image data in response, using original photo');
+    console.warn('[GeminiTransform] No transformed image in response, using original photo');
     return null;
   } catch (err: any) {
     if (err.name === 'AbortError') {
