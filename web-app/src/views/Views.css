@@ -1665,150 +1665,202 @@
   color: var(--color-text-main) !important;
 }
 
-/* Home Player Card */
-.home-player-card {
-  background: linear-gradient(145deg, rgba(30, 30, 40, 0.9), rgba(20, 20, 30, 0.95));
-  border: 2px solid var(--glass-border);
-  border-top: none;
-  border-radius: 20px;
-  padding: 20px;
-  padding-top: 2px;
-  margin-bottom: 24px;
-  position: relative;
-  overflow: hidden;
+/* Home — Focused on Player Layout */
+
+.view--home-focused {
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 215, 0, 0.04) 0%, transparent 60%),
+    radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(46, 139, 87, 0.03) 0%, transparent 40%),
+    var(--color-bg-dark);
 }
 
-.home-player-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--color-perun), var(--color-weles), var(--color-mokosz));
-}
-
-.home-player-card__row {
-  display: flex;
+.view__header--compact {
+  flex-direction: row;
+  justify-content: flex-start;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 12px;
+  gap: 10px;
+  padding: 12px 16px;
+  position: relative;
 }
 
-.home-player-card__clan-icon-wrap {
-  width: 120px;
-  height: 120px;
-  border-radius: 20px;
-  border: 2px solid;
+.view__logo--small {
+  width: 36px;
+  height: 36px;
+}
+
+.view__title-compact {
+  font-family: 'Metamorphous', serif;
+  font-size: 0.9rem;
+  background: linear-gradient(90deg, var(--color-perun), var(--color-weles));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.view__content--home-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 16px;
+  flex: 1;
+}
+
+/* Golden Aura Ring */
+.home-aura {
+  position: relative;
+  width: 260px;
+  height: 260px;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  flex-shrink: 0;
+  margin-top: 8px;
 }
 
-.home-player-card__clan-icon-wrap img {
+.home-aura__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  box-shadow:
+    0 0 30px rgba(255, 215, 0, 0.15),
+    0 0 60px rgba(255, 215, 0, 0.08),
+    inset 0 0 30px rgba(255, 215, 0, 0.05);
+  animation: aura-pulse 3s ease-in-out infinite;
+}
+
+@keyframes aura-pulse {
+  0%, 100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.15), 0 0 60px rgba(255, 215, 0, 0.08), inset 0 0 30px rgba(255, 215, 0, 0.05); }
+  50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.25), 0 0 80px rgba(255, 215, 0, 0.12), inset 0 0 40px rgba(255, 215, 0, 0.08); }
+}
+
+/* Avatar inside aura */
+.home-aura__avatar-wrap {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.home-aura__avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-aura__avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.home-aura__avatar-placeholder img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
+
+.home-aura__avatar-placeholder span {
+  font-size: 4rem;
+}
+
+/* Clan tag at bottom-left of aura */
+.home-aura__clan-tag {
+  position: absolute;
+  bottom: 10px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 20px;
+  padding: 4px 12px 4px 4px;
+  z-index: 2;
+  backdrop-filter: blur(6px);
+}
+
+.home-aura__clan-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.home-aura__clan-icon img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-.home-player-card__clan-icon-wrap span {
-  font-size: 4rem;
+.home-aura__clan-icon span {
+  font-size: 1.2rem;
   line-height: 1;
 }
 
-.home-player-card__clan-label {
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.home-player-card__avatar {
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  border: 3px solid;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.home-player-card__name {
-  font-size: 1.6rem;
+.home-aura__clan-name {
+  font-size: 0.85rem;
   font-weight: 700;
-  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Player name below aura */
+.home-aura__player-name {
+  font-size: 1.5rem;
+  font-weight: 700;
   color: var(--color-text-main);
   margin: 0;
+  text-align: center;
 }
 
-.home-player-card__ogniki {
+/* Fire points bar */
+.home-aura__ogniki {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 16px 24px;
+  gap: 10px;
+  padding: 10px 28px;
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%);
-  border: 1px solid rgba(255, 215, 0, 0.5);
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(255, 215, 0, 0.25);
-  margin-top: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  border-radius: 20px;
 }
 
-.home-player-card__ogniki-icon {
-  font-size: 2rem;
+.home-aura__ogniki-icon {
+  font-size: 1.4rem;
   line-height: 1;
 }
 
-.home-player-card__ogniki-value {
-  font-size: 1.6rem;
+.home-aura__ogniki-value {
+  font-size: 1.3rem;
   font-weight: 800;
   color: var(--color-perun);
   line-height: 1;
 }
 
-@media (max-width: 400px) {
-  .home-player-card__clan-icon-wrap {
-    width: 80px;
-    height: 80px;
-  }
-
-  .home-player-card__clan-icon-wrap span {
-    font-size: 3rem;
-  }
-
-  .home-player-card__avatar {
-    width: 90px;
-    height: 90px;
-  }
-
-  .home-player-card__name {
-    font-size: 1.2rem;
-  }
-}
-
-/* Home Actions Hint */
-.home-actions {
+/* Bottom hint */
+.home-aura__hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
   text-align: center;
-  padding: 24px 20px;
-}
-
-.home-actions__hint {
-  font-size: 1rem;
-  background: linear-gradient(45deg, var(--color-perun), #ff9500);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: 500;
   margin: 0;
-  line-height: 1.5;
-  letter-spacing: 0.5px;
+  opacity: 0.6;
 }
 
 .home-profile-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid var(--glass-border);
@@ -1818,6 +1870,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
   padding: 0;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .home-profile-btn:hover {

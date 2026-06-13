@@ -82,7 +82,7 @@ export function HomeView() {
   const clanIcon = getClanIcon(session.klan_name);
 
   return (
-    <div className="view view--home">
+    <div className="view view--home view--home-focused">
       {logoEnlarged && (
         <div className="logo-overlay" onClick={() => setLogoEnlarged(false)}>
           <img
@@ -92,19 +92,14 @@ export function HomeView() {
           />
         </div>
       )}
-      <header className="view__header view__header--relative">
+      <header className="view__header view__header--compact">
         <img
           src="/logo_peachgames_kupala-Photoroom.png"
           alt="PeachGames Logo"
-          className="view__logo"
+          className="view__logo view__logo--small"
           onClick={() => setLogoEnlarged(true)}
-          style={{ cursor: 'pointer' }}
         />
-<h1 className="view__title">
-          <span className="view__title-main">Peach Games</span>
-          <span className="view__title-sub">Noc Kupały</span>
-        </h1>
-        <p className="view__subtitle">Witaj na ziemiach Kupali</p>
+        <span className="view__title-compact">Peach Games</span>
         <button
           className="home-profile-btn"
           onClick={() => window.history.pushState({}, '', '/profile')}
@@ -114,37 +109,19 @@ export function HomeView() {
         </button>
       </header>
 
-      <main className="view__content">
-        <div className="home-player-card" style={{ borderColor: session.klan_color }}>
-          <div className="home-player-card__row">
-            <div
-              className="home-player-card__clan-icon-wrap"
-              style={{ borderColor: session.klan_color }}
-            >
-              {clanIcon.image ? (
-                <img src={clanIcon.image} alt={session.klan_name} />
-              ) : (
-                <span>{clanIcon.emoji}</span>
-              )}
-            </div>
-            <span className="home-player-card__clan-label" style={{ color: session.klan_color }}>
-              {session.klan_name}
-            </span>
-          </div>
+      <main className="view__content view__content--home-centered">
+        <div className="home-aura">
+          <div className="home-aura__ring" />
 
-          <div className="home-player-card__row">
+          <div className="home-aura__avatar-wrap">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={session.name}
-                className="home-player-card__avatar"
-                style={{ borderColor: session.klan_color }}
+                className="home-aura__avatar"
               />
             ) : (
-              <div
-                className="home-player-card__clan-icon-wrap"
-                style={{ borderColor: session.klan_color }}
-              >
+              <div className="home-aura__avatar-placeholder">
                 {clanIcon.image ? (
                   <img src={clanIcon.image} alt={session.klan_name} />
                 ) : (
@@ -152,18 +129,35 @@ export function HomeView() {
                 )}
               </div>
             )}
-            <h2 className="home-player-card__name">{session.name}</h2>
           </div>
 
-          <div className="home-player-card__ogniki">
-            <span className="home-player-card__ogniki-icon">🔥</span>
-            <span className="home-player-card__ogniki-value">{klanPoints}</span>
+          <div className="home-aura__clan-tag">
+            <div className="home-aura__clan-icon">
+              {clanIcon.image ? (
+                <img src={clanIcon.image} alt={session.klan_name} />
+              ) : (
+                <span>{clanIcon.emoji}</span>
+              )}
+            </div>
+            <span
+              className="home-aura__clan-name"
+              style={{ color: session.klan_color }}
+            >
+              {session.klan_name}
+            </span>
           </div>
         </div>
 
-        <div className="home-actions">
-          <p className="home-actions__hint">🔥 Zbieraj ogniki, wznieś swój klan na szczyt!</p>
+        <h2 className="home-aura__player-name">{session.name}</h2>
+
+        <div className="home-aura__ogniki">
+          <span className="home-aura__ogniki-icon">🔥</span>
+          <span className="home-aura__ogniki-value">{klanPoints}</span>
         </div>
+
+        <p className="home-aura__hint">
+          Zbieraj ogniki, wznieś swój klan na szczyt
+        </p>
       </main>
     </div>
   );
