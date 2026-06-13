@@ -1778,42 +1778,47 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   flex-shrink: 0;
+  padding: 16px 12px 12px;
+  border-top: 2px solid var(--klan-color, #fff);
+  border-left: 2px solid var(--klan-color, #fff);
+  border-right: 2px solid var(--klan-color, #fff);
+  border-bottom: none;
+  border-radius: 100px 100px 0 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
 }
 
 .home-hero__clan-icon {
-  width: 56px;
-  height: 80px;
-  border-radius: 10px;
+  width: 112px;
+  height: 160px;
+  border-radius: 16px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 12px;
   background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(6px);
 }
 
 .home-hero__clan-icon img {
-  width: 85%;
-  height: 85%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
 .home-hero__clan-icon span {
-  font-size: 2rem;
+  font-size: 4rem;
   line-height: 1;
 }
 
 .home-hero__clan-name {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
   text-align: center;
-  background: rgba(0, 0, 0, 0.4);
-  padding: 2px 6px;
-  border-radius: 4px;
+  color: var(--klan-color, #fff);
 }
 
 .home-hero__player-name {
