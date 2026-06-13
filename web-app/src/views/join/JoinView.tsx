@@ -159,6 +159,13 @@ export function JoinView() {
     reader.readAsDataURL(file);
   };
 
+  const handleRegenerate = () => {
+    setExistingAvatar(null);
+    setPlayerAvatarUrl(null);
+    setPhotoFile(null);
+    setPhotoPreview(null);
+  };
+
   const handleJoin = async () => {
     if (!selectedPlayerId) return;
 
@@ -394,19 +401,24 @@ export function JoinView() {
 
               {existingAvatar ? (
                 <div className="join-photo">
-                  <label className="join-panel__label">Twój awatar:</label>
+                  <label className="join-panel__label">Twój awatar (kliknij by wygenerować nowy):</label>
                   <div
-                    className="join-photo__existing"
+                    className="join-photo__existing join-photo__existing--interactive"
                     style={{ borderColor: getKlanColor(selectedPlayer.klan_id) }}
+                    onClick={handleRegenerate}
+                    title="Kliknij by Bogowie nadali Ci nowe oblicze"
                   >
                     <img
                       src={existingAvatar}
                       alt="Twój awatar"
                       className="join-photo__preview"
                     />
+                    <div className="join-photo__regenerate-overlay">
+                      <span>🔄</span>
+                    </div>
                   </div>
                   <p className="join-photo__hint">
-                    Bogowie już nadali Ci oblicze. Możesz dołączyć.
+                    Kliknij awatar by wygenerować nowy
                   </p>
                 </div>
               ) : (
