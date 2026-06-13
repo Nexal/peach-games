@@ -130,7 +130,9 @@ export function HomeView() {
               </div>
             )}
           </div>
+        </div>
 
+        <div className="home-aura__below">
           <div className="home-aura__clan-tag">
             <div className="home-aura__clan-icon">
               {clanIcon.image ? (
@@ -146,9 +148,9 @@ export function HomeView() {
               {session.klan_name}
             </span>
           </div>
-        </div>
 
-        <h2 className="home-aura__player-name">{session.name}</h2>
+          <h2 className="home-aura__player-name">{session.name}</h2>
+        </div>
 
         <div className="home-aura__ogniki">
           <span className="home-aura__ogniki-icon">🔥</span>

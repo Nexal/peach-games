@@ -1677,27 +1677,27 @@
 
 .view__header--compact {
   flex-direction: row;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 16px;
+  padding: 20px 16px 8px;
   position: relative;
 }
 
 .view__logo--small {
-  width: 36px;
-  height: 36px;
+  width: 100px;
+  height: 100px;
 }
 
 .view__title-compact {
   font-family: 'Metamorphous', serif;
-  font-size: 0.9rem;
-  background: linear-gradient(90deg, var(--color-perun), var(--color-weles));
+  font-size: 1.6rem;
+  background: linear-gradient(90deg, var(--color-perun), var(--color-weles), var(--color-mokosz));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 2px;
 }
 
 .view__content--home-centered {
@@ -1713,8 +1713,8 @@
 /* Golden Aura Ring */
 .home-aura {
   position: relative;
-  width: 260px;
-  height: 260px;
+  width: 280px;
+  height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1727,21 +1727,21 @@
   border-radius: 50%;
   border: 2px solid rgba(255, 215, 0, 0.4);
   box-shadow:
-    0 0 30px rgba(255, 215, 0, 0.15),
-    0 0 60px rgba(255, 215, 0, 0.08),
-    inset 0 0 30px rgba(255, 215, 0, 0.05);
+    0 0 40px rgba(255, 215, 0, 0.15),
+    0 0 80px rgba(255, 215, 0, 0.08),
+    inset 0 0 40px rgba(255, 215, 0, 0.05);
   animation: aura-pulse 3s ease-in-out infinite;
 }
 
 @keyframes aura-pulse {
   0%, 100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.15), 0 0 60px rgba(255, 215, 0, 0.08), inset 0 0 30px rgba(255, 215, 0, 0.05); }
-  50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.25), 0 0 80px rgba(255, 215, 0, 0.12), inset 0 0 40px rgba(255, 215, 0, 0.08); }
+  50% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.25), 0 0 100px rgba(255, 215, 0, 0.12), inset 0 0 50px rgba(255, 215, 0, 0.08); }
 }
 
 /* Avatar inside aura */
 .home-aura__avatar-wrap {
-  width: 180px;
-  height: 180px;
+  width: 200px;
+  height: 200px;
   border-radius: 50%;
   overflow: hidden;
   position: relative;
@@ -1773,56 +1773,62 @@
   font-size: 4rem;
 }
 
-/* Clan tag at bottom-left of aura */
-.home-aura__clan-tag {
-  position: absolute;
-  bottom: 10px;
-  left: 20px;
+/* Clan tag + player name row below aura */
+.home-aura__below {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 20px;
-  padding: 4px 12px 4px 4px;
-  z-index: 2;
-  backdrop-filter: blur(6px);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* Clan tag after aura, horizontal */
+.home-aura__clan-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
 .home-aura__clan-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 60px;
+  height: 90px;
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
 }
 
 .home-aura__clan-icon img {
-  width: 100%;
-  height: 100%;
+  width: 85%;
+  height: 85%;
   object-fit: contain;
 }
 
 .home-aura__clan-icon span {
-  font-size: 1.2rem;
+  font-size: 2.2rem;
   line-height: 1;
 }
 
 .home-aura__clan-name {
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   font-weight: 700;
   white-space: nowrap;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
-/* Player name below aura */
+/* Player name next to clan */
 .home-aura__player-name {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--color-text-main);
   margin: 0;
-  text-align: center;
 }
 
 /* Fire points bar */
@@ -1859,6 +1865,9 @@
 }
 
 .home-profile-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -1870,8 +1879,6 @@
   cursor: pointer;
   transition: all 0.2s ease;
   padding: 0;
-  flex-shrink: 0;
-  margin-left: auto;
 }
 
 .home-profile-btn:hover {
