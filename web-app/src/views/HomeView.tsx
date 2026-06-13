@@ -110,18 +110,16 @@ export function HomeView() {
       </header>
 
       <main className="view__content view__content--home-centered">
-        <div className="home-aura">
-          <div className="home-aura__ring" />
-
-          <div className="home-aura__avatar-wrap">
+        <div className="home-hero">
+          <div className="home-hero__avatar-wrap">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={session.name}
-                className="home-aura__avatar"
+                className="home-hero__avatar"
               />
             ) : (
-              <div className="home-aura__avatar-placeholder">
+              <div className="home-hero__avatar-placeholder">
                 {clanIcon.image ? (
                   <img src={clanIcon.image} alt={session.klan_name} />
                 ) : (
@@ -130,26 +128,26 @@ export function HomeView() {
               </div>
             )}
           </div>
-        </div>
 
-        <div className="home-aura__below">
-          <div className="home-aura__clan-tag">
-            <div className="home-aura__clan-icon">
-              {clanIcon.image ? (
-                <img src={clanIcon.image} alt={session.klan_name} />
-              ) : (
-                <span>{clanIcon.emoji}</span>
-              )}
+          <div className="home-hero__info">
+            <div className="home-hero__clan">
+              <div className="home-hero__clan-icon">
+                {clanIcon.image ? (
+                  <img src={clanIcon.image} alt={session.klan_name} />
+                ) : (
+                  <span>{clanIcon.emoji}</span>
+                )}
+              </div>
+              <span
+                className="home-hero__clan-name"
+                style={{ color: session.klan_color }}
+              >
+                {session.klan_name}
+              </span>
             </div>
-            <span
-              className="home-aura__clan-name"
-              style={{ color: session.klan_color }}
-            >
-              {session.klan_name}
-            </span>
-          </div>
 
-          <h2 className="home-aura__player-name">{session.name}</h2>
+            <h2 className="home-hero__player-name">{session.name}</h2>
+          </div>
         </div>
 
         <div className="home-aura__ogniki">

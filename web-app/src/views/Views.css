@@ -1676,22 +1676,22 @@
 }
 
 .view__header--compact {
-  flex-direction: row;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
-  gap: 16px;
-  padding: 20px 16px 8px;
+  gap: 8px;
+  padding: 16px 16px 8px;
   position: relative;
 }
 
 .view__logo--small {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
 }
 
 .view__title-compact {
   font-family: 'Metamorphous', serif;
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   background: linear-gradient(90deg, var(--color-perun), var(--color-weles), var(--color-mokosz));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1704,117 +1704,105 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 16px;
   padding: 0 16px;
   flex: 1;
 }
 
-/* Golden Aura Ring */
-.home-aura {
+/* Hero Avatar Layout */
+.home-hero {
   position: relative;
-  width: 280px;
-  height: 280px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 8px;
+  width: 100%;
+  max-width: 400px;
+  height: 55vh;
+  margin-top: 4px;
 }
 
-.home-aura__ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 215, 0, 0.4);
-  box-shadow:
-    0 0 40px rgba(255, 215, 0, 0.15),
-    0 0 80px rgba(255, 215, 0, 0.08),
-    inset 0 0 40px rgba(255, 215, 0, 0.05);
-  animation: aura-pulse 3s ease-in-out infinite;
-}
-
-@keyframes aura-pulse {
-  0%, 100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.15), 0 0 60px rgba(255, 215, 0, 0.08), inset 0 0 30px rgba(255, 215, 0, 0.05); }
-  50% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.25), 0 0 100px rgba(255, 215, 0, 0.12), inset 0 0 50px rgba(255, 215, 0, 0.08); }
-}
-
-/* Avatar inside aura */
-.home-aura__avatar-wrap {
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
+.home-hero__avatar-wrap {
+  width: 100%;
+  height: 100%;
   overflow: hidden;
+  border-radius: 20px;
   position: relative;
-  z-index: 1;
 }
 
-.home-aura__avatar {
+.home-hero__avatar {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
 }
 
-.home-aura__avatar-placeholder {
+.home-hero__avatar-placeholder {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.05);
+  mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
 }
 
-.home-aura__avatar-placeholder img {
-  width: 70%;
-  height: 70%;
+.home-hero__avatar-placeholder img {
+  width: 40%;
+  height: 40%;
   object-fit: contain;
 }
 
-.home-aura__avatar-placeholder span {
-  font-size: 4rem;
+.home-hero__avatar-placeholder span {
+  font-size: 6rem;
 }
 
-/* Clan tag + player name row below aura */
-.home-aura__below {
+/* Info row at 80% height, overlapping the fading avatar */
+.home-hero__info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 15%;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 14px;
+  padding: 0 20px;
+  z-index: 2;
 }
 
-/* Clan tag after aura, horizontal */
-.home-aura__clan-tag {
+.home-hero__clan {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
 }
 
-.home-aura__clan-icon {
-  width: 60px;
-  height: 90px;
-  border-radius: 12px;
+.home-hero__clan-icon {
+  width: 56px;
+  height: 80px;
+  border-radius: 10px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(6px);
 }
 
-.home-aura__clan-icon img {
+.home-hero__clan-icon img {
   width: 85%;
   height: 85%;
   object-fit: contain;
 }
 
-.home-aura__clan-icon span {
-  font-size: 2.2rem;
+.home-hero__clan-icon span {
+  font-size: 2rem;
   line-height: 1;
 }
 
-.home-aura__clan-name {
-  font-size: 0.7rem;
+.home-hero__clan-name {
+  font-size: 0.65rem;
   font-weight: 700;
   white-space: nowrap;
   text-align: center;
@@ -1823,12 +1811,12 @@
   border-radius: 4px;
 }
 
-/* Player name next to clan */
-.home-aura__player-name {
-  font-size: 1.4rem;
+.home-hero__player-name {
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--color-text-main);
   margin: 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 /* Fire points bar */
@@ -1841,6 +1829,7 @@
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%);
   border: 1px solid rgba(255, 215, 0, 0.4);
   border-radius: 20px;
+  margin-top: 8px;
 }
 
 .home-aura__ogniki-icon {
