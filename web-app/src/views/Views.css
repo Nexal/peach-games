@@ -1696,9 +1696,9 @@
 }
 
 .home-player-card__clan-icon-wrap {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+  width: 120px;
+  height: 120px;
+  border-radius: 20px;
   border: 2px solid;
   display: flex;
   align-items: center;
@@ -1714,18 +1714,18 @@
 }
 
 .home-player-card__clan-icon-wrap span {
-  font-size: 2rem;
+  font-size: 4rem;
   line-height: 1;
 }
 
 .home-player-card__clan-label {
-  font-size: 1.1rem;
+  font-size: 1.5rem;
   font-weight: 600;
 }
 
 .home-player-card__avatar {
-  width: 72px;
-  height: 72px;
+  width: 130px;
+  height: 130px;
   border-radius: 50%;
   border: 3px solid;
   object-fit: cover;
@@ -1733,7 +1733,7 @@
 }
 
 .home-player-card__name {
-  font-size: 1.3rem;
+  font-size: 1.6rem;
   font-weight: 700;
   line-height: 1.2;
   color: var(--color-text-main);
@@ -1767,21 +1767,21 @@
 
 @media (max-width: 400px) {
   .home-player-card__clan-icon-wrap {
-    width: 44px;
-    height: 44px;
+    width: 80px;
+    height: 80px;
   }
 
   .home-player-card__clan-icon-wrap span {
-    font-size: 1.5rem;
+    font-size: 3rem;
   }
 
   .home-player-card__avatar {
-    width: 56px;
-    height: 56px;
+    width: 90px;
+    height: 90px;
   }
 
   .home-player-card__name {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
   }
 }
 
