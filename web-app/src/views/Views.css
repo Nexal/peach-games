@@ -1718,6 +1718,15 @@
   object-fit: contain;
 }
 
+.home-player-card__avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 3px solid;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .home-player-card__info {
   flex: 1;
   min-width: 0;

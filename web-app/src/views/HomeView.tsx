@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getPlayerSession } from '../lib/playerSession';
 import { useGame } from '../App';
+import { supabase } from '../lib/supabase';
 import type { PlayerSession } from '../lib/playerSession';
 
 const CLAN_ICONS: Record<string, { emoji: string; image?: string }> = {
@@ -17,10 +18,23 @@ function getClanIcon(klanName: string): { emoji: string; image?: string } {
 export function HomeView() {
   const [session, setSession] = useState<PlayerSession | null>(null);
   const [logoEnlarged, setLogoEnlarged] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const { klanPoints } = useGame();
 
   useEffect(() => {
-    setSession(getPlayerSession());
+    const s = getPlayerSession();
+    setSession(s);
+
+    if (s?.id) {
+      supabase
+        .from('players')
+        .select('avatar_url')
+        .eq('id', s.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+        });
+    }
   }, []);
 
   if (!session) {
@@ -103,13 +117,22 @@ export function HomeView() {
       <main className="view__content">
         <div className="home-player-card" style={{ borderColor: session.klan_color }}>
           <div className="home-player-card__header">
-            <div className="home-player-card__clan-badge">
-              {clanIcon.image ? (
-                <img src={clanIcon.image} alt={session.klan_name} className="home-player-card__clan-img" />
-              ) : (
-                <span className="home-player-card__clan-icon">{clanIcon.emoji}</span>
-              )}
-            </div>
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={session.name}
+                className="home-player-card__avatar"
+                style={{ borderColor: session.klan_color }}
+              />
+            ) : (
+              <div className="home-player-card__clan-badge">
+                {clanIcon.image ? (
+                  <img src={clanIcon.image} alt={session.klan_name} className="home-player-card__clan-img" />
+                ) : (
+                  <span className="home-player-card__clan-icon">{clanIcon.emoji}</span>
+                )}
+              </div>
+            )}
             <div className="home-player-card__info">
               <h2 className="home-player-card__name">{session.name}</h2>
               <p className="home-player-card__klan" style={{ color: session.klan_color }}>{session.klan_name}</p>
