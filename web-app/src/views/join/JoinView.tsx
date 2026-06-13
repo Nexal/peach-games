@@ -152,11 +152,30 @@ export function JoinView() {
 
     setPhotoFile(file);
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPhotoPreview(reader.result as string);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      const maxDim = 1024;
+      let w = img.width;
+      let h = img.height;
+
+      if (w > h && w > maxDim) { h = (h * maxDim) / w; w = maxDim; }
+      else if (h > maxDim) { w = (w * maxDim) / h; h = maxDim; }
+
+      canvas.width = w;
+      canvas.height = h;
+      ctx?.drawImage(img, 0, 0, w, h);
+
+      const compressed = canvas.toDataURL('image/jpeg', 0.7);
+      setPhotoPreview(compressed);
     };
-    reader.readAsDataURL(file);
+
+    img.src = objectUrl;
   };
 
   const handleRegenerate = () => {
