@@ -3,6 +3,7 @@ import { getPlayerSession } from '../lib/playerSession';
 import { useGame } from '../App';
 import { supabase } from '../lib/supabase';
 import type { PlayerSession } from '../lib/playerSession';
+import './HomeView.css';
 
 const CLAN_ICONS: Record<string, { emoji: string; image?: string }> = {
   'klan peruna': { emoji: '⚡', image: '/icons/perun_icon2_wyciete.png' },
