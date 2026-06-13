@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const GEMINI_MODEL = "gemini-2.0-flash-exp-image-generation";
+const GEMINI_MODEL = "gemini-3.1-flash-image";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const TRANSFORM_TIMEOUT = 30000;
 
