@@ -140,6 +140,16 @@ export function HomeView() {
           </div>
 
           <div className="home-player-card__ogniki">
+            <div
+              className="home-player-card__clan-mini"
+              style={{ borderColor: session.klan_color }}
+            >
+              {clanIcon.image ? (
+                <img src={clanIcon.image} alt={session.klan_name} className="home-player-card__clan-mini-img" />
+              ) : (
+                <span className="home-player-card__clan-mini-icon">{clanIcon.emoji}</span>
+              )}
+            </div>
             <span className="home-player-card__ogniki-icon">🔥</span>
             <span className="home-player-card__ogniki-value">{klanPoints}</span>
           </div>
