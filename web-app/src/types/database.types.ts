@@ -493,6 +493,7 @@ export type Database = {
       }
       players: {
         Row: {
+          avatar_url: string | null
           created_at: string | null
           game_id: string | null
           id: string
@@ -502,6 +503,7 @@ export type Database = {
           role: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string | null
           game_id?: string | null
           id?: string
@@ -511,6 +513,7 @@ export type Database = {
           role?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string | null
           game_id?: string | null
           id?: string

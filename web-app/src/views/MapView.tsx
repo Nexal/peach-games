@@ -424,7 +424,7 @@ export function MapView() {
   return (
     <div className="view view--map">
       <header className="view__header">
-        <h1 className="view__title view__title--small">🗺️ Mapa</h1>
+        <h1 className="view__title view__title--small">Mapa</h1>
         <p className="view__subtitle">Twoje questy i lokalizacje</p>
       </header>
 

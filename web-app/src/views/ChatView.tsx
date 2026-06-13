@@ -287,7 +287,6 @@ export function ChatView() {
     return (
       <div className="view view--chat">
         <header className="view__header">
-          <img src="/icons/glos-bogow.png" alt="Głos Bogów" className="view__icon" />
           <h1 className="view__title view__title--small">Głos Bogów</h1>
         </header>
         <main className="view__content view__content--chat">
@@ -308,7 +307,6 @@ export function ChatView() {
       } as React.CSSProperties}
     >
       <header className="view__header">
-        <img src="/icons/glos-bogow.png" alt="Głos Bogów" className="view__icon" />
         <h1 className="view__title view__title--small">
           {chatMode === 'global' ? 'Modlitwa Wspólna' : `Modlitwa ${playerSession.klan_name}`}
         </h1>

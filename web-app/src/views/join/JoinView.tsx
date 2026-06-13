@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { setPlayerSession, getPlayerSession, clearPlayerSession } from '../../lib/playerSession';
+import { getClanPrompt } from '../../lib/clanPrompts';
+import { transformPhoto } from '../../lib/geminiTransform';
 import type { Database } from '../../types/database.types';
 import './JoinView.css';
 
@@ -17,6 +19,12 @@ export function JoinView() {
   const [customName, setCustomName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [existingAvatar, setExistingAvatar] = useState<string | null>(null);
+  const [playerAvatarUrl, setPlayerAvatarUrl] = useState<string | null>(null);
+  const [isTransforming, setIsTransforming] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const checkAutoLogin = async () => {
@@ -112,6 +120,46 @@ export function JoinView() {
   const availablePlayers = players.filter(p => !p.joined_at);
   const joinedPlayers = players.filter(p => p.joined_at);
 
+  const resetPhotoState = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setExistingAvatar(null);
+    setPlayerAvatarUrl(null);
+  };
+
+  const handleSelectPlayer = async (playerId: string) => {
+    setSelectedPlayerId(playerId);
+    const player = players.find(p => p.id === playerId);
+    setCustomName(player?.name || '');
+    resetPhotoState();
+
+    if (!player) return;
+
+    const { data } = await supabase
+      .from('players')
+      .select('avatar_url')
+      .eq('id', playerId)
+      .single();
+
+    if (data?.avatar_url) {
+      setExistingAvatar(data.avatar_url);
+      setPlayerAvatarUrl(data.avatar_url);
+    }
+  };
+
+  const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPhotoFile(file);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhotoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleJoin = async () => {
     if (!selectedPlayerId) return;
 
@@ -121,9 +169,81 @@ export function JoinView() {
     const finalName = customName.trim() || player.name;
     const klan = klans.find(k => k.id === player.klan_id);
 
+    let avatarUrl = playerAvatarUrl;
+
+    if (!avatarUrl && photoFile) {
+      setIsTransforming(true);
+
+      try {
+        const fileName = `${selectedPlayerId}_${Date.now()}.jpg`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('player-avatars')
+          .upload(filePath, photoFile, {
+            contentType: 'image/jpeg',
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error('[JoinView] Upload error:', uploadError);
+          setError('Błąd podczas zapisywania zdjęcia. Spróbuj ponownie.');
+          setIsTransforming(false);
+          return;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('player-avatars')
+          .getPublicUrl(filePath);
+
+        const originalUrl = urlData.publicUrl;
+
+        const prompt = (klan && getClanPrompt(klan.name)) || '';
+
+        if (prompt && photoPreview) {
+          const base64Data = photoPreview.split(',')[1];
+
+          const transformedBase64 = await transformPhoto(base64Data, prompt);
+
+          if (transformedBase64) {
+            const transformedPath = `${selectedPlayerId}_avatar.png`;
+            const binaryData = Uint8Array.from(atob(transformedBase64), (c) =>
+              c.charCodeAt(0)
+            );
+
+            const { error: avatarUploadError } = await supabase.storage
+              .from('player-avatars')
+              .upload(transformedPath, binaryData, {
+                contentType: 'image/png',
+                upsert: true,
+              });
+
+            if (!avatarUploadError) {
+              const { data: avatarUrlData } = supabase.storage
+                .from('player-avatars')
+                .getPublicUrl(transformedPath);
+              avatarUrl = avatarUrlData.publicUrl;
+            }
+          }
+        }
+
+        if (!avatarUrl) {
+          avatarUrl = originalUrl;
+        }
+      } catch (err) {
+        console.error('[JoinView] Transform error:', err);
+      }
+
+      setIsTransforming(false);
+    }
+
     const { error: updateError } = await supabase
       .from('players')
-      .update({ name: finalName, joined_at: new Date().toISOString() })
+      .update({
+        name: finalName,
+        joined_at: new Date().toISOString(),
+        ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+      })
       .eq('id', selectedPlayerId);
 
     if (updateError) {
@@ -205,10 +325,7 @@ export function JoinView() {
                         <button
                           key={player.id}
                           className={`join-player-card ${selectedPlayerId === player.id ? 'join-player-card--selected' : ''}`}
-                          onClick={() => {
-                            setSelectedPlayerId(player.id);
-                            setCustomName(player.name || '');
-                          }}
+                          onClick={() => handleSelectPlayer(player.id)}
                         >
                           <span
                             className="join-player-card__color"
@@ -234,10 +351,7 @@ export function JoinView() {
                         <button
                           key={player.id}
                           className={`join-player-card join-player-card--joined ${selectedPlayerId === player.id ? 'join-player-card--selected' : ''}`}
-                          onClick={() => {
-                            setSelectedPlayerId(player.id);
-                            setCustomName(player.name || '');
-                          }}
+                          onClick={() => handleSelectPlayer(player.id)}
                         >
                           <span
                             className="join-player-card__color"
@@ -278,15 +392,75 @@ export function JoinView() {
                   <span>{getKlanName(selectedPlayer.klan_id)}</span>
                 </div>
               </div>
+
+              {existingAvatar ? (
+                <div className="join-photo">
+                  <label className="join-panel__label">Twój awatar:</label>
+                  <div
+                    className="join-photo__existing"
+                    style={{ borderColor: getKlanColor(selectedPlayer.klan_id) }}
+                  >
+                    <img
+                      src={existingAvatar}
+                      alt="Twój awatar"
+                      className="join-photo__preview"
+                    />
+                  </div>
+                  <p className="join-photo__hint">
+                    Bogowie już nadali Ci oblicze. Możesz dołączyć.
+                  </p>
+                </div>
+              ) : (
+                <div className="join-photo">
+                  <label className="join-panel__label">📸 Zdjęcie profilowe (wymagane):</label>
+
+                  {photoPreview ? (
+                    <div
+                      className="join-photo__existing"
+                      style={{ borderColor: getKlanColor(selectedPlayer.klan_id) }}
+                    >
+                      <img
+                        src={photoPreview}
+                        alt="Podgląd zdjęcia"
+                        className="join-photo__preview"
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      className="join-photo__capture"
+                      style={{ borderColor: getKlanColor(selectedPlayer.klan_id) }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <span className="join-photo__capture-icon">📷</span>
+                      <span>Zrób zdjęcie</span>
+                    </button>
+                  )}
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    capture="user"
+                    accept="image/*"
+                    onChange={handlePhotoCapture}
+                    style={{ display: 'none' }}
+                  />
+
+                  {photoPreview && (
+                    <p className="join-photo__hint">
+                      Bogowie użyczą Ci nowego oblicza...
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
           <button
             className="button-glow join-panel__submit"
             onClick={handleJoin}
-            disabled={!selectedPlayerId}
+            disabled={!selectedPlayerId || isTransforming || (!existingAvatar && !photoFile)}
           >
-            Dołącz do gry
+            {isTransforming ? '⚡ Bogowie nadają Ci oblicze...' : 'Dołącz do gry'}
           </button>
 
           {isDevMode && selectedGameId && (

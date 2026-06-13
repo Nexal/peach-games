@@ -11,7 +11,7 @@ interface Tab {
 
 const tabs: Tab[] = [
   { id: 'home', label: 'ᚡᛁᛊᛏᚨ', icon: '', iconSrc: '/icons/home.png' },
-  { id: 'map', label: 'ᛗᚨᛈᚨ', icon: '🗺️', iconSrc: undefined },
+  { id: 'map', label: 'ᛗᚨᛈᚨ', icon: '', iconSrc: '/icons/map-Photoroom.png' },
   { id: 'chat', label: 'ᚷᛚᚨᛊᛒᚨᛁᚱ', icon: '', iconSrc: '/icons/glos-bogow.png' },
   { id: 'quests', label: 'ᛈᚱᚨᛒᚤ', icon: '', iconSrc: '/icons/quests.png' },
   { id: 'shop', label: 'ᛊᚲᛟᛈ', icon: '', iconSrc: '/icons/shop.png' },
