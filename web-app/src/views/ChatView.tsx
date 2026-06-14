@@ -45,6 +45,7 @@ export function ChatView() {
       let query = supabase
         .from('messages')
         .select('*')
+        .eq('game_id', playerSession.game_id)
         .order('created_at', { ascending: true })
         .limit(50);
 
@@ -64,9 +65,10 @@ export function ChatView() {
       .channel(`chat:${chatMode}:${playerSession.klan_id}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `game_id=eq.${playerSession.game_id}` },
         (payload) => {
           const newMsg = payload.new as Message;
+          if (newMsg.game_id !== playerSession.game_id) return;
           if (chatMode === 'klan') {
             if (newMsg.klan_id === playerSession.klan_id || (newMsg.sender === 'god' && newMsg.klan_id === null)) {
               setMessages((prev) => [...prev, newMsg]);

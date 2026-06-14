@@ -12,6 +12,40 @@ type Klan = Database['public']['Tables']['klans']['Row'];
 type Player = Database['public']['Tables']['players']['Row'];
 type Quest = Database['public']['Tables']['quests']['Row'];
 
+const DEFAULT_TTS_VOICE_ID = 'rpg9PEuAEDV7I1OjYrbj';
+
+async function generateTTS(text: string, voiceId: string = DEFAULT_TTS_VOICE_ID, retries = 3): Promise<string | null> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-tts`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ text, voice_id: voiceId }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.audio_url) {
+        return data.audio_url;
+      }
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+      }
+    } catch (error) {
+      console.error('[generateTTS] attempt', attempt, 'failed:', error);
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+      }
+    }
+  }
+  return null;
+}
+
 export function AdminDashboardView() {
   const { logout } = useAdminAuth();
   type AdminTab = 'games' | 'klans' | 'players' | 'quests' | 'submissions' | 'chat' | 'map';
@@ -120,6 +154,30 @@ export function AdminDashboardView() {
 
   const updateGameStatus = async (gameId: string, status: string) => {
     await supabase.from('games').update({ status }).eq('id', gameId);
+
+    if (status === 'active') {
+      const game = games.find((g) => g.id === gameId);
+      const gameName = game?.name || 'Noc Kupały';
+      const announcementText = `Słuchajcie, śmiertelnicy! Czas próby nadszedł. Niech rozpocznie się ${gameName}!`;
+
+      let audioUrl: string | null = null;
+      try {
+        audioUrl = await generateTTS(announcementText);
+      } catch (err) {
+        console.error('[updateGameStatus] TTS generation failed:', err);
+      }
+
+      await supabase.from('messages').insert({
+        content: announcementText,
+        sender: 'god',
+        game_id: gameId,
+        klan_id: null,
+        sender_klan_id: null,
+        tts_requested: true,
+        audio_url: audioUrl,
+      });
+    }
+
     await loadGames();
   };
 
@@ -1031,9 +1089,16 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
       .channel('admin:messages')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          ...(selectedGameId ? { filter: `game_id=eq.${selectedGameId}` } : {}),
+        },
+        (payload: { new: Message }) => {
+          const newMsg = payload.new;
+          if (selectedGameId && newMsg.game_id !== selectedGameId) return;
+          setMessages((prev) => [...prev, newMsg]);
         }
       )
       .on(
