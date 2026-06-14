@@ -41,7 +41,7 @@ export async function scanQRCode(
   console.log('[QR] activationId:', activationId);
 
   const [{ data: tasks }, { data: taskCompletions }, { data: allMarkers }, { data: matchingMarkers }] = await Promise.all([
-    (supabase as any).from('tasks').select('id, reward_points').eq('quest_id', questId).order('sort_order'),
+    (supabase as any).from('tasks').select('id, title, reward_points').eq('quest_id', questId).order('sort_order'),
     (supabase as any).from('task_completions').select('task_id, completed_at, metadata').eq('quest_activation_id', activationId),
     (supabase as any).from('map_markers').select('id, task_id').eq('quest_id', questId).eq('type', 'qr').not('task_id', 'is', null),
     (supabase as any).from('map_markers').select('id, task_id, qr_secret').eq('quest_id', questId).eq('type', 'qr').eq('qr_secret', scannedCode).not('task_id', 'is', null),
@@ -150,6 +150,29 @@ export async function scanQRCode(
           .eq('id', klanId);
       }
     }
+
+    // Broadcast notification o ukończeniu taska
+    const taskTitle = currentTask.title || 'Nieznane zadanie';
+    const { data: questData } = await (supabase as any)
+      .from('quests')
+      .select('title')
+      .eq('id', questId)
+      .single();
+    const { data: klanInfo } = await (supabase as any)
+      .from('klans')
+      .select('name')
+      .eq('id', klanId)
+      .single();
+    const questTitle = questData?.title || 'Nieznany quest';
+    const klanName = klanInfo?.name || 'Klan';
+    await (supabase as any).from('messages').insert({
+      content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${taskPoints} 🔥)!`,
+      sender: 'god',
+      game_id: gameId,
+      klan_id: null,
+      sender_klan_id: null,
+      tts_requested: false,
+    });
 
     const nextTaskIndex = tasks.indexOf(currentTask) + 1;
     const allTasksDone = nextTaskIndex >= tasks.length;

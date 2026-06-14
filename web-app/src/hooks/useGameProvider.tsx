@@ -19,6 +19,15 @@ interface QuestCompletionData {
   klan_color?: string;
 }
 
+interface TaskCompletionData {
+  task_id: string;
+  task_name: string;
+  quest_name: string;
+  points: number;
+  klan_name: string;
+  klan_color?: string;
+}
+
 interface GameContextValue {
   playerPosition: MarkerPosition;
   activeQuests: Record<string, QuestState>;
@@ -112,6 +121,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [activeQuests, setActiveQuests] = useState<Record<string, QuestState>>({});
   const [activeQRQuests, setActiveQRQuests] = useState<Record<string, { questId: string; targetLat: number; targetLng: number }>>({});
   const [completionModal, setCompletionModal] = useState<QuestCompletionData | null>(null);
+  const [taskCompletionModal, setTaskCompletionModal] = useState<TaskCompletionData | null>(null);
   const [klanPoints, setKlanPoints] = useState<number>(0);
   const lastPlayerPositionRef = useRef<MarkerPosition>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -316,6 +326,50 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!session?.klan_id) return;
 
+    const channel = supabase
+      .channel(`klan_${session.klan_id}_task_completions`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'task_completions',
+      }, async (payload: any) => {
+        if (!payload.new) return;
+
+        const tc = payload.new as any;
+
+        const { data: qa } = await supabase
+          .from('quest_activations')
+          .select('klan_id, quests!inner(id, title)')
+          .eq('id', tc.quest_activation_id)
+          .single();
+
+        if (!qa || qa.klan_id !== session.klan_id) return;
+
+        const { data: taskData } = await supabase
+          .from('tasks')
+          .select('title, reward_points')
+          .eq('id', tc.task_id)
+          .single();
+
+        if (!taskData) return;
+
+        setTaskCompletionModal({
+          task_id: tc.task_id,
+          task_name: taskData.title,
+          quest_name: (qa as any).quests.title,
+          points: taskData.reward_points || 0,
+          klan_name: session?.klan_name || 'Klan',
+          klan_color: session?.klan_color || '#FFD700',
+        });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [session?.klan_id]);
+
+  useEffect(() => {
+    if (!session?.klan_id) return;
+
     const fetchKlanPoints = async () => {
       const { data } = await supabase
         .from('klans').select('points').eq('id', session.klan_id).maybeSingle();
@@ -432,6 +486,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setCompletionModal(null);
   }, []);
 
+  const dismissTaskCompletion = useCallback(() => {
+    setTaskCompletionModal(null);
+  }, []);
+
   const getMarkerPosition = useCallback((questId: string): MarkerPosition => {
     return activeQuests[questId]?.position || null;
   }, [activeQuests]);
@@ -468,9 +526,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       {children}
       {completionModal ? (
         <CompletionModal data={completionModal} onDismiss={dismissCompletion} />
-      ) : (
-        <div style={{ display: 'none' }}>No completion modal</div>
-      )}
+      ) : null}
+      {taskCompletionModal ? (
+        <TaskCompletionModal data={taskCompletionModal} onDismiss={dismissTaskCompletion} />
+      ) : null}
     </GameContext.Provider>
   );
 }
@@ -488,6 +547,27 @@ function CompletionModal({ data, onDismiss }: { data: QuestCompletionData; onDis
           <span className="completion-points-label">🔥 dla klanu</span>
         </div>
         <p className="completion-by">Ukończony przez {data.player_name}</p>
+        <p className="completion-dismiss">Kliknij by zamknąć</p>
+      </div>
+    </div>
+  );
+}
+
+function TaskCompletionModal({ data, onDismiss }: { data: TaskCompletionData; onDismiss: () => void }) {
+  console.log('[TaskCompletionModal] Rendering with data:', data);
+  return (
+    <div className="completion-overlay" onClick={onDismiss}>
+      <div className="completion-modal" style={{ '--klan-color': data.klan_color } as React.CSSProperties}>
+        <div className="completion-icon">✅</div>
+        <h2 className="completion-title">Zadanie ukończone!</h2>
+        <p className="completion-quest-name">{data.quest_name}</p>
+        <p style={{ color: '#fff', fontSize: '1rem', margin: '0 0 20px 0', opacity: 0.8 }}>
+          {data.task_name}
+        </p>
+        <div className="completion-points-badge">
+          <span className="completion-points-value">+{data.points}</span>
+          <span className="completion-points-label">🔥 dla klanu</span>
+        </div>
         <p className="completion-dismiss">Kliknij by zamknąć</p>
       </div>
     </div>

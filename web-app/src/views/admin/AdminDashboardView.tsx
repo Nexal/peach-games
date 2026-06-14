@@ -11,6 +11,9 @@ type Game = Database['public']['Tables']['games']['Row'];
 type Klan = Database['public']['Tables']['klans']['Row'];
 type Player = Database['public']['Tables']['players']['Row'];
 type Quest = Database['public']['Tables']['quests']['Row'];
+type Task = Database['public']['Tables']['tasks']['Row'];
+type QuestActivation = Database['public']['Tables']['quest_activations']['Row'];
+type TaskCompletion = Database['public']['Tables']['task_completions']['Row'];
 
 const DEFAULT_TTS_VOICE_ID = 'rpg9PEuAEDV7I1OjYrbj';
 
@@ -59,17 +62,13 @@ export function AdminDashboardView() {
   const [pendingSubmissions, setPendingSubmissions] = useState<any[]>([]);
   const [allSubmissions, setAllSubmissions] = useState<any[]>([]);
   const [submissionCount, setSubmissionCount] = useState(0);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [questActivations, setQuestActivations] = useState<QuestActivation[]>([]);
+  const [taskCompletions, setTaskCompletions] = useState<TaskCompletion[]>([]);
 
   useEffect(() => {
     loadGames();
   }, []);
-
-  useEffect(() => {
-    if (selectedGameId) {
-      loadKlans(selectedGameId);
-      loadQuests(selectedGameId);
-    }
-  }, [selectedGameId]);
 
   const loadGames = async () => {
     const { data } = await supabase.from('games').select('*').order('created_at', { ascending: false });
@@ -94,6 +93,32 @@ export function AdminDashboardView() {
   const loadQuests = async (gameId: string) => {
     const { data } = await supabase.from('quests').select('*').eq('game_id', gameId);
     if (data) setQuests(data);
+  };
+
+  const loadTasks = async (gameId: string) => {
+    const { data: questsData } = await supabase.from('quests').select('id').eq('game_id', gameId);
+    if (!questsData || questsData.length === 0) {
+      setTasks([]);
+      setQuestActivations([]);
+      setTaskCompletions([]);
+      return;
+    }
+    const questIds = questsData.map(q => q.id);
+
+    const { data: t } = await supabase.from('tasks').select('*').in('quest_id', questIds).order('sort_order');
+    if (t) setTasks(t);
+
+    const { data: qa } = await supabase.from('quest_activations').select('*').eq('game_id', gameId);
+    if (qa) {
+      setQuestActivations(qa);
+      const ids = qa.map(a => a.id);
+      if (ids.length > 0) {
+        const { data: tc } = await supabase.from('task_completions').select('*').in('quest_activation_id', ids);
+        if (tc) setTaskCompletions(tc);
+      } else {
+        setTaskCompletions([]);
+      }
+    }
   };
 
   const loadSubmissionsDirect = async (gameId: string) => {
@@ -123,6 +148,7 @@ export function AdminDashboardView() {
     if (selectedGameId) {
       loadKlans(selectedGameId).then(() => {
         loadQuests(selectedGameId);
+        loadTasks(selectedGameId);
         loadSubmissionsDirect(selectedGameId);
       });
     }
@@ -248,15 +274,128 @@ export function AdminDashboardView() {
     alert('🔄 Quest zresetowany');
   };
 
+  const completeTask = async (questId: string, taskId: string, klanId: string, customPoints?: number) => {
+    if (!selectedGameId) return;
+    const task = tasks.find(t => t.id === taskId);
+    const points = customPoints ?? task?.reward_points ?? 0;
+    const quest = quests.find(q => q.id === questId);
+    const questTitle = quest?.title || 'Nieznany quest';
+    const taskTitle = task?.title || 'Nieznane zadanie';
+    const klan = klans.find(k => k.id === klanId);
+
+    let qa = questActivations.find(a => a.quest_id === questId && a.klan_id === klanId);
+    if (!qa) {
+      const { data: newQa } = await supabase.from('quest_activations').insert({
+        quest_id: questId,
+        klan_id: klanId,
+        game_id: selectedGameId,
+        activated_at: new Date().toISOString(),
+      }).select().single();
+      if (newQa) {
+        qa = newQa;
+        setQuestActivations(prev => [...prev, newQa]);
+      }
+    }
+    if (!qa) return;
+
+    const { error } = await supabase.from('task_completions').upsert({
+      quest_activation_id: qa.id,
+      task_id: taskId,
+      completed_at: new Date().toISOString(),
+      completed_by_player_id: null,
+    }, { onConflict: 'quest_activation_id,task_id' });
+
+    if (error) { alert('Błąd: ' + error.message); return; }
+
+    const { data: klanData } = await supabase.from('klans').select('points').eq('id', klanId).maybeSingle();
+    if (klanData) {
+      await supabase.from('klans').update({ points: (klanData.points || 0) + points }).eq('id', klanId);
+    }
+
+    // Notyfikacja dla graczy o ukończeniu taska
+    const klanName = klan?.name || 'Klan';
+    await supabase.from('messages').insert({
+      content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${points} 🔥)!`,
+      sender: 'god',
+      game_id: selectedGameId,
+      klan_id: null,
+      sender_klan_id: null,
+      tts_requested: false,
+    });
+
+    // Sprawdź czy wszystkie taski questa są ukończone → auto-zalicz questa
+    const questTasks = tasks.filter(t => t.quest_id === questId);
+    const { count } = await supabase
+      .from('task_completions')
+      .select('*', { count: 'exact', head: true })
+      .eq('quest_activation_id', qa.id);
+
+    if (count && count >= questTasks.length) {
+      const sumPoints = questTasks.reduce((sum, t) => sum + (t.reward_points || 0), 0);
+
+      await supabase.from('quest_completions').insert({
+        quest_id: questId,
+        klan_id: klanId,
+        game_id: selectedGameId,
+        points_awarded: sumPoints,
+        completed_by_player_id: null,
+        completed_at: new Date().toISOString(),
+      });
+
+      await supabase.from('quest_activations').update({
+        completed_at: new Date().toISOString(),
+      }).eq('id', qa.id);
+    }
+
+    if (selectedGameId) loadTasks(selectedGameId);
+  };
+
+  const uncompleteTask = async (taskCompletionId: string, taskId: string, klanId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const points = task.reward_points ?? 0;
+
+    await supabase.from('task_completions').delete().eq('id', taskCompletionId);
+
+    const { data: klanData } = await supabase.from('klans').select('points').eq('id', klanId).maybeSingle();
+    if (klanData) {
+      await supabase.from('klans').update({ points: Math.max(0, (klanData.points || 0) - points) }).eq('id', klanId);
+    }
+
+    // Jeśli quest był automatycznie zaliczony przez wszystkie taski, cofnij to
+    if (selectedGameId) {
+      const { data: qc } = await supabase
+        .from('quest_completions')
+        .select('id')
+        .eq('quest_id', task.quest_id)
+        .eq('klan_id', klanId)
+        .eq('game_id', selectedGameId)
+        .maybeSingle();
+
+      if (qc) {
+        await supabase.from('quest_completions').delete().eq('id', qc.id);
+
+        const qa = questActivations.find(a => a.quest_id === task.quest_id && a.klan_id === klanId);
+        if (qa) {
+          await supabase.from('quest_activations').update({ completed_at: null }).eq('id', qa.id);
+        }
+      }
+
+      loadTasks(selectedGameId);
+    }
+  };
+
   const handleApproveSubmission = async (submissionId: string, taskId: string, questActivationId: string, klanId: string) => {
     const { data: submission } = await (supabase as any)
       .from('submissions')
-      .select('*, tasks!inner(reward_points)')
+      .select('*, tasks!inner(title, reward_points), quest_activations!inner(quests!inner(title))')
       .eq('id', submissionId)
       .single();
     if (!submission) return;
 
     const points = submission.tasks?.reward_points || 0;
+    const taskTitle = submission.tasks?.title || 'Nieznane zadanie';
+    const questTitle = submission.quest_activations?.quests?.title || 'Nieznany quest';
 
     // Update submission status
     await supabase.from('submissions').update({
@@ -278,6 +417,18 @@ export function AdminDashboardView() {
     if (klanData) {
       await supabase.from('klans').update({ points: (klanData.points || 0) + points }).eq('id', klanId);
     }
+
+    // Broadcast notification
+    const { data: klanInfo } = await supabase.from('klans').select('name').eq('id', klanId).single();
+    const klanName = klanInfo?.name || 'Klan';
+    await supabase.from('messages').insert({
+      content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${points} 🔥)!`,
+      sender: 'god',
+      game_id: selectedGameId,
+      klan_id: null,
+      sender_klan_id: null,
+      tts_requested: false,
+    });
 
     if (selectedGameId) loadSubmissionsDirect(selectedGameId);
     alert(`✅ Zatwierdzono zgłoszenie (+${points} 🔥)`);
@@ -327,6 +478,11 @@ export function AdminDashboardView() {
             gameId={selectedGameId}
             onComplete={completeQuest}
             onReset={resetQuest}
+            tasks={tasks}
+            questActivations={questActivations}
+            taskCompletions={taskCompletions}
+            onCompleteTask={completeTask}
+            onUncompleteTask={uncompleteTask}
           />
         )}
         {activeTab === 'submissions' && selectedGameId && (
@@ -714,25 +870,34 @@ function PlayersPanel({
   );
 }
 
-type QuestCompletion = Database['public']['Tables']['quest_completions']['Row'];
-
 function QuestsPanel({
   quests,
   klans,
   gameId,
+  tasks,
+  questActivations,
+  taskCompletions,
   onComplete,
   onReset,
+  onCompleteTask,
+  onUncompleteTask,
 }: {
   quests: Quest[];
   klans: Klan[];
   gameId: string;
+  tasks: Task[];
+  questActivations: QuestActivation[];
+  taskCompletions: TaskCompletion[];
   onComplete: (questId: string, klanId: string, customPoints?: number) => void;
   onReset: (questId: string) => void;
+  onCompleteTask: (questId: string, taskId: string, klanId: string, customPoints?: number) => void;
+  onUncompleteTask: (taskCompletionId: string, taskId: string, klanId: string) => void;
 }) {
   const [selectedQuestId, setSelectedQuestId] = useState<string>('');
   const [selectedKlanId, setSelectedKlanId] = useState<string>('');
   const [customPoints, setCustomPoints] = useState<string>('');
-  const [completions, setCompletions] = useState<QuestCompletion[]>([]);
+  const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
+  const [completions, setCompletions] = useState<Database['public']['Tables']['quest_completions']['Row'][]>([]);
 
   useEffect(() => {
     supabase
@@ -820,6 +985,8 @@ function QuestsPanel({
           {quests.map(quest => {
             const questCompletions = completions.filter(c => c.quest_id === quest.id);
             const isCompleted = questCompletions.length > 0;
+            const questTasks = tasks.filter(t => t.quest_id === quest.id).sort((a, b) => a.sort_order - b.sort_order);
+            const isExpanded = expandedQuestId === quest.id;
             return (
               <div key={quest.id} className={`admin-quest-card ${isCompleted ? 'admin-quest-card--done' : ''}`}>
                 <div className="admin-quest-card__header">
@@ -835,6 +1002,36 @@ function QuestsPanel({
                     {quest.type && <span className="admin-quest-card__type">{quest.type}</span>}
                   </div>
                 </div>
+
+                {questTasks.length > 0 && (
+                  <button
+                    className="admin-quest-card__expand-btn"
+                    onClick={() => setExpandedQuestId(isExpanded ? null : quest.id)}
+                  >
+                    {isExpanded ? '▲' : '▼'} Taski ({questTasks.length})
+                  </button>
+                )}
+
+                {isExpanded && questTasks.length > 0 && (
+                  <div className="admin-quest-card__tasks">
+                    {questTasks.map(task => {
+                      const klansInGame = klans.filter(k => k.game_id === gameId);
+                      return (
+                        <TaskRow
+                          key={task.id}
+                          task={task}
+                          klans={klansInGame}
+                          questActivations={questActivations}
+                          taskCompletions={taskCompletions}
+                          questId={quest.id}
+                          onCompleteTask={onCompleteTask}
+                          onUncompleteTask={onUncompleteTask}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+
                 {questCompletions.length > 0 && (
                   <div className="admin-quest-card__completions">
                     {questCompletions.map(c => {
@@ -862,6 +1059,87 @@ function QuestsPanel({
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskRow({
+  task,
+  klans,
+  questActivations,
+  taskCompletions,
+  questId,
+  onCompleteTask,
+  onUncompleteTask,
+}: {
+  task: Task;
+  klans: Klan[];
+  questActivations: QuestActivation[];
+  taskCompletions: TaskCompletion[];
+  questId: string;
+  onCompleteTask: (questId: string, taskId: string, klanId: string, customPoints?: number) => void;
+  onUncompleteTask: (taskCompletionId: string, taskId: string, klanId: string) => void;
+}) {
+  const [selectedKlanId, setSelectedKlanId] = useState<string>(klans[0]?.id || '');
+  const [customPoints, setCustomPoints] = useState<string>('');
+
+  const qa = questActivations.find(a => a.quest_id === questId && a.klan_id === selectedKlanId);
+  const tc = qa
+    ? taskCompletions.find(tc => tc.quest_activation_id === qa.id && tc.task_id === task.id)
+    : null;
+  const isTaskDone = !!tc;
+
+  const taskIcon = task.type === 'qr' ? '📱' : task.type === 'gps' ? '📍' : task.type === 'photo' ? '📷' : task.type === 'logic' ? '🧩' : task.type === 'chase' ? '🏇' : '📋';
+
+  return (
+    <div className="admin-task-row">
+      <div className="admin-task-row__header">
+        <span className="admin-task-row__icon">{taskIcon}</span>
+        <span className="admin-task-row__info">
+          <span className="admin-task-row__title">{task.title}</span>
+        </span>
+        <span className="admin-task-row__points">+{task.reward_points} 🔥</span>
+        <span className={`admin-task-row__status ${isTaskDone ? 'admin-task-row__status--done' : 'admin-task-row__status--pending'}`}>
+          {isTaskDone ? '✅' : '⬜'}
+        </span>
+      </div>
+      <div className="admin-task-row__actions">
+        <select
+          value={selectedKlanId}
+          onChange={(e) => setSelectedKlanId(e.target.value)}
+          className="admin-task-row__klan-select"
+        >
+          {klans.map(k => (
+            <option key={k.id} value={k.id}>{k.name}</option>
+          ))}
+        </select>
+        <input
+          type="number"
+          value={customPoints}
+          onChange={(e) => setCustomPoints(e.target.value)}
+          placeholder={`punkty (${task.reward_points})`}
+          className="admin-task-row__points-input"
+        />
+        {!isTaskDone ? (
+          <button
+            className="admin-task-row__btn"
+            onClick={() => {
+              const pts = customPoints ? parseInt(customPoints) : undefined;
+              onCompleteTask(questId, task.id, selectedKlanId, pts);
+              setCustomPoints('');
+            }}
+          >
+            ✅ Zalicz
+          </button>
+        ) : (
+          <button
+            className="admin-task-row__btn admin-task-row__btn--danger"
+            onClick={() => onUncompleteTask(tc!.id, task.id, selectedKlanId)}
+          >
+            ⬅️ Cofnij
+          </button>
+        )}
       </div>
     </div>
   );

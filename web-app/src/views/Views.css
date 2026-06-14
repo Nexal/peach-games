@@ -621,7 +621,8 @@
 .view--admin {
   padding: 0;
   background: var(--color-bg-dark);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   max-width: 480px;
   margin: 0 auto;
   position: relative;
@@ -760,6 +761,9 @@
 }
 
 .admin-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: 20px;
   padding-bottom: 100px;
 }
@@ -1429,6 +1433,133 @@
 }
 
 .admin-quest-card__btn--danger {
+  color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.admin-quest-card__expand-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 8px 0;
+  margin-top: 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.admin-quest-card__task-count {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.admin-quest-card__tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-task-row {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.admin-task-row__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-task-row__icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.admin-task-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-task-row__title {
+  font-size: 0.9rem;
+  color: var(--color-text-main);
+}
+
+.admin-task-row__points {
+  font-size: 0.8rem;
+  color: var(--color-perun);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.admin-task-row__status {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.admin-task-row__status--done {
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+}
+
+.admin-task-row__status--pending {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-muted);
+}
+
+.admin-task-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-task-row__klan-select {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.admin-task-row__points-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  width: 65px;
+}
+
+.admin-task-row__btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-main);
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.admin-task-row__btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.admin-task-row__btn--danger {
   color: #e74c3c;
   border-color: #e74c3c;
 }
