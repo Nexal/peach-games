@@ -6,7 +6,6 @@ import { ChatView } from './views/ChatView';
 import { MapView } from './views/MapView';
 import { QuestsView } from './views/QuestsView';
 import { ShopView } from './views/ShopView';
-import { ProfileView } from './views/ProfileView';
 import { JoinView } from './views/join/JoinView';
 import { AdminAuthProvider, useAdminAuth } from './lib/admin/AdminAuth';
 import { AdminLoginView } from './views/admin/AdminLoginView';
@@ -37,7 +36,6 @@ function AppContent() {
   const { isAuthenticated } = useAdminAuth();
   const [showAdmin, setShowAdmin] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const [session, setSession] = useState<PlayerSession | null>(null);
   const { status: gameStatus } = useGameStatus(session?.game_id);
   const [showSplash, setShowSplash] = useState(false);
@@ -90,18 +88,21 @@ function AppContent() {
 
     verifyAndSetSession();
 
+    const originalPushState = window.history.pushState.bind(window.history);
+    window.history.pushState = function (...args) {
+      originalPushState(...args);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    };
+
     const handleRouteChange = () => {
       const pathname = window.location.pathname;
       setShowAdmin(pathname === '/admin');
       setShowJoin(pathname === '/join');
-      setShowProfile(pathname === '/profile');
     };
     window.addEventListener('popstate', handleRouteChange);
-    window.addEventListener('pushState', handleRouteChange);
     handleRouteChange();
     return () => {
       window.removeEventListener('popstate', handleRouteChange);
-      window.removeEventListener('pushState', handleRouteChange);
     };
   }, []);
 
@@ -114,13 +115,17 @@ function AppContent() {
     setShowSplash(true);
     setSplashClosing(false);
 
+    const hasSeenSplash = localStorage.getItem('peachgames_splash_seen') === 'true';
+    const displayDuration = hasSeenSplash ? 1000 : 5000;
+
     splashTimerRef.current = setTimeout(() => {
       setSplashClosing(true);
       setTimeout(() => {
         setShowSplash(false);
         setSplashClosing(false);
+        localStorage.setItem('peachgames_splash_seen', 'true');
       }, 600);
-    }, 2000);
+    }, displayDuration);
   }, [showJoin, showAdmin, session]);
 
   const wakeLockActive = !!session || (showAdmin && isAuthenticated);
@@ -134,8 +139,6 @@ function AppContent() {
 
     if (showJoin) return <JoinView />;
 
-    if (showProfile) return <ProfileView />;
-
     if (!session) return <HomeView />;
 
     switch (activeTab) {
@@ -144,7 +147,6 @@ function AppContent() {
       case 'chat': return <ChatView />;
       case 'quests': return <QuestsView />;
       case 'shop': return <ShopView />;
-      case 'profile': return <ProfileView />;
       default: return <HomeView />;
     }
   };
