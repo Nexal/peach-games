@@ -56,7 +56,9 @@ export function AdminDashboardView() {
   const [games, setGames] = useState<Game[]>([]);
   const [klans, setKlans] = useState<Klan[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(() =>
+    localStorage.getItem('peachgames_admin_selected_game_id')
+  );
   const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(false);
   const [pendingSubmissions, setPendingSubmissions] = useState<any[]>([]);
@@ -70,12 +72,23 @@ export function AdminDashboardView() {
     loadGames();
   }, []);
 
+  useEffect(() => {
+    if (selectedGameId) {
+      localStorage.setItem('peachgames_admin_selected_game_id', selectedGameId);
+    } else {
+      localStorage.removeItem('peachgames_admin_selected_game_id');
+    }
+  }, [selectedGameId]);
+
   const loadGames = async () => {
     const { data } = await supabase.from('games').select('*').order('created_at', { ascending: false });
     if (data) {
       setGames(data);
       if (data.length > 0 && !selectedGameId) {
-        setSelectedGameId(data[0].id);
+        setSelectedGameId(games.find((g) => g.status === 'active')?.id || data[0].id);
+      }
+      if (selectedGameId && data.length > 0 && !data.find((g) => g.id === selectedGameId)) {
+        setSelectedGameId(games.find((g) => g.status === 'active')?.id || data[0].id);
       }
     }
   };
@@ -501,7 +514,7 @@ export function AdminDashboardView() {
           />
         )}
         {activeTab === 'chat' && (
-          <ChatPanel games={games} klans={klans} />
+          <ChatPanel klans={klans} selectedGameId={selectedGameId} />
         )}
         {activeTab === 'map' && selectedGameId && (
           <MapPanel gameId={selectedGameId} klans={klans} />
@@ -1281,10 +1294,9 @@ const TTS_VOICES = [
   { id: 'Kinga_Voice', name: 'Leśna Driada (Kinga)', voiceId: 'PLACEHOLDER_KINGA' },
 ];
 
-function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
+function ChatPanel({ klans, selectedGameId }: { klans: Klan[]; selectedGameId: string | null }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedKlanId, setSelectedKlanId] = useState<string | null>(null);
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [broadcastToAll, setBroadcastToAll] = useState(false);
@@ -1349,12 +1361,6 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
-
-  useEffect(() => {
-    if (games.length > 0 && !selectedGameId) {
-      setSelectedGameId(games.find((g) => g.status === 'active')?.id || games[0].id);
-    }
-  }, [games]);
 
   useEffect(() => {
     if (selectedGameId) {
@@ -1569,50 +1575,29 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
 
   const selectedKlan = klans.find((k) => k.id === selectedKlanId);
 
+  const gameKlans = klans.filter((k) => k.game_id === selectedGameId);
+
   return (
-    <div className="admin-panel">
-      <div className="admin-panel__section">
-        <h2 className="admin-panel__title">📨 Czat Klanu</h2>
-        <div className="admin-panel__row">
-          <select
-            value={selectedGameId || ''}
-            onChange={(e) => {
-              setSelectedGameId(e.target.value || null);
-              setSelectedKlanId(null);
-            }}
-            className="admin-panel__select"
+    <div className="admin-panel admin-panel--chat">
+      <div className="admin-panel__section admin-panel__section--chat-controls">
+        <div className="admin-chat__channels">
+          <button
+            className={`admin-chat__channel-btn ${selectedKlanId === null ? 'admin-chat__channel-btn--active' : ''}`}
+            onClick={() => setSelectedKlanId(null)}
           >
-            <option value="">Wszystkie gry</option>
-            {games.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={selectedKlanId || ''}
-            onChange={(e) => setSelectedKlanId(e.target.value || null)}
-            className="admin-panel__select"
-          >
-            <option value="">Publiczny</option>
-            {klans
-              .filter((k) => k.game_id === selectedGameId)
-              .map((k) => (
-                <option key={k.id} value={k.id}>
-                  {k.name}
-                </option>
-              ))}
-          </select>
+            🌍 Publiczny
+          </button>
+          {gameKlans.map((k) => (
+            <button
+              key={k.id}
+              className={`admin-chat__channel-btn ${selectedKlanId === k.id ? 'admin-chat__channel-btn--active' : ''}`}
+              style={selectedKlanId === k.id && k.theme_color ? { borderColor: k.theme_color, background: `${k.theme_color}20` } : undefined}
+              onClick={() => setSelectedKlanId(k.id)}
+            >
+              {k.name}
+            </button>
+          ))}
         </div>
-        {selectedKlan ? (
-          <p className="admin-panel__info">
-            👁️ Przemawiasz jako Bogowie do klanu <strong>{selectedKlan.name}</strong>
-          </p>
-        ) : selectedKlanId === null && (
-          <p className="admin-panel__info">
-            🌍 Przemawiasz jako Bogowie na kanale <strong>Publicznym</strong>
-          </p>
-        )}
         <label className="admin-chat__tts">
           <input
             type="checkbox"

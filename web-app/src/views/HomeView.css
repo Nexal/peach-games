@@ -248,36 +248,269 @@
   opacity: 0.6;
 }
 
-.home-profile-btn {
+.home-hero__avatar-edit {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  bottom: 12px;
+  right: 12px;
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--glass-border);
+  border: 2px solid var(--color-bg);
+  background: var(--color-accent);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  z-index: 5;
+  transition: opacity 0.2s;
+}
+
+.home-hero__avatar-edit:hover {
+  opacity: 0.85;
+}
+
+.home-hero__avatar-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
   padding: 0;
 }
 
-.home-profile-btn:hover {
+.home-hero__avatar-add-text {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  z-index: 2;
+  position: relative;
+}
+
+/* Avatar edit modal */
+.home-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: overlayIn 0.2s ease;
+}
+
+.home-modal {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 28px 24px 24px;
+  width: 100%;
+  max-width: 380px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.home-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.home-modal__close:hover {
   background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.05);
+  color: var(--color-text-main);
 }
 
-.home-profile-btn:active {
-  transform: scale(0.95);
+.home-modal__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
-.home-profile-btn__icon {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
+.home-modal__compare {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.home-modal__compare-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-modal__compare-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.home-modal__compare-label--new {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.home-modal__compare-arrow {
+  font-size: 1.5rem;
+  color: var(--color-text-muted);
+}
+
+.home-modal__compare-preview {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 3px solid;
+  overflow: hidden;
+}
+
+.home-modal__compare-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-modal__error {
+  text-align: center;
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.home-modal__capture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border: 2px dashed var(--glass-border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--color-text-main);
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.home-modal__capture:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--color-accent);
+}
+
+.home-modal__capture-icon {
+  font-size: 1.5rem;
+}
+
+.home-modal__loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  color: var(--color-text-main);
+  font-size: 0.9rem;
+  animation: modalLoadingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes modalLoadingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.home-modal__loading-spinner {
+  font-size: 1.3rem;
+  animation: modalSpin 1.5s linear infinite;
+}
+
+@keyframes modalSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.home-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.home-modal__action-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.home-modal__action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.home-modal__action-btn--generate {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-secondary));
+  color: #fff;
+}
+
+.home-modal__action-btn--generate:hover {
+  opacity: 0.9;
+}
+
+.home-modal__action-btn--save {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-secondary));
+  color: #fff;
+}
+
+.home-modal__action-btn--save:hover {
+  opacity: 0.9;
+}
+
+.home-modal__action-btn--retake {
+  background: transparent;
+  border: 1px solid var(--glass-border) !important;
+  color: var(--color-text-muted);
+}
+
+.home-modal__action-btn--retake:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-main);
+}
+
+.home-modal__action-btn--discard {
+  background: transparent;
+  border: 1px solid var(--glass-border) !important;
+  color: var(--color-text-muted);
+}
+
+.home-modal__action-btn--discard:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-main);
 }
 
 /* Pre-game status banner */
