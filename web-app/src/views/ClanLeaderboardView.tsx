@@ -7,9 +7,9 @@ import './ClanLeaderboardView.css';
 type KlanRow = Database['public']['Tables']['klans']['Row'];
 
 const CLAN_ICONS: Record<string, { emoji: string; image?: string }> = {
-  'klan peruna': { emoji: '⚡', image: '/icons/perun_icon2_wyciete.png' },
-  'klan welesa': { emoji: '🐺', image: '/icons/weles_icon22-Photoroom.png' },
-  'klan mokoszy': { emoji: '🌿', image: '/icons/mokosz_icon12-removebg-preview.png' },
+  'klan peruna': { emoji: '⚡', image: '/icons/perun_symbol-Photoroom.png' },
+  'klan welesa': { emoji: '🐺', image: '/icons/weles_icon_symbol-Photoroom.png' },
+  'klan mokoszy': { emoji: '🌿', image: '/icons/mokosz_symbol-Photoroom.png' },
 };
 
 const GOD_AVATARS: Record<string, { emoji: string; name: string }> = {
