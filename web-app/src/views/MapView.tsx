@@ -8,6 +8,7 @@ import { LocationMarker, CenterOnLocationButton } from '../components/map/MapCon
 import { AnimatedMarker, PulsingMarker } from '../components/map/AnimatedMarkers';
 import { QRScannerModal } from '../components/quest/QRScannerModal';
 import { MediaUploadModal } from '../components/quest/MediaUploadModal';
+import { PreGameSplash } from '../components/PreGameSplash';
 import { useQRScanner } from '../hooks/useQRScanner';
 import { useClanMemberPositions } from '../hooks/usePlayerPosition';
 import L from 'leaflet';
@@ -421,6 +422,8 @@ function MapContent() {
 }
 
 export function MapView() {
+  const { gameStatus } = usePlayerSession();
+
   return (
     <div className="view view--map">
       <header className="view__header">
@@ -429,19 +432,23 @@ export function MapView() {
       </header>
 
       <main className="view__content view__content--map">
-        <div className="map-container">
-          <MapContainer
-            center={DEFAULT_MAP_CONFIG.center}
-            zoom={DEFAULT_MAP_CONFIG.zoom}
-            maxZoom={DEFAULT_MAP_CONFIG.maxZoom}
-            minZoom={DEFAULT_MAP_CONFIG.minZoom}
-            className="leaflet-map"
-            zoomControl={true}
-            attributionControl={false}
-          >
-            <MapContent />
-          </MapContainer>
-        </div>
+        {gameStatus === 'active' ? (
+          <div className="map-container">
+            <MapContainer
+              center={DEFAULT_MAP_CONFIG.center}
+              zoom={DEFAULT_MAP_CONFIG.zoom}
+              maxZoom={DEFAULT_MAP_CONFIG.maxZoom}
+              minZoom={DEFAULT_MAP_CONFIG.minZoom}
+              className="leaflet-map"
+              zoomControl={true}
+              attributionControl={false}
+            >
+              <MapContent />
+            </MapContainer>
+          </div>
+        ) : (
+          <PreGameSplash view="map" status={gameStatus} />
+        )}
       </main>
     </div>
   );

@@ -15,17 +15,20 @@ import { getPlayerSession, clearPlayerSession, type PlayerSession } from './lib/
 import { supabase } from './lib/supabase';
 import { GameProvider } from './hooks/useGameProvider';
 import { PlayerPositionProvider } from './hooks/usePlayerPosition';
+import { useGameStatus, type GameStatus } from './hooks/useGameStatus';
 import './views/Views.css';
 import './components/tab-bar/TabBar.css';
 
 interface PlayerContextValue {
   session: PlayerSession | null;
   refreshSession: () => void;
+  gameStatus: GameStatus | null;
 }
 
 const PlayerContext = createContext<PlayerContextValue>({
   session: null,
   refreshSession: () => {},
+  gameStatus: null,
 });
 
 function AppContent() {
@@ -35,6 +38,7 @@ function AppContent() {
   const [showJoin, setShowJoin] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [session, setSession] = useState<PlayerSession | null>(null);
+  const { status: gameStatus } = useGameStatus(session?.game_id);
   const [showSplash, setShowSplash] = useState(false);
   const [splashClosing, setSplashClosing] = useState(false);
   const splashShownRef = useRef(false);
@@ -141,7 +145,7 @@ function AppContent() {
   };
 
   return (
-    <PlayerContext.Provider value={{ session, refreshSession }}>
+    <PlayerContext.Provider value={{ session, refreshSession, gameStatus }}>
       <PlayerPositionProvider>
         <GameProvider>
         {showSplash && (

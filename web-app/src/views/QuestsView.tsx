@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { usePlayerSession, useGame } from '../App';
 import { QRScannerModal } from '../components/quest/QRScannerModal';
 import { MediaUploadModal } from '../components/quest/MediaUploadModal';
+import { PreGameSplash } from '../components/PreGameSplash';
 import { useQRScanner } from '../hooks/useQRScanner';
 import type { Database } from '../types/database.types';
 import './QuestsView.css';
@@ -42,7 +43,7 @@ function getQuestState(q: QuestWithState, klanId: string | undefined): QuestStat
 }
 
 export function QuestsView() {
-  const { session } = usePlayerSession();
+  const { session, gameStatus } = usePlayerSession();
   const [quests, setQuests] = useState<QuestWithState[]>([]);
   const [loading, setLoading] = useState(true);
   const [qrQuest, setQrQuest] = useState<QuestWithState | null>(null);
@@ -227,6 +228,20 @@ export function QuestsView() {
             <h2 className="placeholder-panel__title">Brak sesji</h2>
             <p className="placeholder-panel__text">Dołącz do gry, aby zobaczyć próby.</p>
           </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (gameStatus !== 'active') {
+    return (
+      <div className="view view--quests">
+        <header className="view__header">
+          <h1 className="view__title view__title--small">🗺️ Próby</h1>
+          <p className="view__subtitle">Zadania dla Twojego Klanu</p>
+        </header>
+        <main className="view__content">
+          <PreGameSplash view="quests" status={gameStatus} />
         </main>
       </div>
     );

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useGame } from '../App';
 import { usePlayerSession } from '../App';
+import { PreGameSplash } from '../components/PreGameSplash';
 
 type ShopItem = {
   id: string;
@@ -21,7 +22,7 @@ const SHOP_ITEMS: ShopItem[] = [
 
 export function ShopView() {
   const { klanPoints } = useGame();
-  const { session } = usePlayerSession();
+  const { session, gameStatus } = usePlayerSession();
   const [ownedItems, setOwnedItems] = useState<string[]>([]);
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
@@ -87,6 +88,9 @@ export function ShopView() {
       </header>
 
       <main className="view__content">
+        {gameStatus !== 'active' ? (
+          <PreGameSplash view="shop" status={gameStatus} />
+        ) : (
         <div className="shop-items">
           {SHOP_ITEMS.map(item => {
             const owned = ownedItems.includes(item.id);
@@ -116,6 +120,7 @@ export function ShopView() {
             );
           })}
         </div>
+        )}
       </main>
     </div>
   );

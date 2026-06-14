@@ -1,0 +1,97 @@
+.pre-game-splash {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.pre-game-splash__rune {
+  position: absolute;
+  font-size: 40vh;
+  opacity: 0.04;
+  pointer-events: none;
+  user-select: none;
+  color: var(--color-perun);
+  animation: runePulse 4s ease-in-out infinite;
+}
+
+.pre-game-splash__content {
+  position: relative;
+  z-index: 1;
+  max-width: 420px;
+  text-align: center;
+  padding: 36px 28px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.pre-game-splash__icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 20px rgba(255, 200, 50, 0.35));
+  animation: iconFloat 3s ease-in-out infinite;
+}
+
+.pre-game-splash__title {
+  font-size: 1.35rem;
+  margin: 0 0 12px;
+  color: var(--color-text-main);
+  background: linear-gradient(90deg, var(--color-perun), #ffffff 60%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pre-game-splash__description {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  margin: 0 0 24px;
+}
+
+.pre-game-splash__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--color-perun);
+  padding: 10px 18px;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 999px;
+}
+
+.pre-game-splash__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-perun);
+  box-shadow: 0 0 10px var(--color-perun);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+@keyframes runePulse {
+  0%, 100% { opacity: 0.03; transform: scale(1); }
+  50% { opacity: 0.07; transform: scale(1.05); }
+}
+
+@keyframes iconFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}

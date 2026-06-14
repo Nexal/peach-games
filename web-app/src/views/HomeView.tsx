@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { getPlayerSession } from '../lib/playerSession';
-import { useGame } from '../App';
+import { useGame, usePlayerSession } from '../App';
 import { supabase } from '../lib/supabase';
 import type { PlayerSession } from '../lib/playerSession';
+import type { GameStatus } from '../hooks/useGameStatus';
 import './HomeView.css';
 
 const CLAN_ICONS: Record<string, { emoji: string; image?: string }> = {
@@ -21,6 +22,7 @@ export function HomeView() {
   const [logoEnlarged, setLogoEnlarged] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const { klanPoints } = useGame();
+  const { gameStatus } = usePlayerSession();
 
   useEffect(() => {
     const s = getPlayerSession();
@@ -111,6 +113,7 @@ export function HomeView() {
       </header>
 
       <main className="view__content view__content--home-centered">
+        <GameStatusBanner status={gameStatus} />
         <div className="home-hero" style={{ '--klan-color': session.klan_color } as React.CSSProperties}>
           <div className="home-hero__avatar-wrap">
             {avatarUrl ? (
@@ -160,6 +163,30 @@ export function HomeView() {
           Zbieraj ogniki, wznieś swój klan na szczyt
         </p>
       </main>
+    </div>
+  );
+}
+
+function GameStatusBanner({ status }: { status: GameStatus | null }) {
+  if (status === 'active') return null;
+
+  if (status === 'finished') {
+    return (
+      <div className="home-status-banner home-status-banner--finished">
+        <span className="home-status-banner__icon">🌙</span>
+        <span className="home-status-banner__text">
+          Kolo roku się odwróciło. Gra dobiegła końca.
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="home-status-banner">
+      <span className="home-status-banner__icon">✨</span>
+      <span className="home-status-banner__text">
+        Bogowie jeszcze zbierają siły. Gdy dadzą znak, rozpocznie się Noc Kupały.
+      </span>
     </div>
   );
 }
