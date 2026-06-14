@@ -16,6 +16,7 @@ import { supabase } from './lib/supabase';
 import { GameProvider } from './hooks/useGameProvider';
 import { PlayerPositionProvider } from './hooks/usePlayerPosition';
 import { useGameStatus, type GameStatus } from './hooks/useGameStatus';
+import { useScreenWakeLock } from './hooks/useScreenWakeLock';
 import './views/Views.css';
 import './components/tab-bar/TabBar.css';
 
@@ -120,6 +121,9 @@ function AppContent() {
       }, 600);
     }, 2000);
   }, [showJoin, showAdmin, session]);
+
+  const wakeLockActive = !!session || (showAdmin && isAuthenticated);
+  useScreenWakeLock(wakeLockActive);
 
   const renderView = () => {
     if (showAdmin) {
