@@ -166,6 +166,7 @@ export function useGamePlayerPositions(gameId: string | undefined) {
             id,
             name,
             klan_id,
+            avatar_url,
             klans:klan_id (
               id,
               name
@@ -182,6 +183,7 @@ export function useGamePlayerPositions(gameId: string | undefined) {
         const transformed: any[] = (data || []).map((p: any) => ({
           player_id: p.player_id,
           player_name: p.players?.name || 'Nieznany',
+          avatar_url: p.players?.avatar_url || null,
           klan_id: p.players?.klan_id || null,
           klan_name: p.players?.klans?.name || null,
           lat: p.lat,
@@ -219,6 +221,7 @@ export function useGamePlayerPositions(gameId: string | undefined) {
 export interface ClanMemberPosition {
   player_id: string;
   player_name: string;
+  avatar_url: string | null;
   lat: number;
   lng: number;
   accuracy: number | null;
@@ -243,7 +246,8 @@ export function useClanMemberPositions(gameId: string | undefined, klanId: strin
           players!inner (
             id,
             name,
-            klan_id
+            klan_id,
+            avatar_url
           )
         `)
         .eq('game_id', gameId)
@@ -256,6 +260,7 @@ export function useClanMemberPositions(gameId: string | undefined, klanId: strin
         const transformed = (data as any[]).map((p: any) => ({
           player_id: p.player_id,
           player_name: p.players?.name || 'Nieznany',
+          avatar_url: p.players?.avatar_url || null,
           lat: p.lat,
           lng: p.lng,
           accuracy: p.accuracy,

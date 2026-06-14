@@ -311,6 +311,7 @@ export function QuestsView() {
       await (supabase as any).from('messages').insert({
         content: `${klanName} ukończył quest „${questTitle}" (+${totalPoints} 🔥)!`,
         sender: 'god',
+        player_id: null,
         game_id: session.game_id,
         klan_id: null,
         sender_klan_id: null,
@@ -320,6 +321,7 @@ export function QuestsView() {
       await (supabase as any).from('messages').insert({
         content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${taskPoints} 🔥)!`,
         sender: 'god',
+        player_id: null,
         game_id: session.game_id,
         klan_id: null,
         sender_klan_id: null,

@@ -30,6 +30,7 @@ export function ChatView() {
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [notifFlash, setNotifFlash] = useState(false);
+  const [playerAvatarMap, setPlayerAvatarMap] = useState<Record<string, string | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -46,6 +47,14 @@ export function ChatView() {
     if (playerSession?.game_id) {
       supabase.from('klans').select('*').eq('game_id', playerSession.game_id)
         .then(({ data }) => data && setKlans(data));
+      supabase.from('players').select('id, avatar_url').eq('game_id', playerSession.game_id)
+        .then(({ data }) => {
+          if (data) {
+            const map: Record<string, string | null> = {};
+            data.forEach(p => { map[p.id] = p.avatar_url; });
+            setPlayerAvatarMap(map);
+          }
+        });
     }
   }, [playerSession?.game_id]);
 
@@ -57,8 +66,8 @@ export function ChatView() {
         .from('messages')
         .select('*')
         .eq('game_id', playerSession.game_id)
-        .order('created_at', { ascending: true })
-        .limit(50);
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (chatMode === 'klan') {
         query = query.or(`klan_id.eq.${playerSession.klan_id},and(sender.eq.god,klan_id.is.null)`);
@@ -67,7 +76,7 @@ export function ChatView() {
       }
 
       const { data } = await query;
-      if (data) setMessages(data);
+      if (data) setMessages(data.reverse());
     };
 
     fetchMessages();
@@ -283,6 +292,7 @@ export function ChatView() {
     const { error: insertError } = await supabase.from('messages').insert({
       content: inputText.trim(),
       sender: playerSession.name,
+      player_id: playerSession.player_id || null,
       klan_id: chatMode === 'global' ? null : playerSession.klan_id,
       sender_klan_id: playerSession.klan_id,
       game_id: playerSession.game_id,
@@ -372,6 +382,7 @@ export function ChatView() {
               const clan = klans.find(k => k.id === (msg.sender_klan_id || msg.klan_id));
               const clanColor = clan?.theme_color || '#888888';
               const clanColorRgb = hexToRgb(clanColor);
+              const senderAvatar = !isGod ? playerAvatarMap[msg.player_id || ''] || null : null;
               return (
                 <div
                   key={msg.id}
@@ -383,7 +394,16 @@ export function ChatView() {
                   title={msg.created_at ? new Date(msg.created_at).toLocaleString('pl-PL') : ''}
                 >
                   <span className="chat-message__sender" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>
-                    {isGod ? '👁️ Bogowie' : isGlobal ? `👤 ${msg.sender} (${clan?.name || '?'})` : `👤 ${msg.sender}`}
+                    {senderAvatar ? (
+                      <img
+                        src={senderAvatar}
+                        alt={msg.sender}
+                        style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover', marginRight: 4, verticalAlign: 'middle', cursor: 'pointer' }}
+                        onClick={() => setEnlargedImage(senderAvatar)}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                    ) : null}
+                    {isGod ? '👁️ Bogowie' : isGlobal ? `${msg.sender} (${clan?.name || '?'})` : `${msg.sender}`}
                   </span>
                   <span className="chat-message__content" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>{msg.content}</span>
                   {msg.image_url && (

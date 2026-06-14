@@ -65,7 +65,7 @@ function AppContent() {
 
       const { data: player } = await supabase
         .from('players')
-        .select('id, name, klan_id, joined_at, klans(id, name, theme_color)')
+        .select('id, name, klan_id, joined_at, avatar_url, klans(id, name, theme_color)')
         .eq('id', stored.id)
         .single();
 
@@ -82,6 +82,7 @@ function AppContent() {
         klan_id: player.klan_id || '',
         klan_name: (player.klans as any)?.name || 'Nieznany',
         klan_color: (player.klans as any)?.theme_color || '#888',
+        avatar_url: (player as any).avatar_url || null,
         game_id: stored.game_id,
         session_start: stored.session_start,
       });

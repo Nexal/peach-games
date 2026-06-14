@@ -6,6 +6,7 @@ export type PlayerSession = {
   klan_name: string;
   klan_color: string;
   game_id: string;
+  avatar_url?: string | null;
   session_start?: string;
 };
 

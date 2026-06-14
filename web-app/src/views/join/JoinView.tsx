@@ -282,6 +282,7 @@ export function JoinView() {
       klan_id: player.klan_id || '',
       klan_name: klan?.name || 'Nieznany',
       klan_color: klan?.theme_color || '#888',
+      avatar_url: avatarUrl || null,
       game_id: selectedGameId || '',
     });
 

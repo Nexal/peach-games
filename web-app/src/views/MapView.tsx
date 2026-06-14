@@ -78,6 +78,7 @@ function MapContent() {
   const [taskProgress, setTaskProgress] = useState<Record<string, { scanned: number; total: number }>>({});
   const [taskRefresh, setTaskRefresh] = useState(0);
   const [showClanMembers, setShowClanMembers] = useState(true);
+  const [enlargedAvatar, setEnlargedAvatar] = useState<string | null>(null);
 
   const clanMembers = useClanMemberPositions(
     session?.game_id,
@@ -281,27 +282,49 @@ function MapContent() {
           position={[member.lat, member.lng]}
           icon={L.divIcon({
             className: 'clan-member-marker',
-            html: `<div style="
-              width: 20px;
-              height: 20px;
-              background: ${session?.klan_color || '#9B59B6'};
-              border: 2px solid #fff;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 10px;
-              font-weight: bold;
-              color: #fff;
-            ">${member.player_name.charAt(0).toUpperCase()}</div>`,
-            iconSize: [20, 20],
-            iconAnchor: [10, 10],
+            html: member.avatar_url
+              ? `<div style="
+                  width: 24px;
+                  height: 24px;
+                  border: 2px solid #fff;
+                  border-radius: 50%;
+                  overflow: hidden;
+                  box-shadow: 0 0 4px rgba(0,0,0,0.3);
+                ">
+                  <img src="${member.avatar_url}" style="width:100%;height:100%;object-fit:cover;" />
+                </div>`
+              : `<div style="
+                  width: 20px;
+                  height: 20px;
+                  background: ${session?.klan_color || '#9B59B6'};
+                  border: 2px solid #fff;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 10px;
+                  font-weight: bold;
+                  color: #fff;
+                ">${member.player_name.charAt(0).toUpperCase()}</div>`,
+            iconSize: member.avatar_url ? [24, 24] : [20, 20],
+            iconAnchor: member.avatar_url ? [12, 12] : [10, 10],
           })}
         >
           <Popup>
             <div className="map-popup map-popup--clan-member">
-              <h3>{member.player_name}</h3>
-              <p><strong>Online:</strong> {new Date(member.updated_at).toLocaleTimeString()}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                {member.avatar_url && (
+                  <img
+                    src={member.avatar_url}
+                    alt={member.player_name}
+                    style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${session?.klan_color || '#9B59B6'}`, cursor: 'pointer' }}
+                    onClick={() => setEnlargedAvatar(member.avatar_url)}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                )}
+                <h3 style={{ margin: 0 }}>{member.player_name}</h3>
+              </div>
+              <p style={{ margin: '0 0 2px' }}><strong>Online:</strong> {new Date(member.updated_at).toLocaleTimeString()}</p>
             </div>
           </Popup>
         </Marker>
@@ -415,6 +438,15 @@ function MapContent() {
       {feedback && (
         <div className={`map-qr-feedback map-qr-feedback--${feedback.type}`}>
           {feedback.text}
+        </div>
+      )}
+
+      {enlargedAvatar && (
+        <div className="chat-image-modal" onClick={() => setEnlargedAvatar(null)}>
+          <div className="chat-image-modal__content" onClick={(e) => e.stopPropagation()}>
+            <button className="chat-image-modal__close" onClick={() => setEnlargedAvatar(null)}>✕</button>
+            <img src={enlargedAvatar} alt="Powiększenie avatara" className="chat-image-modal__img" />
+          </div>
         </div>
       )}
     </>

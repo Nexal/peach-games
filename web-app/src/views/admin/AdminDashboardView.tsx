@@ -196,6 +196,7 @@ export function AdminDashboardView() {
       await supabase.from('messages').insert({
         content: announcementText,
         sender: 'god',
+        player_id: null,
         game_id: gameId,
         klan_id: null,
         sender_klan_id: null,
@@ -317,6 +318,7 @@ export function AdminDashboardView() {
     await supabase.from('messages').insert({
       content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${points} 🔥)!`,
       sender: 'god',
+      player_id: null,
       game_id: selectedGameId,
       klan_id: null,
       sender_klan_id: null,
@@ -424,6 +426,7 @@ export function AdminDashboardView() {
     await supabase.from('messages').insert({
       content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${points} 🔥)!`,
       sender: 'god',
+      player_id: null,
       game_id: selectedGameId,
       klan_id: null,
       sender_klan_id: null,
@@ -1295,6 +1298,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
+  const [playerAvatarMap, setPlayerAvatarMap] = useState<Record<string, string | null>>({});
 
   const compressImage = (file: File, maxWidth: number = 1200, quality: number = 0.8): Promise<Blob> => {
     return new Promise((resolve, reject) => {
@@ -1393,6 +1397,19 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
   }, [selectedGameId, selectedKlanId]);
 
   useEffect(() => {
+    if (selectedGameId) {
+      supabase.from('players').select('id, avatar_url').eq('game_id', selectedGameId)
+        .then(({ data }) => {
+          if (data) {
+            const map: Record<string, string | null> = {};
+            data.forEach(p => { map[p.id] = p.avatar_url; });
+            setPlayerAvatarMap(map);
+          }
+        });
+    }
+  }, [selectedGameId]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -1408,8 +1425,8 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
     let query = supabase
       .from('messages')
       .select('*')
-      .order('created_at', { ascending: true })
-      .limit(50);
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (selectedGameId) {
       query = query.eq('game_id', selectedGameId);
@@ -1420,8 +1437,8 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
       query = query.is('klan_id', null);
     }
 
-    const { data } = await query;
-    if (data) setMessages(data);
+      const { data } = await query;
+      if (data) setMessages(data.reverse());
   };
 
   const generateTTS = async (text: string, voiceId: string, retries = 3): Promise<string | null> => {
@@ -1496,6 +1513,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
       await supabase.from('messages').insert({
         content: inputText.trim() || (imageUrl ? '📷' : ''),
         sender: 'god',
+        player_id: null,
         game_id: selectedGameId,
         klan_id: null,
         sender_klan_id: null,
@@ -1507,6 +1525,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
       await supabase.from('messages').insert({
         content: inputText.trim() || (imageUrl ? '📷' : ''),
         sender: 'god',
+        player_id: null,
         game_id: selectedGameId,
         klan_id: selectedKlanId,
         sender_klan_id: selectedKlanId,
@@ -1646,6 +1665,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
             const isPlaying = audioPlayersRef.current[msg.id] && !audioPlayersRef.current[msg.id].paused;
             const klanColor = clan?.theme_color;
             const isSelectedKlan = selectedKlanId && msg.klan_id === selectedKlanId;
+            const senderAvatarUrl = msg.sender !== 'god' && msg.player_id ? (playerAvatarMap[msg.player_id] || null) : null;
             return (
               <div
                 key={msg.id}
@@ -1658,7 +1678,7 @@ function ChatPanel({ games, klans }: { games: Game[]; klans: Klan[] }) {
                       ? '📢 Broadcast'
                       : msg.sender === 'god'
                         ? `✨ Bogowie${clan ? ` (${clan.name})` : ''}`
-                        : `👤 ${msg.sender}${clan ? ` (${clan.name})` : ''}`}
+                        : <>{senderAvatarUrl ? <img src={senderAvatarUrl} alt={msg.sender} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', marginRight: 4, verticalAlign: 'middle', cursor: 'pointer' }} onClick={() => setEnlargedImage(senderAvatarUrl)} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} /> : null}{msg.sender}{clan ? ` (${clan.name})` : ''}</>}
                     {msg.tts_requested && ' 🔊'}
                   </span>
                   <div className="admin-chat__message-actions">
@@ -1780,6 +1800,7 @@ function MapPanel({ gameId, klans }: MapPanelProps) {
             id,
             name,
             klan_id,
+            avatar_url,
             klans!inner (
               id,
               name,
@@ -1858,28 +1879,42 @@ function MapPanel({ gameId, klans }: MapPanelProps) {
             const klanName = pos.players?.klans?.name || 'Bez klanu';
             const klanColor = getKlanColor(pos.players?.klan_id);
 
+            const avatarUrl = pos.players?.avatar_url || null;
             const playerIcon = L.divIcon({
               className: 'admin-player-marker',
-              html: `
-                <div style="
-                  width: 20px;
-                  height: 20px;
-                  background: ${klanColor};
-                  border: 2px solid #fff;
-                  border-radius: 50%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-weight: bold;
-                  font-size: 8px;
-                  color: #fff;
-                  box-shadow: 0 0 8px ${klanColor};
-                ">
-                  ${playerName.charAt(0).toUpperCase()}
-                </div>
-              `,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10],
+              html: avatarUrl
+                ? `
+                  <div style="
+                    width: 28px;
+                    height: 28px;
+                    border: 2px solid #fff;
+                    border-radius: 50%;
+                    overflow: hidden;
+                    box-shadow: 0 0 8px ${klanColor};
+                  ">
+                    <img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;" />
+                  </div>
+                `
+                : `
+                  <div style="
+                    width: 20px;
+                    height: 20px;
+                    background: ${klanColor};
+                    border: 2px solid #fff;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                    font-size: 8px;
+                    color: #fff;
+                    box-shadow: 0 0 8px ${klanColor};
+                  ">
+                    ${playerName.charAt(0).toUpperCase()}
+                  </div>
+                `,
+              iconSize: avatarUrl ? [28, 28] : [20, 20],
+              iconAnchor: avatarUrl ? [14, 14] : [10, 10],
             });
 
             return (
@@ -1890,7 +1925,17 @@ function MapPanel({ gameId, klans }: MapPanelProps) {
               >
                 <Popup>
                   <div className="admin-map-popup">
-                    <h3 style={{ color: klanColor }}>{playerName}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      {avatarUrl && (
+                        <img
+                          src={avatarUrl}
+                          alt={playerName}
+                          style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${klanColor}` }}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                        />
+                      )}
+                      <h3 style={{ margin: 0, color: klanColor }}>{playerName}</h3>
+                    </div>
                     <p><strong>Klan:</strong> {klanName}</p>
                     <p><strong>Pozycja:</strong> {pos.lat.toFixed(5)}, {pos.lng.toFixed(5)}</p>
                     <p><strong>Dokładność:</strong> ±{Math.round(pos.accuracy || 0)}m</p>

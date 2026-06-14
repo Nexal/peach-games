@@ -383,6 +383,7 @@ export type Database = {
           id: string
           image_url: string | null
           klan_id: string | null
+          player_id: string | null
           sender: string
           sender_klan_id: string | null
           tts_requested: boolean | null
@@ -395,6 +396,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           klan_id?: string | null
+          player_id?: string | null
           sender: string
           sender_klan_id?: string | null
           tts_requested?: boolean | null
@@ -407,6 +409,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           klan_id?: string | null
+          player_id?: string | null
           sender?: string
           sender_klan_id?: string | null
           tts_requested?: boolean | null
@@ -431,6 +434,13 @@ export type Database = {
             columns: ["klan_id"]
             isOneToOne: false
             referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
           {

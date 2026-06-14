@@ -146,3 +146,20 @@ For multi-step tasks, state a brief plan:
 ```
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+## 5. Branching Strategy
+
+**Przed każdym nowym zadaniem sprawdź aktualny branch (`git branch --show-current`).**
+
+- Jeśli jesteś na branchu `main` (lub `master` / `develop`), utwórz nowy branch dedykowany zadaniu (`git checkout -b feat/nazwa-zadania`).
+- Jeśli jesteś już na osobnym branchu (np. `feat/coś`), a nowe zadanie dotyczy czegoś innego — **zapytaj użytkownika**, czy utworzyć nowego brancha, czy kontynuować na obecnym.
+- Nazwa brancha powinna odzwierciedlać zadanie (np. `feat/kupala-scoring`, `fix/chat-reconnect`, `refactor/map-view`).
+
+## 6. Self Review przed zakończeniem zadania
+
+**Zanim uznasz zadanie za skończone, wykonaj przegląd własnych zmian:**
+
+- Przejrzyj `git diff` — sprawdź, czy nie ma zbędnych zmian, wykasowanych testów, zostawionych komentarzy, console.logów, tymczasowych plików.
+- Upewnij się, że zmiany dotyczą **tylko** tego zadania — brak przypadkowych modyfikacji w niepowiązanych plikach.
+- Jeśli zmieniłeś logikę biznesową — sprawdź, czy nie trzeba zaktualizować testów.
+- Rzuć okiem na finalny stan plików, które edytowałeś (np. przez `git diff --stat` i szybki przegląd kluczowych plików).
