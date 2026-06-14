@@ -40,6 +40,9 @@ interface GameContextValue {
   deactivateQRQuest: (questId: string) => void;
   getMarkerPosition: (questId: string) => MarkerPosition;
   klanPoints: number;
+  unreadGodMessages: number;
+  markMessagesRead: () => void;
+  setChatOpen: (open: boolean) => void;
 }
 
 interface QuestState {
@@ -54,7 +57,10 @@ const GameContext = createContext<GameContextValue>({
   activeQRQuests: {},
   completionModal: null,
   klanPoints: 0,
+  unreadGodMessages: 0,
   dismissCompletion: () => {},
+  markMessagesRead: () => {},
+  setChatOpen: () => {},
   completeChase: async () => {},
   activateQuest: async () => {},
   activateQRQuest: () => {},
@@ -123,8 +129,47 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [completionModal, setCompletionModal] = useState<QuestCompletionData | null>(null);
   const [taskCompletionModal, setTaskCompletionModal] = useState<TaskCompletionData | null>(null);
   const [klanPoints, setKlanPoints] = useState<number>(0);
+  const [unreadGodMessages, setUnreadGodMessages] = useState<number>(() => {
+    const saved = localStorage.getItem('peach_unread_god');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  const saveUnread = useCallback((n: number) => {
+    setUnreadGodMessages(n);
+    localStorage.setItem('peach_unread_god', String(n));
+  }, []);
+  const unreadRef = useRef(unreadGodMessages);
+  unreadRef.current = unreadGodMessages;
+  const chatOpenRef = useRef(false);
+  const setChatOpen = useCallback((open: boolean) => { chatOpenRef.current = open; }, []);
   const lastPlayerPositionRef = useRef<MarkerPosition>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const swRegRef = useRef<ServiceWorkerRegistration | null>(null);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then((reg) => {
+        swRegRef.current = reg;
+      }).catch(() => {});
+    }
+  }, []);
+
+  const showNotif = useCallback((title: string, body: string, tag: string) => {
+    if (swRegRef.current && 'showNotification' in swRegRef.current) {
+      swRegRef.current.showNotification(title, { body, tag, requireInteraction: true });
+    } else {
+      try {
+        const n = new Notification(title, { body, tag, requireInteraction: true });
+        n.onclick = () => window.focus();
+      } catch (e) {
+        console.warn('[GameProvider] Notification failed:', e);
+      }
+    }
+  }, []);
+
+  const markMessagesRead = useCallback(() => {
+    saveUnread(0);
+  }, [saveUnread]);
 
   useEffect(() => {
     if (!session?.id || !session?.game_id) return;
@@ -339,7 +384,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
         const { data: qa } = await supabase
           .from('quest_activations')
-          .select('klan_id, quests!inner(id, title)')
+          .select('klan_id, quest_id, quests!inner(id, title)')
           .eq('id', tc.quest_activation_id)
           .single();
 
@@ -352,6 +397,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (!taskData) return;
+
+        // If all tasks for this quest are completed, skip the task modal
+        // — the quest completion modal will cover it
+        const { count: totalTasks, error: totalErr } = await supabase
+          .from('tasks')
+          .select('*', { count: 'exact', head: true })
+          .eq('quest_id', qa.quest_id);
+
+        const { count: completedTasks } = await supabase
+          .from('task_completions')
+          .select('*', { count: 'exact', head: true })
+          .eq('quest_activation_id', tc.quest_activation_id)
+          .not('completed_at', 'is', null);
+
+        if (!totalErr && totalTasks != null && completedTasks != null && completedTasks >= totalTasks) {
+          return;
+        }
 
         setTaskCompletionModal({
           task_id: tc.task_id,
@@ -392,6 +454,34 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     return () => { supabase.removeChannel(klanChannel); };
   }, [session?.klan_id]);
+
+  useEffect(() => {
+    if (!session?.game_id) return;
+
+    const channel = supabase
+      .channel(`god_messages_${session.game_id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `game_id=eq.${session.game_id}`,
+      }, (payload: any) => {
+        const msg = payload.new as any;
+        if (msg.sender !== 'god' || !msg.content) return;
+        if (msg.klan_id && msg.klan_id !== session?.klan_id) return;
+        if (!chatOpenRef.current) {
+          saveUnread(unreadRef.current + 1);
+        }
+        showNotif(
+          '🔔 Wiadomość od Boga',
+          msg.content.length > 200 ? msg.content.substring(0, 200) + '…' : msg.content,
+          msg.id,
+        );
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [session?.game_id, showNotif]);
 
   const completeChase = useCallback(async (chaseId: string, questId: string) => {
     if (!session?.id) return;
@@ -516,7 +606,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       activeQRQuests,
       completionModal,
       klanPoints,
+      unreadGodMessages,
       dismissCompletion,
+      markMessagesRead,
+      setChatOpen,
       completeChase,
       activateQuest,
       activateQRQuest,

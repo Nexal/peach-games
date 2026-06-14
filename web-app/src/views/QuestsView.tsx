@@ -21,6 +21,7 @@ interface TaskProgress {
   totalMarkers: number;
   scannedMarkerIds: string[];
   completed: boolean;
+  correctAnswer: string | null;
 }
 
 interface QuestWithState extends Quest {
@@ -50,6 +51,7 @@ export function QuestsView() {
   const [activating, setActivating] = useState<string | null>(null);
   const [uploadTask, setUploadTask] = useState<{ taskId: string; questActivationId: string } | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [textFeedback, setTextFeedback] = useState<{ taskId: string; type: 'success' | 'error'; text: string } | null>(null);
 
   const loadSubmissions = useCallback(async () => {
     if (!session?.game_id || !session?.klan_id) return;
@@ -124,6 +126,7 @@ export function QuestsView() {
             totalMarkers,
             scannedMarkerIds,
             completed: taskCompleted,
+            correctAnswer: task.correct_answer || null,
           });
         });
 
@@ -215,6 +218,119 @@ export function QuestsView() {
 
     loadQuests();
   }, [session, loadQuests]);
+
+  const submitTextAnswer = useCallback(async (taskId: string, answer: string) => {
+    if (!session?.game_id || !session?.klan_id || !session?.id) return;
+
+    const quest = quests.find(q => q.tasks.some(t => t.id === taskId));
+    const task = quest?.tasks.find(t => t.id === taskId);
+
+    if (!task?.correctAnswer) {
+      setTextFeedback({ taskId, type: 'error', text: 'Brak poprawnej odpowiedzi dla tego zadania.' });
+      return;
+    }
+
+    if (answer.trim().toLowerCase() !== task.correctAnswer.trim().toLowerCase()) {
+      setTextFeedback({ taskId, type: 'error', text: '❌ Niepoprawna odpowiedź. Spróbuj ponownie.' });
+      setTimeout(() => setTextFeedback(null), 3000);
+      return;
+    }
+
+    const { data: activation } = await (supabase as any)
+      .from('quest_activations')
+      .select('id')
+      .eq('quest_id', quest!.id)
+      .eq('klan_id', session.klan_id)
+      .is('completed_at', null)
+      .limit(1);
+
+    if (!activation || activation.length === 0) return;
+
+    const activationId = activation[0].id;
+
+    await (supabase as any).from('task_completions').upsert(
+      {
+        quest_activation_id: activationId,
+        task_id: taskId,
+        completed_at: new Date().toISOString(),
+        completed_by_player_id: session.id,
+        metadata: { answer_text: answer },
+      },
+      { onConflict: 'quest_activation_id, task_id' },
+    );
+
+    const taskPoints = task.reward_points || 0;
+
+    if (taskPoints > 0) {
+      const { data: klanData } = await (supabase as any)
+        .from('klans')
+        .select('points')
+        .eq('id', session.klan_id)
+        .maybeSingle();
+
+      if (klanData) {
+        await (supabase as any)
+          .from('klans')
+          .update({ points: (klanData.points || 0) + taskPoints })
+          .eq('id', session.klan_id);
+      }
+    }
+
+    // Broadcast notification
+    const { data: questData } = await (supabase as any)
+      .from('quests')
+      .select('title')
+      .eq('id', quest!.id)
+      .single();
+    const { data: klanInfo } = await (supabase as any)
+      .from('klans')
+      .select('name')
+      .eq('id', session.klan_id)
+      .single();
+    const questTitle = questData?.title || 'Nieznany quest';
+    const klanName = klanInfo?.name || 'Klan';
+    const taskTitle = task.title || 'Nieznane zadanie';
+
+    const allTasksDone = quest!.tasks.every(t => t.completed || t.id === taskId);
+    const totalPoints = quest!.tasks.reduce((sum, t) => sum + (t.reward_points || 0), 0);
+
+    if (allTasksDone) {
+      await (supabase as any).from('quest_completions').insert({
+        quest_id: quest!.id,
+        klan_id: session.klan_id,
+        game_id: session.game_id,
+        completed_by_player_id: session.id,
+        points_awarded: totalPoints,
+      });
+
+      await (supabase as any)
+        .from('quest_activations')
+        .update({ completed_at: new Date().toISOString(), completed_by_player_id: session.id })
+        .eq('id', activationId);
+
+      await (supabase as any).from('messages').insert({
+        content: `${klanName} ukończył quest „${questTitle}" (+${totalPoints} 🔥)!`,
+        sender: 'god',
+        game_id: session.game_id,
+        klan_id: null,
+        sender_klan_id: null,
+        tts_requested: false,
+      });
+    } else {
+      await (supabase as any).from('messages').insert({
+        content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${taskPoints} 🔥)!`,
+        sender: 'god',
+        game_id: session.game_id,
+        klan_id: null,
+        sender_klan_id: null,
+        tts_requested: false,
+      });
+    }
+
+    setTextFeedback({ taskId, type: 'success', text: allTasksDone ? `✅ Quest ukończony! +${totalPoints} 🔥` : '✅ Poprawna odpowiedź!' });
+    setTimeout(() => setTextFeedback(null), 3000);
+    loadQuests();
+  }, [session, quests, loadQuests]);
 
   if (!session) {
     return (
@@ -313,6 +429,8 @@ export function QuestsView() {
                   setUploadTask({ taskId, questActivationId: quest.activationId });
                 }
               }}
+              onSubmitText={(taskId, answer) => submitTextAnswer(taskId, answer)}
+              textFeedback={textFeedback}
               submissions={submissions}
             />
           );
@@ -407,6 +525,8 @@ function QuestCard({
   onActivate,
   onScan,
   onUploadPhoto,
+  onSubmitText,
+  textFeedback,
   submissions,
 }: {
   quest: QuestWithState;
@@ -415,6 +535,8 @@ function QuestCard({
   onActivate: () => void;
   onScan: () => void;
   onUploadPhoto: (taskId: string) => void;
+  onSubmitText: (taskId: string, answer: string) => void;
+  textFeedback: { taskId: string; type: 'success' | 'error'; text: string } | null;
   submissions: Submission[];
 }) {
   const typeIcons: Record<string, string> = {
@@ -422,6 +544,7 @@ function QuestCard({
     qr: '📱',
     photo: '📷',
     logic: '🧩',
+    text: '✍️',
   };
 
   const typeLabels: Record<string, string> = {
@@ -429,7 +552,10 @@ function QuestCard({
     qr: 'QR Kod',
     photo: 'Fotografia',
     logic: 'Logika',
+    text: 'Tekst',
   };
+
+  const [textAnswer, setTextAnswer] = useState('');
 
   const completedTasks = quest.tasks.filter((t) => t.completed).length;
   const totalTasks = quest.tasks.length;
@@ -500,7 +626,7 @@ function QuestCard({
         </button>
       )}
 
-      {state === 'active' && quest.type === 'qr' && currentTask && (
+      {state === 'active' && currentTask && currentTask.type === 'qr' && (
         <button className="quest-card__action-btn" onClick={onScan}>
           📱 Skanuj kod QR ({currentTask.scannedMarkerIds.length}/{currentTask.totalMarkers})
         </button>
@@ -532,6 +658,30 @@ function QuestCard({
           </button>
         );
       })()}
+
+      {state === 'active' && currentTask && !currentTask.completed && currentTask.type === 'text' && (
+        <div className="quest-card__text-input">
+          {textFeedback?.taskId === currentTask.id && (
+            <div className={`quest-card__submission-status quest-card__submission-status--${textFeedback.type === 'error' ? 'rejected' : 'pending'}`}>
+              {textFeedback.text}
+            </div>
+          )}
+          <textarea
+            className="quest-card__textarea"
+            placeholder="Wpisz odpowiedź..."
+            value={textAnswer}
+            onChange={(e) => setTextAnswer(e.target.value)}
+            rows={3}
+          />
+          <button
+            className="quest-card__action-btn"
+            onClick={() => { onSubmitText(currentTask.id, textAnswer); setTextAnswer(''); }}
+            disabled={!textAnswer.trim()}
+          >
+            ✍️ Wyślij odpowiedź
+          </button>
+        </div>
+      )}
 
       {state === 'active' && quest.type !== 'qr' && quest.tasks.length === 0 && (
         <div className="quest-card__instructions">📍 Udaj się na miejsce wskazane na mapie</div>

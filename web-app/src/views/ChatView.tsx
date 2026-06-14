@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { getPlayerSession } from '../lib/playerSession';
+import { useGame } from '../App';
 import type { Database } from '../types/database.types';
 
 type Message = Database['public']['Tables']['messages']['Row'];
@@ -16,6 +17,7 @@ function hexToRgb(hex: string): string {
 }
 
 export function ChatView() {
+  const { markMessagesRead, setChatOpen } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [playerSession] = useState(getPlayerSession());
@@ -27,9 +29,18 @@ export function ChatView() {
   const [uploading, setUploading] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [notifFlash, setNotifFlash] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => { setChatOpen(true); markMessagesRead(); return () => setChatOpen(false); }, [setChatOpen, markMessagesRead]);
+
+  const requestNotifyPermission = useCallback(async () => {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') return;
+    await Notification.requestPermission();
+  }, []);
 
   useEffect(() => {
     if (playerSession?.game_id) {
@@ -77,6 +88,10 @@ export function ChatView() {
             if (newMsg.klan_id === null) {
               setMessages((prev) => [...prev, newMsg]);
             }
+          }
+          if (newMsg.sender === 'god') {
+            setNotifFlash(true);
+            setTimeout(() => setNotifFlash(false), 2000);
           }
         }
       )
@@ -313,7 +328,21 @@ export function ChatView() {
           {chatMode === 'global' ? 'Modlitwa Wspólna' : `Modlitwa ${playerSession.klan_name}`}
         </h1>
         <p className="view__subtitle">Przesłanie od Bogów</p>
-        <div className="chat-mode-toggle">
+        <div className="chat-controls-row">
+          {'Notification' in window && (
+            <button
+              className={`chat-notify-btn ${notifFlash ? 'chat-notify-btn--flash' : ''}`}
+              onClick={requestNotifyPermission}
+              title={
+                Notification.permission === 'granted' ? 'Powiadomienia włączone' :
+                Notification.permission === 'denied' ? 'Powiadomienia zablokowane' : 'Włącz powiadomienia'
+              }
+            >
+              {Notification.permission === 'granted' ? '🔔' :
+               Notification.permission === 'denied' ? '🔕' : '🔇'}
+            </button>
+          )}
+          <div className="chat-mode-toggle">
           <button
             className={`chat-mode-toggle__btn ${chatMode === 'klan' ? 'chat-mode-toggle__btn--active' : ''}`}
             onClick={() => setChatMode('klan')}
@@ -327,6 +356,7 @@ export function ChatView() {
             🌍 Wspólna
           </button>
         </div>
+      </div>
       </header>
 
       <main className="view__content view__content--chat">

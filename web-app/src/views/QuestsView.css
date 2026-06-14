@@ -306,3 +306,32 @@
 .quest-card__action-btn--retry:hover {
   background: rgba(255, 255, 255, 0.25);
 }
+
+.quest-card__text-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quest-card__textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-family: 'Metamorphous', serif;
+  font-size: 0.85rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.quest-card__textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.quest-card__textarea:focus {
+  outline: none;
+  border-color: var(--color-perun);
+}

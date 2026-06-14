@@ -126,6 +126,7 @@
   width: 48px;
   height: 48px;
   flex-shrink: 0;
+  position: relative;
 }
 
 .tab-bar__icon--img {
@@ -147,4 +148,33 @@
   letter-spacing: 0.5px;
   text-align: center;
   text-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+.tab-bar__item--unread .tab-bar__icon {
+  animation: tab-unread-pulse 2s infinite;
+}
+
+.tab-bar__badge {
+  position: absolute;
+  top: -2px;
+  right: -6px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: system-ui, sans-serif;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+}
+
+@keyframes tab-unread-pulse {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.3)); }
+  50% { filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.7)); }
 }
