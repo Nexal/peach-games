@@ -355,3 +355,13 @@
   background: rgba(155, 89, 182, 0.3);
   border-color: var(--clan-color, #9B59B6);
 }
+
+/* Theme toggle button */
+.map-theme-toggle {
+  font-size: 1rem;
+}
+
+.map-theme-toggle--active {
+  background: rgba(255, 215, 0, 0.3);
+  border-color: #FFD700;
+}
