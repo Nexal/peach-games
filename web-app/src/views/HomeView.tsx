@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { setPlayerSession } from '../lib/playerSession';
+import { setPlayerSession, clearPlayerSession } from '../lib/playerSession';
 import { useGame, usePlayerSession } from '../App';
 import { supabase } from '../lib/supabase';
 import { transformPhoto } from '../lib/geminiTransform';
@@ -29,6 +29,8 @@ export function HomeView() {
   const [isTransforming, setIsTransforming] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editName, setEditName] = useState(session?.name || '');
+  const [nameSaved, setNameSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,11 +167,40 @@ export function HomeView() {
     setIsSaving(false);
   };
 
+  const handleSaveName = async () => {
+    if (!session || !editName.trim()) return;
+    setError(null);
+
+    const { error: updateError } = await supabase
+      .from('players')
+      .update({ name: editName.trim() })
+      .eq('id', session.id);
+
+    if (updateError) {
+      console.error('[HomeView] Name update error:', updateError);
+      setError('Błąd podczas zapisywania nazwy.');
+      return;
+    }
+
+    setPlayerSession({ ...session, name: editName.trim() });
+    refreshSession();
+    setNameSaved(true);
+    setTimeout(() => setNameSaved(false), 2000);
+  };
+
+  const handleLogout = () => {
+    clearPlayerSession();
+    refreshSession();
+    closeModal();
+  };
+
   const openModal = () => {
     setShowModal(true);
     setPhotoFile(null);
     setTransformedAvatar(null);
     setError(null);
+    setEditName(session?.name || '');
+    setNameSaved(false);
   };
 
   const closeModal = () => {
@@ -177,6 +208,7 @@ export function HomeView() {
     setPhotoFile(null);
     setTransformedAvatar(null);
     setError(null);
+    setNameSaved(false);
   };
 
   if (!session) {
@@ -315,6 +347,34 @@ export function HomeView() {
         <div className="home-modal-overlay" onClick={closeModal}>
           <div className="home-modal" onClick={(e) => e.stopPropagation()}>
             <button className="home-modal__close" onClick={closeModal}>✕</button>
+
+            <div className="home-modal__name-row">
+              <label className="home-modal__name-label">Nick:</label>
+              <div className="home-modal__name-input-wrap">
+                <input
+                  className="home-modal__name-input"
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  maxLength={30}
+                  placeholder="Twój pseudonim"
+                />
+                <button
+                  className="home-modal__name-save"
+                  onClick={handleSaveName}
+                  disabled={
+                    !editName.trim() ||
+                    editName.trim() === session?.name ||
+                    nameSaved
+                  }
+                >
+                  {nameSaved ? '✓' : '💾'}
+                </button>
+              </div>
+            </div>
+
+            <div className="home-modal__divider" />
+
             <h2 className="home-modal__title">
               {transformedAvatar ? 'Nowe oblicze' : 'Zmień awatar'}
             </h2>
@@ -394,6 +454,12 @@ export function HomeView() {
                 </button>
               </div>
             )}
+
+            <div className="home-modal__divider" />
+
+            <button className="home-modal__logout" onClick={handleLogout}>
+              🚪 Wyloguj się
+            </button>
 
             <input
               ref={fileInputRef}
