@@ -8,6 +8,16 @@ import type { Database } from '../types/database.types';
 type Message = Database['public']['Tables']['messages']['Row'];
 type Klan = Database['public']['Tables']['klans']['Row'];
 
+const CLAN_ICONS: Record<string, string> = {
+  'klan peruna': '/icons/perun_symbol-Photoroom.png',
+  'klan welesa': '/icons/weles_icon_symbol-Photoroom.png',
+  'klan mokoszy': '/icons/mokosz_symbol-Photoroom.png',
+};
+
+function getClanIcon(klanName: string): string {
+  return CLAN_ICONS[klanName.toLowerCase()] || '';
+}
+
 function hexToRgb(hex: string): string {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (result) {
@@ -357,7 +367,10 @@ export function ChatView() {
             className={`chat-mode-toggle__btn ${chatMode === 'klan' ? 'chat-mode-toggle__btn--active' : ''}`}
             onClick={() => setChatMode('klan')}
           >
-            💬 Klan
+            {getClanIcon(playerSession.klan_name) && (
+              <img src={getClanIcon(playerSession.klan_name)} alt={playerSession.klan_name} style={{ width: 36, height: 36 }} />
+            )}
+            Klan
           </button>
           <button
             className={`chat-mode-toggle__btn ${chatMode === 'global' ? 'chat-mode-toggle__btn--active' : ''}`}

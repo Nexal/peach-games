@@ -573,12 +573,17 @@
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.5);
-  padding: 10px 16px;
+  padding: 6px 16px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  line-height: 1;
 }
 
 .chat-mode-toggle__btn--active {
