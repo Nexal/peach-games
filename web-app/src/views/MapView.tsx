@@ -78,6 +78,7 @@ function MapContent() {
   const [taskProgress, setTaskProgress] = useState<Record<string, { scanned: number; total: number }>>({});
   const [taskRefresh, setTaskRefresh] = useState(0);
   const [showClanMembers, setShowClanMembers] = useState(true);
+  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark');
   const [enlargedAvatar, setEnlargedAvatar] = useState<string | null>(null);
 
   const clanMembers = useClanMemberPositions(
@@ -258,7 +259,7 @@ function MapContent() {
 
   return (
     <>
-      <TileLayer url={TILE_LAYERS.dark.url} attribution={TILE_LAYERS.dark.attribution} />
+      <TileLayer key={mapTheme} url={TILE_LAYERS[mapTheme].url} attribution={TILE_LAYERS[mapTheme].attribution} />
       <LocationMarker watchPosition={true} />
       <AnimatedMarker center={DEFAULT_MAP_CONFIG.center} orbitRadius={100} speed={0.5} />
       <PulsingMarker position={DEFAULT_MAP_CONFIG.center} />
@@ -403,6 +404,14 @@ function MapContent() {
       })}
 
       <CenterOnLocationButton>
+        <button
+          onClick={() => setMapTheme(prev => (prev === 'dark' ? 'light' : 'dark'))}
+          className={`map-control-button map-theme-toggle ${mapTheme === 'light' ? 'map-theme-toggle--active' : ''}`}
+          title={mapTheme === 'dark' ? 'Przełącz na jasny motyw' : 'Przełącz na ciemny motyw'}
+          style={{ width: 44, height: 44 }}
+        >
+          {mapTheme === 'dark' ? '☀️' : '🌙'}
+        </button>
         <button
           onClick={() => setShowClanMembers(prev => !prev)}
           className={`map-control-button map-clan-toggle ${showClanMembers ? 'map-clan-toggle--active' : ''}`}
