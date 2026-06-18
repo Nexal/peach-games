@@ -362,13 +362,15 @@ export function AdminDashboardView() {
 
     // Notyfikacja dla graczy o ukończeniu taska
     const klanName = klan?.name || 'Klan';
+    const notifGod = gods.find(g => g.klan_id === klanId);
     await supabase.from('messages').insert({
       content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${points} 🔥)!`,
-      sender: 'god',
+      sender: notifGod?.name || 'Bóg',
       player_id: null,
       game_id: selectedGameId,
+      god_id: notifGod?.id || null,
       klan_id: null,
-      sender_klan_id: null,
+      sender_klan_id: notifGod?.klan_id || null,
       tts_requested: false,
     });
 
@@ -394,6 +396,17 @@ export function AdminDashboardView() {
       await supabase.from('quest_activations').update({
         completed_at: new Date().toISOString(),
       }).eq('id', qa.id);
+
+      await supabase.from('messages').insert({
+        content: `${klanName} ukończył quest „${questTitle}" (+${sumPoints} 🔥)!`,
+        sender: notifGod?.name || 'Bóg',
+        player_id: null,
+        game_id: selectedGameId,
+        god_id: notifGod?.id || null,
+        klan_id: null,
+        sender_klan_id: notifGod?.klan_id || null,
+        tts_requested: false,
+      });
     }
 
     if (selectedGameId) loadTasks(selectedGameId);
@@ -470,13 +483,15 @@ export function AdminDashboardView() {
     // Broadcast notification
     const { data: klanInfo } = await supabase.from('klans').select('name').eq('id', klanId).single();
     const klanName = klanInfo?.name || 'Klan';
+    const notifGod = gods.find(g => g.klan_id === klanId);
     await supabase.from('messages').insert({
       content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${points} 🔥)!`,
-      sender: 'god',
+      sender: notifGod?.name || 'Bóg',
       player_id: null,
       game_id: selectedGameId,
+      god_id: notifGod?.id || null,
       klan_id: null,
-      sender_klan_id: null,
+      sender_klan_id: notifGod?.klan_id || null,
       tts_requested: false,
     });
 
