@@ -12,10 +12,16 @@ const CLAN_ICONS: Record<string, { emoji: string; image?: string }> = {
   'klan mokoszy': { emoji: '🌿', image: '/icons/mokosz_symbol-Photoroom.png' },
 };
 
-const GOD_AVATARS: Record<string, { emoji: string; name: string }> = {
-  'klan peruna': { emoji: '⚡', name: 'Perun' },
-  'klan welesa': { emoji: '🐺', name: 'Weles' },
-  'klan mokoszy': { emoji: '🌿', name: 'Mokosz' },
+const GOD_AVATAR_IMAGES: Record<string, string> = {
+  'Perun': '/icons/perun_avatar.png',
+  'Weles': '/icons/weles_avatar.jpeg',
+  'Mokosz': '/icons/mokosz_avatar.jpeg',
+};
+
+const GOD_AVATARS: Record<string, { name: string; image: string }> = {
+  'klan peruna': { name: 'Perun', image: GOD_AVATAR_IMAGES['Perun'] },
+  'klan welesa': { name: 'Weles', image: GOD_AVATAR_IMAGES['Weles'] },
+  'klan mokoszy': { name: 'Mokosz', image: GOD_AVATAR_IMAGES['Mokosz'] },
 };
 
 function getClanKey(klanName: string): string {
@@ -107,7 +113,7 @@ export function ClanLeaderboardView({ session, onClose }: Props) {
           {clans.map((clan, idx) => {
             const clanKey = getClanKey(clan.name);
             const clanIcon = CLAN_ICONS[clanKey] || { emoji: '⚔️' };
-            const god = GOD_AVATARS[clanKey] || { emoji: '✨', name: 'Bóg' };
+            const god = GOD_AVATARS[clanKey] || { name: 'Bóg', image: '' };
             const isOwn = clan.id === session.klan_id;
 
             return (
@@ -117,7 +123,11 @@ export function ClanLeaderboardView({ session, onClose }: Props) {
                 <header className="clan-leaderboard__clan-header">
                   <div className="clan-leaderboard__clan-header-left">
                     <div className="clan-leaderboard__god-avatar" title={god.name}>
-                      <span>{god.emoji}</span>
+                      {god.image ? (
+                        <img src={god.image} alt={god.name} style={{ cursor: 'pointer' }} onClick={() => setEnlargedAvatar(god.image)} />
+                      ) : (
+                        <span>✨</span>
+                      )}
                     </div>
                     <div
                       className="clan-leaderboard__clan-icon"

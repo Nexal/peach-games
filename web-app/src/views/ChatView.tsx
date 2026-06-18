@@ -14,11 +14,11 @@ const CLAN_ICONS: Record<string, string> = {
   'klan mokoszy': '/icons/mokosz_symbol-Photoroom.png',
 };
 
-const GOD_EMOJIS: Record<string, string> = {
-  'Perun': '⚡',
-  'Weles': '🐺',
-  'Mokosz': '🌾',
-  'Bogowie': '📢',
+const GOD_ICONS: Record<string, string> = {
+  'Perun': '/icons/perun_avatar.png',
+  'Weles': '/icons/weles_avatar.jpeg',
+  'Mokosz': '/icons/mokosz_avatar.jpeg',
+  'Bogowie': '',
 };
 
 function getClanIcon(klanName: string): string {
@@ -410,7 +410,7 @@ export function ChatView() {
               const clanColor = clan?.theme_color || '#888888';
               const clanColorRgb = hexToRgb(clanColor);
               const senderAvatar = !isGod ? playerAvatarMap[msg.player_id || ''] || null : null;
-              const godEmoji = isGod ? (GOD_EMOJIS[msg.sender] || '✨') : '';
+              const godIcon = isGod ? (GOD_ICONS[msg.sender] || '') : '';
               return (
                 <div
                   key={msg.id}
@@ -434,7 +434,7 @@ export function ChatView() {
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                       />
                     ) : null}
-                    {isGod ? `${godEmoji} ${msg.sender}` : isGlobal ? `${msg.sender} (${clan?.name || '?'})` : `${msg.sender}`}
+                    {isGod ? <>{godIcon ? <img src={godIcon} alt={msg.sender} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', marginRight: 4, verticalAlign: 'middle', cursor: 'pointer' }} onClick={() => setEnlargedImage(godIcon)} /> : <span>📢</span>} {msg.sender}</> : isGlobal ? `${msg.sender} (${clan?.name || '?'})` : `${msg.sender}`}
                   </span>
                   <span className="chat-message__content" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>{msg.content}</span>
                   {msg.image_url && (

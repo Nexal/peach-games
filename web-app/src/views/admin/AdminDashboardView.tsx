@@ -1381,11 +1381,11 @@ function SubmissionsPanel({
 
 type Message = Database['public']['Tables']['messages']['Row'];
 
-const GOD_EMOJIS: Record<string, string> = {
-  'Perun': '⚡',
-  'Weles': '🐺',
-  'Mokosz': '🌾',
-  'Bogowie': '📢',
+const GOD_ICONS: Record<string, string> = {
+  'Perun': '/icons/perun_avatar.png',
+  'Weles': '/icons/weles_avatar.jpeg',
+  'Mokosz': '/icons/mokosz_avatar.jpeg',
+  'Bogowie': '',
 };
 
 function ChatPanel({
@@ -1756,7 +1756,7 @@ function ChatPanel({
             const klanColor = clan?.theme_color;
             const isSelectedKlan = selectedKlanId && msg.klan_id === selectedKlanId;
             const senderAvatarUrl = !isGodMessage && msg.player_id ? (playerAvatarMap[msg.player_id] || null) : null;
-            const godEmoji = isGodMessage ? (GOD_EMOJIS[msg.sender] || '✨') : '';
+            const godIcon = isGodMessage ? (GOD_ICONS[msg.sender] || '') : '';
             return (
               <div
                 key={msg.id}
@@ -1769,7 +1769,7 @@ function ChatPanel({
                 <div className="admin-chat__message-header">
                   <span className="admin-chat__message-sender">
                     {isGodMessage
-                      ? `${godEmoji} ${msg.sender}${clan ? ` (${clan.name})` : ''}`
+                      ? <>{godIcon ? <img src={godIcon} alt={msg.sender} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', marginRight: 4, verticalAlign: 'middle' }} /> : <span>📢</span>} {msg.sender}{clan ? ` (${clan.name})` : ''}</>
                       : <>{senderAvatarUrl ? <img src={senderAvatarUrl} alt={msg.sender} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', marginRight: 4, verticalAlign: 'middle', cursor: 'pointer' }} onClick={() => setEnlargedImage(senderAvatarUrl)} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} /> : null}{msg.sender}{clan ? ` (${clan.name})` : ''}</>}
                     {msg.tts_requested && ' 🔊'}
                   </span>
@@ -2121,9 +2121,22 @@ function MapPanel({ gameId, klans, selectedGodId }: MapPanelProps) {
             const klanName = godPos.gods?.klans?.name || '';
             const klanColor = godPos.gods?.klans?.theme_color || '#FFD700';
 
+            const godIconUrl = GOD_ICONS[godName] || '';
+
             const godIcon = L.divIcon({
               className: 'admin-god-marker',
-              html: `
+              html: godIconUrl ? `
+                <div style="
+                  width: 36px;
+                  height: 36px;
+                  border: 3px solid ${klanColor};
+                  border-radius: 50%;
+                  overflow: hidden;
+                  box-shadow: 0 0 12px ${klanColor}, 0 0 24px ${klanColor};
+                ">
+                  <img src="${godIconUrl}" alt="${godName}" style="width:100%;height:100%;object-fit:cover;" />
+                </div>
+              ` : `
                 <div style="
                   width: 36px;
                   height: 36px;
@@ -2154,7 +2167,7 @@ function MapPanel({ gameId, klans, selectedGodId }: MapPanelProps) {
               >
                 <Popup>
                   <div className="admin-map-popup admin-map-popup--god">
-                    <h3 style={{ margin: 0, color: klanColor }}>✨ {godName}</h3>
+                    <h3 style={{ margin: 0, color: klanColor }}>{godIconUrl ? <img src={godIconUrl} alt={godName} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', marginRight: 4, verticalAlign: 'middle' }} /> : '✨ '}{godName}</h3>
                     {klanName && <p><strong>Klan:</strong> {klanName}</p>}
                     <p><strong>Pozycja:</strong> {godPos.lat.toFixed(5)}, {godPos.lng.toFixed(5)}</p>
                     <p><strong>Dokładność:</strong> ±{Math.round(godPos.accuracy || 0)}m</p>
@@ -2186,13 +2199,14 @@ function MapPanel({ gameId, klans, selectedGodId }: MapPanelProps) {
             {godPositions.map((godPos) => {
               const klanColor = godPos.gods?.klans?.theme_color || '#FFD700';
               const godName = godPos.gods?.name || 'Bóg';
+              const godIconUrl = GOD_ICONS[godName] || '';
               return (
                 <div key={godPos.god_id} className="admin-map-panel__legend-item">
                   <span
                     className="admin-map-panel__legend-color admin-map-panel__legend-color--god"
                     style={{ background: klanColor }}
                   />
-                  <span>✨ {godName}</span>
+                  <span>{godIconUrl ? <img src={godIconUrl} alt={godName} style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover', marginRight: 4, verticalAlign: 'middle' }} /> : '✨ '}{godName}</span>
                 </div>
               );
             })}

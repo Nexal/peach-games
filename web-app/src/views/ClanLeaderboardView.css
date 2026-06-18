@@ -104,6 +104,13 @@
   justify-content: center;
   font-size: 2.6rem;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.clan-leaderboard__god-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .clan-leaderboard__clan-icon {
