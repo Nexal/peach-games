@@ -13,9 +13,25 @@ const CLAN_ICONS: Record<string, { emoji: string; image?: string }> = {
   'klan mokoszy': { emoji: '🌿', image: '/icons/mokosz_symbol-Photoroom.png' },
 };
 
+const GOD_AVATAR_IMAGES: Record<string, string> = {
+  'Perun': '/icons/perun_avatar.png',
+  'Weles': '/icons/weles_avatar.jpeg',
+  'Mokosz': '/icons/mokosz_avatar.jpeg',
+};
+
 function getClanIcon(klanName: string): { emoji: string; image?: string } {
   const key = klanName.toLowerCase();
   return CLAN_ICONS[key] || { emoji: '⚔️' };
+}
+
+function getGodAvatar(klanName: string): string {
+  const godNames: Record<string, string> = {
+    'klan peruna': 'Perun',
+    'klan welesa': 'Weles',
+    'klan mokoszy': 'Mokosz',
+  };
+  const godName = godNames[klanName.toLowerCase()] || '';
+  return GOD_AVATAR_IMAGES[godName] || '';
 }
 
 export function HomeView() {
@@ -31,7 +47,11 @@ export function HomeView() {
   const [error, setError] = useState<string | null>(null);
   const [editName, setEditName] = useState(session?.name || '');
   const [nameSaved, setNameSaved] = useState(false);
+  const [enlargedAvatar, setEnlargedAvatar] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const clanIcon = session ? getClanIcon(session.klan_name) : { emoji: '⚔️' };
+  const godAvatarUrl = session ? getGodAvatar(session.klan_name) : '';
 
   const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -253,8 +273,6 @@ export function HomeView() {
     );
   }
 
-  const clanIcon = getClanIcon(session.klan_name);
-
   return (
     <div className="view view--home view--home-focused">
       {logoEnlarged && (
@@ -314,6 +332,11 @@ export function HomeView() {
 
           <div className="home-hero__info">
             <div className="home-hero__clan">
+              {godAvatarUrl && (
+                <div className="home-hero__god-avatar" onClick={() => setEnlargedAvatar(godAvatarUrl)}>
+                  <img src={godAvatarUrl} alt={session.klan_name} />
+                </div>
+              )}
               <div className="home-hero__clan-icon" onClick={() => setShowLeaderboard(true)}>
                 {clanIcon.image ? (
                   <img src={clanIcon.image} alt={session.klan_name} />
@@ -478,6 +501,12 @@ export function HomeView() {
           session={session}
           onClose={() => setShowLeaderboard(false)}
         />
+      )}
+
+      {enlargedAvatar && (
+        <div className="home-god-avatar-modal" onClick={() => setEnlargedAvatar(null)}>
+          <img src={enlargedAvatar} alt="Awatar boga" />
+        </div>
       )}
     </div>
   );
