@@ -10,7 +10,6 @@ import './QuestsView.css';
 
 type Quest = Database['public']['Tables']['quests']['Row'];
 type Submission = Database['public']['Tables']['submissions']['Row'];
-type God = Database['public']['Tables']['gods']['Row'];
 
 interface TaskProgress {
   id: string;
@@ -53,7 +52,6 @@ export function QuestsView() {
   const [uploadTask, setUploadTask] = useState<{ taskId: string; questActivationId: string } | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [textFeedback, setTextFeedback] = useState<{ taskId: string; type: 'success' | 'error'; text: string } | null>(null);
-  const [gods, setGods] = useState<God[]>([]);
 
   const loadSubmissions = useCallback(async () => {
     if (!session?.game_id || !session?.klan_id) return;
@@ -157,11 +155,6 @@ export function QuestsView() {
     loadQuests();
     loadSubmissions();
   }, [session?.game_id, session?.klan_id]);
-
-  useEffect(() => {
-    if (!session?.game_id) return;
-    supabase.from('gods').select('*').then(({ data }) => data && setGods(data));
-  }, [session?.game_id]);
 
   useEffect(() => {
     if (!session?.game_id || !session?.klan_id) return;
@@ -297,10 +290,6 @@ export function QuestsView() {
     const questTitle = questData?.title || 'Nieznany quest';
     const klanName = klanInfo?.name || 'Klan';
     const taskTitle = task.title || 'Nieznane zadanie';
-    const god = gods.find(g => g.klan_id === session.klan_id);
-    const godSender = god?.name || 'Bóg';
-    const godId = god?.id || null;
-    const godKlanId = god?.klan_id || null;
 
     const allTasksDone = quest!.tasks.every(t => t.completed || t.id === taskId);
     const totalPoints = quest!.tasks.reduce((sum, t) => sum + (t.reward_points || 0), 0);
@@ -321,23 +310,23 @@ export function QuestsView() {
 
       await (supabase as any).from('messages').insert({
         content: `${klanName} ukończył quest „${questTitle}" (+${totalPoints} 🔥)!`,
-        sender: godSender,
+        sender: 'Bogowie',
         player_id: null,
         game_id: session.game_id,
-        god_id: godId,
+        god_id: null,
         klan_id: null,
-        sender_klan_id: godKlanId,
+        sender_klan_id: session.klan_id,
         tts_requested: false,
       });
     } else {
       await (supabase as any).from('messages').insert({
         content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${taskPoints} 🔥)!`,
-        sender: godSender,
+        sender: 'Bogowie',
         player_id: null,
         game_id: session.game_id,
-        god_id: godId,
+        god_id: null,
         klan_id: null,
-        sender_klan_id: godKlanId,
+        sender_klan_id: session.klan_id,
         tts_requested: false,
       });
     }

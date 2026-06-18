@@ -362,15 +362,14 @@ export function AdminDashboardView() {
 
     // Notyfikacja dla graczy o ukończeniu taska
     const klanName = klan?.name || 'Klan';
-    const notifGod = gods.find(g => g.klan_id === klanId);
     await supabase.from('messages').insert({
       content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${points} 🔥)!`,
-      sender: notifGod?.name || 'Bóg',
+      sender: 'Bogowie',
       player_id: null,
       game_id: selectedGameId,
-      god_id: notifGod?.id || null,
+      god_id: null,
       klan_id: null,
-      sender_klan_id: notifGod?.klan_id || null,
+      sender_klan_id: klanId,
       tts_requested: false,
     });
 
@@ -399,12 +398,12 @@ export function AdminDashboardView() {
 
       await supabase.from('messages').insert({
         content: `${klanName} ukończył quest „${questTitle}" (+${sumPoints} 🔥)!`,
-        sender: notifGod?.name || 'Bóg',
+        sender: 'Bogowie',
         player_id: null,
         game_id: selectedGameId,
-        god_id: notifGod?.id || null,
+        god_id: null,
         klan_id: null,
-        sender_klan_id: notifGod?.klan_id || null,
+        sender_klan_id: klanId,
         tts_requested: false,
       });
     }
@@ -483,15 +482,14 @@ export function AdminDashboardView() {
     // Broadcast notification
     const { data: klanInfo } = await supabase.from('klans').select('name').eq('id', klanId).single();
     const klanName = klanInfo?.name || 'Klan';
-    const notifGod = gods.find(g => g.klan_id === klanId);
     await supabase.from('messages').insert({
       content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${points} 🔥)!`,
-      sender: notifGod?.name || 'Bóg',
+      sender: 'Bogowie',
       player_id: null,
       game_id: selectedGameId,
-      god_id: notifGod?.id || null,
+      god_id: null,
       klan_id: null,
-      sender_klan_id: notifGod?.klan_id || null,
+      sender_klan_id: klanId,
       tts_requested: false,
     });
 
@@ -1387,6 +1385,7 @@ const GOD_EMOJIS: Record<string, string> = {
   'Perun': '⚡',
   'Weles': '🐺',
   'Mokosz': '🌾',
+  'Bogowie': '📢',
 };
 
 function ChatPanel({
@@ -1751,8 +1750,8 @@ function ChatPanel({
           )}
           {messages.map((msg) => {
             const clan = klans.find((k) => k.id === (msg.sender_klan_id || msg.klan_id));
-            const isGodMessage = !!msg.god_id;
-            const isBroadcast = isGodMessage && msg.klan_id === null;
+            const isGodMessage = !!msg.god_id || msg.sender === 'Bogowie';
+            const isSystemNotification = msg.sender === 'Bogowie';
             const isPlaying = audioPlayersRef.current[msg.id] && !audioPlayersRef.current[msg.id].paused;
             const klanColor = clan?.theme_color;
             const isSelectedKlan = selectedKlanId && msg.klan_id === selectedKlanId;
@@ -1761,9 +1760,12 @@ function ChatPanel({
             return (
               <div
                 key={msg.id}
-                className={`admin-chat__message ${isGodMessage ? 'admin-chat__message--god' : ''} ${isBroadcast ? 'admin-chat__message--broadcast' : ''} ${isSelectedKlan ? 'admin-chat__message--selected-klan' : ''}`}
+                className={`admin-chat__message ${isGodMessage ? 'admin-chat__message--god' : ''} ${isSystemNotification ? 'admin-chat__message--broadcast' : ''} ${isSelectedKlan ? 'admin-chat__message--selected-klan' : ''}`}
                 style={isGodMessage && klanColor ? { borderLeft: `4px solid ${klanColor}` } : !isGodMessage && klanColor ? { borderLeft: `4px solid ${klanColor}` } : undefined}
               >
+                {isSystemNotification && (
+                  <div className="chat-message__broadcast-badge">📢 Ogłoszenie</div>
+                )}
                 <div className="admin-chat__message-header">
                   <span className="admin-chat__message-sender">
                     {isGodMessage

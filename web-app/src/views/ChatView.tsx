@@ -18,6 +18,7 @@ const GOD_EMOJIS: Record<string, string> = {
   'Perun': '⚡',
   'Weles': '🐺',
   'Mokosz': '🌾',
+  'Bogowie': '📢',
 };
 
 function getClanIcon(klanName: string): string {
@@ -402,8 +403,9 @@ export function ChatView() {
             )}
             {messages.map((msg) => {
               const isOwnMessage = msg.sender === playerSession.name;
-              const isGod = !!msg.god_id;
+              const isGod = !!msg.god_id || msg.sender === 'Bogowie';
               const isGlobal = msg.klan_id === null;
+              const isSystemNotification = msg.sender === 'Bogowie';
               const clan = klans.find(k => k.id === (msg.sender_klan_id || msg.klan_id));
               const clanColor = clan?.theme_color || '#888888';
               const clanColorRgb = hexToRgb(clanColor);
@@ -412,13 +414,16 @@ export function ChatView() {
               return (
                 <div
                   key={msg.id}
-                  className={`chat-message ${isGod ? 'chat-message--god' : isOwnMessage ? 'chat-message--own' : 'chat-message--klan'} ${isGlobal && !isOwnMessage && !isGod ? 'chat-message--global' : ''} ${isGod && isGlobal ? 'chat-message--broadcast' : ''}`}
+                  className={`chat-message ${isGod ? 'chat-message--god' : isOwnMessage ? 'chat-message--own' : 'chat-message--klan'} ${isGlobal && !isOwnMessage && !isGod ? 'chat-message--global' : ''} ${isSystemNotification ? 'chat-message--broadcast' : ''}`}
                   style={{
                     '--msg-klan-color': isGod ? (clanColor || '#FFD700') : clanColor,
                     '--msg-klan-color-rgb': isGod ? hexToRgb(clanColor || '#FFD700') : clanColorRgb,
                   } as React.CSSProperties}
                   title={msg.created_at ? new Date(msg.created_at).toLocaleString('pl-PL') : ''}
                 >
+                  {isSystemNotification && (
+                    <div className="chat-message__broadcast-badge">📢 Ogłoszenie</div>
+                  )}
                   <span className="chat-message__sender" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: isGod ? (clanColor || '#FFD700') : clanColor, filter: isGod ? undefined : 'brightness(1.4)' }) : undefined}>
                     {senderAvatar ? (
                       <img

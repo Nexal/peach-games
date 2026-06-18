@@ -487,7 +487,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         filter: `game_id=eq.${session.game_id}`,
       }, (payload: any) => {
         const msg = payload.new as any;
-        if (!msg.god_id || !msg.content) return;
+        const isGodOrSystem = !!msg.god_id || msg.sender === 'Bogowie';
+        if (!isGodOrSystem || !msg.content) return;
         if (msg.klan_id && msg.klan_id !== session?.klan_id) return;
         const isClanMsg = !!msg.klan_id;
         if (!chatOpenRef.current) {
