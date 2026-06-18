@@ -242,6 +242,90 @@ export type Database = {
         }
         Relationships: []
       }
+      god_positions: {
+        Row: {
+          accuracy: number | null
+          game_id: string
+          god_id: string
+          lat: number
+          lng: number
+          updated_at: string | null
+        }
+        Insert: {
+          accuracy?: number | null
+          game_id: string
+          god_id: string
+          lat: number
+          lng: number
+          updated_at?: string | null
+        }
+        Update: {
+          accuracy?: number | null
+          game_id?: string
+          god_id?: string
+          lat?: number
+          lng?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "god_positions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "god_positions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "god_positions_god_id_fkey"
+            columns: ["god_id"]
+            isOneToOne: true
+            referencedRelation: "gods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gods: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          id: string
+          klan_id: string | null
+          name: string
+          voice_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          id?: string
+          klan_id?: string | null
+          name: string
+          voice_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          id?: string
+          klan_id?: string | null
+          name?: string
+          voice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gods_klan_id_fkey"
+            columns: ["klan_id"]
+            isOneToOne: false
+            referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       klans: {
         Row: {
           game_id: string | null
@@ -380,6 +464,7 @@ export type Database = {
           content: string
           created_at: string | null
           game_id: string | null
+          god_id: string | null
           id: string
           image_url: string | null
           klan_id: string | null
@@ -393,6 +478,7 @@ export type Database = {
           content: string
           created_at?: string | null
           game_id?: string | null
+          god_id?: string | null
           id?: string
           image_url?: string | null
           klan_id?: string | null
@@ -406,6 +492,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           game_id?: string | null
+          god_id?: string | null
           id?: string
           image_url?: string | null
           klan_id?: string | null
@@ -427,6 +514,13 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_god_id_fkey"
+            columns: ["god_id"]
+            isOneToOne: false
+            referencedRelation: "gods"
             referencedColumns: ["id"]
           },
           {

@@ -14,6 +14,7 @@ type Quest = Database['public']['Tables']['quests']['Row'];
 type Task = Database['public']['Tables']['tasks']['Row'];
 type QuestActivation = Database['public']['Tables']['quest_activations']['Row'];
 type TaskCompletion = Database['public']['Tables']['task_completions']['Row'];
+type God = Database['public']['Tables']['gods']['Row'];
 
 const DEFAULT_TTS_VOICE_ID = 'rpg9PEuAEDV7I1OjYrbj';
 
@@ -67,6 +68,10 @@ export function AdminDashboardView() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [questActivations, setQuestActivations] = useState<QuestActivation[]>([]);
   const [taskCompletions, setTaskCompletions] = useState<TaskCompletion[]>([]);
+  const [gods, setGods] = useState<God[]>([]);
+  const [selectedGodId, setSelectedGodId] = useState<string | null>(() =>
+    localStorage.getItem('peachgames_admin_selected_god_id')
+  );
 
   useEffect(() => {
     loadGames();
@@ -79,6 +84,14 @@ export function AdminDashboardView() {
       localStorage.removeItem('peachgames_admin_selected_game_id');
     }
   }, [selectedGameId]);
+
+  useEffect(() => {
+    if (selectedGodId) {
+      localStorage.setItem('peachgames_admin_selected_god_id', selectedGodId);
+    } else {
+      localStorage.removeItem('peachgames_admin_selected_god_id');
+    }
+  }, [selectedGodId]);
 
   const loadGames = async () => {
     const { data } = await supabase.from('games').select('*').order('created_at', { ascending: false });
@@ -96,6 +109,19 @@ export function AdminDashboardView() {
   const loadKlans = async (gameId: string) => {
     const { data } = await supabase.from('klans').select('*').eq('game_id', gameId);
     if (data) setKlans(data);
+  };
+
+  const loadGods = async (gameId: string) => {
+    const { data } = await supabase
+      .from('gods')
+      .select('*, klans!inner(id, name, theme_color, game_id)')
+      .eq('klans.game_id', gameId);
+    if (data) {
+      setGods(data);
+      if (data.length > 0 && !selectedGodId) {
+        setSelectedGodId(data[0].id);
+      }
+    }
   };
 
   const loadPlayers = async () => {
@@ -160,6 +186,7 @@ export function AdminDashboardView() {
   useEffect(() => {
     if (selectedGameId) {
       loadKlans(selectedGameId).then(() => {
+        loadGods(selectedGameId);
         loadQuests(selectedGameId);
         loadTasks(selectedGameId);
         loadSubmissionsDirect(selectedGameId);
@@ -199,18 +226,25 @@ export function AdminDashboardView() {
       const gameName = game?.name || 'Noc Kupały';
       const announcementText = `Słuchajcie, śmiertelnicy! Czas próby nadszedł. Niech rozpocznie się ${gameName}!`;
 
+      const firstGod = gods.find(g => {
+        const klan = (g as any).klans;
+        return klan?.game_id === gameId;
+      });
+      const voiceId = firstGod?.voice_id || 'rpg9PEuAEDV7I1OjYrbj';
+
       let audioUrl: string | null = null;
       try {
-        audioUrl = await generateTTS(announcementText);
+        audioUrl = await generateTTS(announcementText, voiceId);
       } catch (err) {
         console.error('[updateGameStatus] TTS generation failed:', err);
       }
 
       await supabase.from('messages').insert({
         content: announcementText,
-        sender: 'god',
+        sender: firstGod?.name || 'Bóg',
         player_id: null,
         game_id: gameId,
+        god_id: firstGod?.id || null,
         klan_id: null,
         sender_klan_id: null,
         tts_requested: true,
@@ -479,6 +513,9 @@ export function AdminDashboardView() {
             onUpdateStatus={updateGameStatus}
             onDeleteGame={deleteGame}
             loading={loading}
+            gods={gods}
+            selectedGodId={selectedGodId}
+            onSelectGod={setSelectedGodId}
           />
         )}
         {activeTab === 'klans' && (
@@ -514,10 +551,19 @@ export function AdminDashboardView() {
           />
         )}
         {activeTab === 'chat' && (
-          <ChatPanel klans={klans} selectedGameId={selectedGameId} />
+          <ChatPanel
+            klans={klans}
+            selectedGameId={selectedGameId}
+            gods={gods}
+            selectedGodId={selectedGodId}
+          />
         )}
         {activeTab === 'map' && selectedGameId && (
-          <MapPanel gameId={selectedGameId} klans={klans} />
+          <MapPanel
+            gameId={selectedGameId}
+            klans={klans}
+            selectedGodId={selectedGodId}
+          />
         )}
       </main>
 
@@ -577,6 +623,9 @@ function GamesPanel({
   onUpdateStatus,
   onDeleteGame,
   loading,
+  gods,
+  selectedGodId,
+  onSelectGod,
 }: {
   games: Game[];
   selectedGameId: string | null;
@@ -585,6 +634,9 @@ function GamesPanel({
   onUpdateStatus: (id: string, status: string) => void;
   onDeleteGame: (id: string) => void;
   loading: boolean;
+  gods: God[];
+  selectedGodId: string | null;
+  onSelectGod: (id: string) => void;
 }) {
   const [newGameName, setNewGameName] = useState('');
 
@@ -668,6 +720,34 @@ function GamesPanel({
           ))}
         </div>
       </div>
+
+      {selectedGameId && gods.length > 0 && (
+        <div className="admin-panel__section">
+          <h2 className="admin-panel__title">Wybierz Boga</h2>
+          <div className="admin-panel__row">
+            <select
+              value={selectedGodId || ''}
+              onChange={(e) => onSelectGod(e.target.value)}
+              className="admin-panel__select"
+              style={{ flex: 1 }}
+            >
+              {gods.map((god) => {
+                const klan = (god as any).klans;
+                return (
+                  <option key={god.id} value={god.id}>
+                    {god.name}{klan ? ` (${klan.name})` : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          {selectedGodId && (
+            <p className="admin-panel__hint">
+              Przemawiasz jako: <strong>{gods.find(g => g.id === selectedGodId)?.name}</strong>
+            </p>
+          )}
+        </div>
+      )}
 
       {selectedGameId && (
         <div className="admin-panel__section">
@@ -1288,19 +1368,28 @@ function SubmissionsPanel({
 
 type Message = Database['public']['Tables']['messages']['Row'];
 
-const TTS_VOICES = [
-  { id: 'Kamil_Voice', name: 'Bogini Głos (Kamil)', voiceId: 'rpg9PEuAEDV7I1OjYrbj' },
-  { id: 'Tomek_Voice', name: 'Mroczny Wizard (Tomek)', voiceId: 'PLACEHOLDER_TOMEK' },
-  { id: 'Kinga_Voice', name: 'Leśna Driada (Kinga)', voiceId: 'PLACEHOLDER_KINGA' },
-];
+const GOD_EMOJIS: Record<string, string> = {
+  'Perun': '⚡',
+  'Weles': '🐺',
+  'Mokosz': '🌾',
+};
 
-function ChatPanel({ klans, selectedGameId }: { klans: Klan[]; selectedGameId: string | null }) {
+function ChatPanel({
+  klans,
+  selectedGameId,
+  gods,
+  selectedGodId,
+}: {
+  klans: Klan[];
+  selectedGameId: string | null;
+  gods: God[];
+  selectedGodId: string | null;
+}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [selectedKlanId, setSelectedKlanId] = useState<string | null>(null);
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [broadcastToAll, setBroadcastToAll] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useState(TTS_VOICES[0].voiceId);
   const [previewAudio, setPreviewAudio] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1386,6 +1475,11 @@ function ChatPanel({ klans, selectedGameId }: { klans: Klan[]; selectedGameId: s
         (payload: { new: Message }) => {
           const newMsg = payload.new;
           if (selectedGameId && newMsg.game_id !== selectedGameId) return;
+          if (selectedKlanId) {
+            if (newMsg.klan_id !== selectedKlanId) return;
+          } else {
+            if (newMsg.klan_id !== null) return;
+          }
           setMessages((prev) => [...prev, newMsg]);
         }
       )
@@ -1478,13 +1572,16 @@ function ChatPanel({ klans, selectedGameId }: { klans: Klan[]; selectedGameId: s
     return null;
   };
 
+  const selectedGod = gods.find(g => g.id === selectedGodId);
+  const selectedGodVoiceId = selectedGod?.voice_id || 'rpg9PEuAEDV7I1OjYrbj';
+
   const generatePreview = async () => {
     if (!inputText.trim()) return;
 
     setIsGeneratingPreview(true);
     setPreviewAudio(null);
 
-    const audioUrl = await generateTTS(inputText, selectedVoice);
+    const audioUrl = await generateTTS(inputText, selectedGodVoiceId);
     if (audioUrl) {
       setPreviewAudio(audioUrl);
       if (audioPreviewRef.current) {
@@ -1507,7 +1604,7 @@ function ChatPanel({ klans, selectedGameId }: { klans: Klan[]; selectedGameId: s
 
     if (ttsEnabled && !audioUrl) {
       setIsGeneratingPreview(true);
-      audioUrl = await generateTTS(inputText, selectedVoice);
+      audioUrl = await generateTTS(inputText, selectedGodVoiceId);
       setIsGeneratingPreview(false);
     }
 
@@ -1515,14 +1612,17 @@ function ChatPanel({ klans, selectedGameId }: { klans: Klan[]; selectedGameId: s
       imageUrl = await uploadImage(selectedImage);
     }
 
+    const godKlanId = selectedGod?.klan_id || null;
+
     if (broadcastToAll) {
       await supabase.from('messages').insert({
         content: inputText.trim() || (imageUrl ? '📷' : ''),
-        sender: 'god',
+        sender: selectedGod?.name || 'Bóg',
         player_id: null,
         game_id: selectedGameId,
+        god_id: selectedGodId,
         klan_id: null,
-        sender_klan_id: null,
+        sender_klan_id: godKlanId,
         tts_requested: ttsEnabled,
         audio_url: audioUrl,
         image_url: imageUrl,
@@ -1530,11 +1630,12 @@ function ChatPanel({ klans, selectedGameId }: { klans: Klan[]; selectedGameId: s
     } else {
       await supabase.from('messages').insert({
         content: inputText.trim() || (imageUrl ? '📷' : ''),
-        sender: 'god',
+        sender: selectedGod?.name || 'Bóg',
         player_id: null,
         game_id: selectedGameId,
+        god_id: selectedGodId,
         klan_id: selectedKlanId,
-        sender_klan_id: selectedKlanId,
+        sender_klan_id: godKlanId,
         tts_requested: ttsEnabled,
         audio_url: audioUrl,
         image_url: imageUrl,
@@ -1608,17 +1709,6 @@ function ChatPanel({ klans, selectedGameId }: { klans: Klan[]; selectedGameId: s
         </label>
         {ttsEnabled && (
           <div className="admin-chat__voice-select">
-            <select
-              value={selectedVoice}
-              onChange={(e) => setSelectedVoice(e.target.value)}
-              className="admin-panel__select"
-            >
-              {TTS_VOICES.map((voice) => (
-                <option key={voice.id} value={voice.voiceId}>
-                  {voice.name}
-                </option>
-              ))}
-            </select>
             <button
               onClick={generatePreview}
               disabled={!inputText.trim() || isGeneratingPreview}
@@ -1646,24 +1736,24 @@ function ChatPanel({ klans, selectedGameId }: { klans: Klan[]; selectedGameId: s
           )}
           {messages.map((msg) => {
             const clan = klans.find((k) => k.id === (msg.sender_klan_id || msg.klan_id));
-            const isBroadcast = msg.sender === 'god' && msg.klan_id === null;
+            const isGodMessage = !!msg.god_id;
+            const isBroadcast = isGodMessage && msg.klan_id === null;
             const isPlaying = audioPlayersRef.current[msg.id] && !audioPlayersRef.current[msg.id].paused;
             const klanColor = clan?.theme_color;
             const isSelectedKlan = selectedKlanId && msg.klan_id === selectedKlanId;
-            const senderAvatarUrl = msg.sender !== 'god' && msg.player_id ? (playerAvatarMap[msg.player_id] || null) : null;
+            const senderAvatarUrl = !isGodMessage && msg.player_id ? (playerAvatarMap[msg.player_id] || null) : null;
+            const godEmoji = isGodMessage ? (GOD_EMOJIS[msg.sender] || '✨') : '';
             return (
               <div
                 key={msg.id}
-                className={`admin-chat__message ${msg.sender === 'god' ? 'admin-chat__message--god' : ''} ${isBroadcast ? 'admin-chat__message--broadcast' : ''} ${isSelectedKlan ? 'admin-chat__message--selected-klan' : ''}`}
-                style={klanColor && !isBroadcast ? { borderLeft: `4px solid ${klanColor}` } : undefined}
+                className={`admin-chat__message ${isGodMessage ? 'admin-chat__message--god' : ''} ${isBroadcast ? 'admin-chat__message--broadcast' : ''} ${isSelectedKlan ? 'admin-chat__message--selected-klan' : ''}`}
+                style={isGodMessage && klanColor ? { borderLeft: `4px solid ${klanColor}` } : !isGodMessage && klanColor ? { borderLeft: `4px solid ${klanColor}` } : undefined}
               >
                 <div className="admin-chat__message-header">
                   <span className="admin-chat__message-sender">
-                    {isBroadcast
-                      ? '📢 Broadcast'
-                      : msg.sender === 'god'
-                        ? `✨ Bogowie${clan ? ` (${clan.name})` : ''}`
-                        : <>{senderAvatarUrl ? <img src={senderAvatarUrl} alt={msg.sender} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', marginRight: 4, verticalAlign: 'middle', cursor: 'pointer' }} onClick={() => setEnlargedImage(senderAvatarUrl)} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} /> : null}{msg.sender}{clan ? ` (${clan.name})` : ''}</>}
+                    {isGodMessage
+                      ? `${godEmoji} ${msg.sender}${clan ? ` (${clan.name})` : ''}`
+                      : <>{senderAvatarUrl ? <img src={senderAvatarUrl} alt={msg.sender} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', marginRight: 4, verticalAlign: 'middle', cursor: 'pointer' }} onClick={() => setEnlargedImage(senderAvatarUrl)} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} /> : null}{msg.sender}{clan ? ` (${clan.name})` : ''}</>}
                     {msg.tts_requested && ' 🔊'}
                   </span>
                   <div className="admin-chat__message-actions">
@@ -1676,7 +1766,7 @@ function ChatPanel({ klans, selectedGameId }: { klans: Klan[]; selectedGameId: s
                         {isPlaying ? '⏸' : '▶'}
                       </button>
                     )}
-                    {msg.sender === 'god' && (
+                    {isGodMessage && (
                       <button
                         className="admin-chat__action-btn admin-chat__action-btn--delete"
                         onClick={() => deleteMessage(msg)}
@@ -1766,10 +1856,12 @@ function ChatPanel({ klans, selectedGameId }: { klans: Klan[]; selectedGameId: s
 interface MapPanelProps {
   gameId: string;
   klans: Klan[];
+  selectedGodId: string | null;
 }
 
-function MapPanel({ gameId, klans }: MapPanelProps) {
+function MapPanel({ gameId, klans, selectedGodId }: MapPanelProps) {
   const [positions, setPositions] = useState<any[]>([]);
+  const [godPositions, setGodPositions] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchPositions = async () => {
@@ -1802,7 +1894,36 @@ function MapPanel({ gameId, klans }: MapPanelProps) {
       }
     };
 
+    const fetchGodPositions = async () => {
+      const { data } = await supabase
+        .from('god_positions')
+        .select(`
+          god_id,
+          lat,
+          lng,
+          accuracy,
+          updated_at,
+          gods!inner (
+            id,
+            name,
+            voice_id,
+            klans!inner (
+              id,
+              name,
+              theme_color
+            )
+          )
+        `)
+        .eq('game_id', gameId)
+        .gt('updated_at', new Date(Date.now() - 10 * 60 * 1000).toISOString());
+
+      if (data) {
+        setGodPositions(data);
+      }
+    };
+
     fetchPositions();
+    fetchGodPositions();
 
     const channel = supabase
       .channel('admin_map_positions')
@@ -1814,12 +1935,53 @@ function MapPanel({ gameId, klans }: MapPanelProps) {
       }, () => {
         fetchPositions();
       })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'god_positions',
+        filter: `game_id=eq.${gameId}`,
+      }, () => {
+        fetchGodPositions();
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [gameId]);
+
+  useEffect(() => {
+    if (!selectedGodId) return;
+
+    let watchId: number | null = null;
+
+    if ('geolocation' in navigator) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const { latitude, longitude, accuracy } = position.coords;
+          supabase
+            .from('god_positions')
+            .upsert({
+              god_id: selectedGodId,
+              game_id: gameId,
+              lat: latitude,
+              lng: longitude,
+              accuracy: accuracy,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'god_id' })
+            .then(({ error }) => { if (error) console.error('[God GPS] Error:', error); });
+        },
+        (error) => console.error('[God GPS] Error:', error),
+        { enableHighAccuracy: true, maximumAge: 10000 }
+      );
+    }
+
+    return () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [selectedGodId, gameId]);
 
   const getKlanColor = (klanId: string | null) => {
     if (!klanId) return '#888888';
@@ -1834,6 +1996,11 @@ function MapPanel({ gameId, klans }: MapPanelProps) {
         <span className="admin-map-panel__count">
           {positions.length} graczy online
         </span>
+        {godPositions.length > 0 && (
+          <span className="admin-map-panel__count admin-map-panel__count--god">
+            {godPositions.length} bogów online
+          </span>
+        )}
       </div>
 
       <div className="admin-map-panel__container">
@@ -1930,19 +2097,90 @@ function MapPanel({ gameId, klans }: MapPanelProps) {
               </Marker>
             );
           })}
+
+          {/* God markers */}
+          {godPositions.map((godPos) => {
+            const godName = godPos.gods?.name || 'Bóg';
+            const klanName = godPos.gods?.klans?.name || '';
+            const klanColor = godPos.gods?.klans?.theme_color || '#FFD700';
+
+            const godIcon = L.divIcon({
+              className: 'admin-god-marker',
+              html: `
+                <div style="
+                  width: 36px;
+                  height: 36px;
+                  background: ${klanColor};
+                  border: 3px solid #FFD700;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: bold;
+                  font-size: 14px;
+                  color: #fff;
+                  box-shadow: 0 0 12px ${klanColor}, 0 0 24px #FFD700;
+                  text-shadow: 0 0 4px rgba(0,0,0,0.8);
+                ">
+                  ✦
+                </div>
+              `,
+              iconSize: [36, 36],
+              iconAnchor: [18, 18],
+            });
+
+            return (
+              <Marker
+                key={godPos.god_id}
+                position={[godPos.lat, godPos.lng]}
+                icon={godIcon}
+              >
+                <Popup>
+                  <div className="admin-map-popup admin-map-popup--god">
+                    <h3 style={{ margin: 0, color: klanColor }}>✨ {godName}</h3>
+                    {klanName && <p><strong>Klan:</strong> {klanName}</p>}
+                    <p><strong>Pozycja:</strong> {godPos.lat.toFixed(5)}, {godPos.lng.toFixed(5)}</p>
+                    <p><strong>Dokładność:</strong> ±{Math.round(godPos.accuracy || 0)}m</p>
+                    <p><strong>Online:</strong> {new Date(godPos.updated_at).toLocaleTimeString()}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
 
       <div className="admin-map-panel__legend">
-        {klans.map((klan) => (
-          <div key={klan.id} className="admin-map-panel__legend-item">
-            <span
-              className="admin-map-panel__legend-color"
-              style={{ background: klan.theme_color }}
-            />
-            <span>{klan.name}</span>
+        <div className="admin-map-panel__legend-section">
+          <strong>Gracze:</strong>
+          {klans.map((klan) => (
+            <div key={klan.id} className="admin-map-panel__legend-item">
+              <span
+                className="admin-map-panel__legend-color"
+                style={{ background: klan.theme_color }}
+              />
+              <span>{klan.name}</span>
+            </div>
+          ))}
+        </div>
+        {godPositions.length > 0 && (
+          <div className="admin-map-panel__legend-section">
+            <strong>Bogowie:</strong>
+            {godPositions.map((godPos) => {
+              const klanColor = godPos.gods?.klans?.theme_color || '#FFD700';
+              const godName = godPos.gods?.name || 'Bóg';
+              return (
+                <div key={godPos.god_id} className="admin-map-panel__legend-item">
+                  <span
+                    className="admin-map-panel__legend-color admin-map-panel__legend-color--god"
+                    style={{ background: klanColor }}
+                  />
+                  <span>✨ {godName}</span>
+                </div>
+              );
+            })}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

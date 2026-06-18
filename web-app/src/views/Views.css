@@ -218,6 +218,31 @@
   box-shadow: 0 6px 20px rgba(192, 192, 192, 0.2);
 }
 
+.chat-message--broadcast {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.15);
+}
+
+.chat-message--broadcast .chat-message__sender {
+  color: #ffd700 !important;
+}
+
+.chat-message__broadcast-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-bottom: 6px;
+  display: inline-block;
+  align-self: flex-start;
+}
+
 .chat-message--klan {
   align-self: flex-start;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
