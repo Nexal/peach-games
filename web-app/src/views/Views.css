@@ -622,6 +622,29 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+.chat-mode-toggle__btn--unread {
+  position: relative;
+}
+
+.chat-mode-toggle__badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  animation: tab-unread-pulse 2s infinite;
+}
+
 .chat-message--global {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%) !important;
   border-color: rgba(var(--msg-klan-color-rgb, 255, 255, 255), 0.3) !important;

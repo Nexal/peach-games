@@ -40,8 +40,10 @@ interface GameContextValue {
   deactivateQRQuest: (questId: string) => void;
   getMarkerPosition: (questId: string) => MarkerPosition;
   klanPoints: number;
-  unreadGodMessages: number;
-  markMessagesRead: () => void;
+  unreadClanMessages: number;
+  unreadGlobalMessages: number;
+  markClanMessagesRead: () => void;
+  markGlobalMessagesRead: () => void;
   setChatOpen: (open: boolean) => void;
 }
 
@@ -57,9 +59,11 @@ const GameContext = createContext<GameContextValue>({
   activeQRQuests: {},
   completionModal: null,
   klanPoints: 0,
-  unreadGodMessages: 0,
+  unreadClanMessages: 0,
+  unreadGlobalMessages: 0,
   dismissCompletion: () => {},
-  markMessagesRead: () => {},
+  markClanMessagesRead: () => {},
+  markGlobalMessagesRead: () => {},
   setChatOpen: () => {},
   completeChase: async () => {},
   activateQuest: async () => {},
@@ -129,19 +133,30 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [completionModal, setCompletionModal] = useState<QuestCompletionData | null>(null);
   const [taskCompletionModal, setTaskCompletionModal] = useState<TaskCompletionData | null>(null);
   const [klanPoints, setKlanPoints] = useState<number>(0);
-  const [unreadGodMessages, setUnreadGodMessages] = useState<number>(() => {
-    const saved = localStorage.getItem('peach_unread_god');
+  const [unreadClanMessages, setUnreadClanMessages] = useState<number>(() => {
+    const saved = localStorage.getItem('peach_unread_clan');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [unreadGlobalMessages, setUnreadGlobalMessages] = useState<number>(() => {
+    const saved = localStorage.getItem('peach_unread_global');
     return saved ? parseInt(saved, 10) : 0;
   });
 
-  const saveUnread = useCallback((n: number) => {
-    setUnreadGodMessages(n);
-    localStorage.setItem('peach_unread_god', String(n));
+  const saveClanUnread = useCallback((n: number) => {
+    setUnreadClanMessages(n);
+    localStorage.setItem('peach_unread_clan', String(n));
   }, []);
-  const unreadRef = useRef(unreadGodMessages);
-  unreadRef.current = unreadGodMessages;
+  const saveGlobalUnread = useCallback((n: number) => {
+    setUnreadGlobalMessages(n);
+    localStorage.setItem('peach_unread_global', String(n));
+  }, []);
+  const unreadClanRef = useRef(unreadClanMessages);
+  unreadClanRef.current = unreadClanMessages;
+  const unreadGlobalRef = useRef(unreadGlobalMessages);
+  unreadGlobalRef.current = unreadGlobalMessages;
   const chatOpenRef = useRef(false);
   const setChatOpen = useCallback((open: boolean) => { chatOpenRef.current = open; }, []);
+  const chatModeRef = useRef<'klan' | 'global'>('klan');
   const lastPlayerPositionRef = useRef<MarkerPosition>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const swRegRef = useRef<ServiceWorkerRegistration | null>(null);
@@ -167,9 +182,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const markMessagesRead = useCallback(() => {
-    saveUnread(0);
-  }, [saveUnread]);
+  const markClanMessagesRead = useCallback(() => {
+    saveClanUnread(0);
+    chatModeRef.current = 'klan';
+  }, [saveClanUnread]);
+  const markGlobalMessagesRead = useCallback(() => {
+    saveGlobalUnread(0);
+    chatModeRef.current = 'global';
+  }, [saveGlobalUnread]);
 
   useEffect(() => {
     if (!session?.id || !session?.game_id) return;
@@ -467,10 +487,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         filter: `game_id=eq.${session.game_id}`,
       }, (payload: any) => {
         const msg = payload.new as any;
-        if (msg.sender !== 'god' || !msg.content) return;
+        if (!msg.god_id || !msg.content) return;
         if (msg.klan_id && msg.klan_id !== session?.klan_id) return;
+        const isClanMsg = !!msg.klan_id;
         if (!chatOpenRef.current) {
-          saveUnread(unreadRef.current + 1);
+          if (isClanMsg) {
+            saveClanUnread(unreadClanRef.current + 1);
+          } else {
+            saveGlobalUnread(unreadGlobalRef.current + 1);
+          }
+        } else {
+          if (isClanMsg && chatModeRef.current !== 'klan') {
+            saveClanUnread(unreadClanRef.current + 1);
+          } else if (!isClanMsg && chatModeRef.current !== 'global') {
+            saveGlobalUnread(unreadGlobalRef.current + 1);
+          }
         }
         showNotif(
           '🔔 Wiadomość od Boga',
@@ -606,9 +637,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       activeQRQuests,
       completionModal,
       klanPoints,
-      unreadGodMessages,
+      unreadClanMessages,
+      unreadGlobalMessages,
       dismissCompletion,
-      markMessagesRead,
+      markClanMessagesRead,
+      markGlobalMessagesRead,
       setChatOpen,
       completeChase,
       activateQuest,

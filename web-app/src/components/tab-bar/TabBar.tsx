@@ -8,14 +8,15 @@ interface TabBarProps {
 }
 
 export function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
-  const { unreadGodMessages } = useGame();
+  const { unreadClanMessages, unreadGlobalMessages } = useGame();
+  const unreadTotal = unreadClanMessages + unreadGlobalMessages;
 
   return (
     <nav className="tab-bar">
       {tabs.map((tab) => (
         <button
           key={tab.id}
-          className={`tab-bar__item ${activeTab === tab.id ? 'tab-bar__item--active' : ''} ${tab.id === 'chat' && unreadGodMessages > 0 ? 'tab-bar__item--unread' : ''}`}
+          className={`tab-bar__item ${activeTab === tab.id ? 'tab-bar__item--active' : ''} ${tab.id === 'chat' && unreadTotal > 0 ? 'tab-bar__item--unread' : ''}`}
           onClick={() => onTabChange(tab.id)}
         >
           <span className="tab-bar__icon">
@@ -24,8 +25,8 @@ export function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
             ) : tab.icon ? (
               tab.icon
             ) : null}
-            {tab.id === 'chat' && unreadGodMessages > 0 && (
-              <span className="tab-bar__badge">{unreadGodMessages > 99 ? '99+' : unreadGodMessages}</span>
+            {tab.id === 'chat' && unreadTotal > 0 && (
+              <span className="tab-bar__badge">{unreadTotal > 99 ? '99+' : unreadTotal}</span>
             )}
           </span>
           <span className="tab-bar__label">{tab.label}</span>

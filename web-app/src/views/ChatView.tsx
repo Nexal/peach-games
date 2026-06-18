@@ -33,7 +33,7 @@ function hexToRgb(hex: string): string {
 }
 
 export function ChatView() {
-  const { markMessagesRead, setChatOpen } = useGame();
+  const { markClanMessagesRead, markGlobalMessagesRead, setChatOpen, unreadClanMessages, unreadGlobalMessages } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [playerSession] = useState(getPlayerSession());
@@ -51,7 +51,7 @@ export function ChatView() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => { setChatOpen(true); markMessagesRead(); return () => setChatOpen(false); }, [setChatOpen, markMessagesRead]);
+  useEffect(() => { setChatOpen(true); markClanMessagesRead(); return () => setChatOpen(false); }, [setChatOpen, markClanMessagesRead]);
 
   const requestNotifyPermission = useCallback(async () => {
     if (!('Notification' in window)) return;
@@ -370,19 +370,25 @@ export function ChatView() {
           )}
           <div className="chat-mode-toggle">
           <button
-            className={`chat-mode-toggle__btn ${chatMode === 'klan' ? 'chat-mode-toggle__btn--active' : ''}`}
-            onClick={() => setChatMode('klan')}
+            className={`chat-mode-toggle__btn ${chatMode === 'klan' ? 'chat-mode-toggle__btn--active' : ''} ${chatMode !== 'klan' && unreadClanMessages > 0 ? 'chat-mode-toggle__btn--unread' : ''}`}
+            onClick={() => { setChatMode('klan'); markClanMessagesRead(); }}
           >
             {getClanIcon(playerSession.klan_name) && (
               <img src={getClanIcon(playerSession.klan_name)} alt={playerSession.klan_name} style={{ width: 36, height: 36 }} />
             )}
             Klan
+            {chatMode !== 'klan' && unreadClanMessages > 0 && (
+              <span className="chat-mode-toggle__badge">{unreadClanMessages > 99 ? '99+' : unreadClanMessages}</span>
+            )}
           </button>
           <button
-            className={`chat-mode-toggle__btn ${chatMode === 'global' ? 'chat-mode-toggle__btn--active' : ''}`}
-            onClick={() => setChatMode('global')}
+            className={`chat-mode-toggle__btn ${chatMode === 'global' ? 'chat-mode-toggle__btn--active' : ''} ${chatMode !== 'global' && unreadGlobalMessages > 0 ? 'chat-mode-toggle__btn--unread' : ''}`}
+            onClick={() => { setChatMode('global'); markGlobalMessagesRead(); }}
           >
             🌍 Wspólna
+            {chatMode !== 'global' && unreadGlobalMessages > 0 && (
+              <span className="chat-mode-toggle__badge">{unreadGlobalMessages > 99 ? '99+' : unreadGlobalMessages}</span>
+            )}
           </button>
         </div>
       </div>
