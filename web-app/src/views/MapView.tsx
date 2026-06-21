@@ -463,7 +463,7 @@ function MapContent() {
 }
 
 export function MapView() {
-  const { gameStatus } = usePlayerSession();
+  const { session, gameStatus } = usePlayerSession();
 
   return (
     <div className="view view--map">
@@ -473,7 +473,7 @@ export function MapView() {
       </header>
 
       <main className="view__content view__content--map">
-        {gameStatus === 'active' ? (
+        {gameStatus === 'active' || session?.is_test ? (
           <div className="map-container">
             <MapContainer
               center={DEFAULT_MAP_CONFIG.center}

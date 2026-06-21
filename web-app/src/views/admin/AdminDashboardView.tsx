@@ -863,6 +863,7 @@ function PlayersPanel({
 }) {
   const [selectedKlanId, setSelectedKlanId] = useState<string>('');
   const [playerName, setPlayerName] = useState('');
+  const [isTestPlayer, setIsTestPlayer] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [editName, setEditName] = useState('');
 
@@ -877,8 +878,10 @@ function PlayersPanel({
       klan_id: selectedKlanId,
       game_id: gameId,
       role: 'member',
+      is_test: isTestPlayer,
     });
     setPlayerName('');
+    setIsTestPlayer(false);
     window.location.reload();
   };
 
@@ -928,8 +931,16 @@ function PlayersPanel({
                 {k.name}
               </option>
             ))}
-          </select>
-          <button onClick={addPlayer} className="button-glow">
+            </select>
+            <label className="admin-panel__checkbox-label">
+              <input
+                type="checkbox"
+                checked={isTestPlayer}
+                onChange={(e) => setIsTestPlayer(e.target.checked)}
+              />
+              <span>🧪 Testowy</span>
+            </label>
+            <button onClick={addPlayer} className="button-glow">
             +
           </button>
         </div>
@@ -958,6 +969,7 @@ function PlayersPanel({
                 ) : (
                   <>
                     <span className="admin-player-card__name">{player.name}</span>
+                    {player.is_test && <span className="admin-player-card__test-badge">🧪</span>}
                     <div className="admin-player-card__actions">
                       <span
                         className="admin-player-card__klan"

@@ -353,7 +353,7 @@ export function QuestsView() {
     );
   }
 
-  if (gameStatus !== 'active') {
+  if (gameStatus !== 'active' && !session?.is_test) {
     return (
       <div className="view view--quests">
         <header className="view__header">

@@ -601,6 +601,7 @@ export type Database = {
           created_at: string | null
           game_id: string | null
           id: string
+          is_test: boolean | null
           joined_at: string | null
           klan_id: string | null
           name: string
@@ -611,6 +612,7 @@ export type Database = {
           created_at?: string | null
           game_id?: string | null
           id?: string
+          is_test?: boolean | null
           joined_at?: string | null
           klan_id?: string | null
           name: string
@@ -621,6 +623,7 @@ export type Database = {
           created_at?: string | null
           game_id?: string | null
           id?: string
+          is_test?: boolean | null
           joined_at?: string | null
           klan_id?: string | null
           name?: string

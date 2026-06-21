@@ -8,6 +8,7 @@ export type PlayerSession = {
   game_id: string;
   avatar_url?: string | null;
   session_start?: string;
+  is_test?: boolean;
 };
 
 const SESSION_KEY = 'peachgames_player_session';

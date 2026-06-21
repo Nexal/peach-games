@@ -307,6 +307,7 @@ export function JoinView() {
       klan_name: klan?.name || 'Nieznany',
       klan_color: klan?.theme_color || '#888',
       avatar_url: avatarUrl || null,
+      is_test: (player as any).is_test || false,
       game_id: selectedGameId || '',
     });
 
@@ -363,7 +364,7 @@ export function JoinView() {
                 <label className="join-panel__label">Dostępni gracze:</label>
                 {klans
                   .map((klan) => {
-                    const clanPlayers = players.filter(p => p.klan_id === klan.id);
+                    const clanPlayers = players.filter(p => p.klan_id === klan.id && (isDevMode || !p.is_test));
                     if (clanPlayers.length === 0) return null;
                     const clanKey = getClanKey(klan.name);
                     const clanIcon = CLAN_ICONS[clanKey] || { emoji: '⚔️' };
@@ -421,6 +422,7 @@ export function JoinView() {
                                   )}
                                 </div>
                                 <span className="join-clan-player__name">{player.name || '(bez imienia)'}</span>
+                                {player.is_test && <span className="join-clan-player__badge join-clan-player__badge--test">🧪</span>}
                                 {isJoined && <span className="join-clan-player__badge">Dołączył</span>}
                               </button>
                             );

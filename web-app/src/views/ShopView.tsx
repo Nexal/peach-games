@@ -88,7 +88,7 @@ export function ShopView() {
       </header>
 
       <main className="view__content">
-        {gameStatus !== 'active' ? (
+        {gameStatus !== 'active' && !session?.is_test ? (
           <PreGameSplash view="shop" status={gameStatus} />
         ) : (
         <div className="shop-items">
