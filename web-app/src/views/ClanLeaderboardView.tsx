@@ -62,7 +62,8 @@ export function ClanLeaderboardView({ session, onClose }: Props) {
           .from('players')
           .select('id, name, avatar_url, klan_id')
           .eq('game_id', session.game_id)
-          .not('joined_at', 'is', null),
+          .not('joined_at', 'is', null)
+          .or('is_test.eq.false,is_test.is.null'),
       ]);
 
       const klans = klansRes.data || [];
