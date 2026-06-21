@@ -3,7 +3,7 @@ export interface ClanIntro {
   poster: string;
 }
 
-const INTRO_BASE = 'https://groomervision.pl/peach-game2/intro';
+const INTRO_BASE = 'https://peachgames2.groomervision.pl/peach-game2/intro';
 
 export const CLAN_INTROS: Record<string, ClanIntro> = {
   'klan peruna': {
