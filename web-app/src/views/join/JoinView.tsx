@@ -46,6 +46,7 @@ export function JoinView() {
   const [playerAvatarUrl, setPlayerAvatarUrl] = useState<string | null>(null);
   const [isTransforming, setIsTransforming] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkAutoLogin = async () => {
@@ -163,6 +164,10 @@ export function JoinView() {
       setExistingAvatar(data.avatar_url);
       setPlayerAvatarUrl(data.avatar_url);
     }
+
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -432,7 +437,7 @@ export function JoinView() {
           )}
 
           {selectedPlayer && (
-            <div className="join-panel__section">
+            <div className="join-panel__section" ref={formRef}>
               <label className="join-panel__label">Twój pseudonim:</label>
               <input
                 type="text"
