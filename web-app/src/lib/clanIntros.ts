@@ -3,17 +3,19 @@ export interface ClanIntro {
   poster: string;
 }
 
+const STORAGE_BASE = 'https://xmanqwjuqylwhizkqjsi.supabase.co/storage/v1/object/public/intro-videos';
+
 export const CLAN_INTROS: Record<string, ClanIntro> = {
   'klan peruna': {
-    video: '/intro/Perun-intro.mp4',
+    video: `${STORAGE_BASE}/Perun-intro.mp4`,
     poster: '/icons/perun_avatar.png',
   },
   'klan welesa': {
-    video: '/intro/Weles-intro.mp4',
+    video: `${STORAGE_BASE}/Weles-intro.mp4`,
     poster: '/icons/weles_avatar.jpeg',
   },
   'klan mokoszy': {
-    video: '/intro/Mokosz-intro.mp4',
+    video: `${STORAGE_BASE}/Mokosz-intro.mp4`,
     poster: '/icons/mokosz_avatar.jpeg',
   },
 };

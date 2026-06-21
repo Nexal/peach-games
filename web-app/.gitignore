@@ -25,3 +25,4 @@ dist-ssr
 
 # Large media files (deploy separately)
 public/intro/
+scripts/upload-intro-videos.mjs
