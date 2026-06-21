@@ -78,7 +78,7 @@ function MapContent() {
   const [taskProgress, setTaskProgress] = useState<Record<string, { scanned: number; total: number }>>({});
   const [taskRefresh, setTaskRefresh] = useState(0);
   const [showClanMembers, setShowClanMembers] = useState(true);
-  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark');
+  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem('map_theme') as 'dark' | 'light') || 'dark');
   const [enlargedAvatar, setEnlargedAvatar] = useState<string | null>(null);
 
   const clanMembers = useClanMemberPositions(
@@ -405,7 +405,7 @@ function MapContent() {
 
       <CenterOnLocationButton>
         <button
-          onClick={() => setMapTheme(prev => (prev === 'dark' ? 'light' : 'dark'))}
+          onClick={() => setMapTheme(prev => { const next = prev === 'dark' ? 'light' : 'dark'; localStorage.setItem('map_theme', next); return next; })}
           className={`map-control-button map-theme-toggle ${mapTheme === 'light' ? 'map-theme-toggle--active' : ''}`}
           title={mapTheme === 'dark' ? 'Przełącz na jasny motyw' : 'Przełącz na ciemny motyw'}
           style={{ width: 44, height: 44 }}
