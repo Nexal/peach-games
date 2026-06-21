@@ -511,7 +511,7 @@ export function JoinView() {
                 </div>
               ) : (
                 <div className="join-photo">
-                  <label className="join-panel__label">📸 Zdjęcie profilowe (wymagane):</label>
+                  <label className="join-panel__label">📸 Zdjęcie profilowe{!selectedPlayer?.is_test && ' (wymagane)'}:</label>
 
                   {photoPreview ? (
                     <div
@@ -557,7 +557,7 @@ export function JoinView() {
           <button
             className="button-glow join-panel__submit"
             onClick={handleJoin}
-            disabled={!selectedPlayerId || isTransforming || (!existingAvatar && !photoFile)}
+            disabled={!selectedPlayerId || isTransforming || (!existingAvatar && !photoFile && !selectedPlayer?.is_test)}
           >
             {isTransforming ? '⚡ Bogowie nadają Ci oblicze...' : 'Dołącz do gry'}
           </button>
