@@ -9,6 +9,28 @@ type Player = Database['public']['Tables']['players']['Row'];
 type Klan = Database['public']['Tables']['klans']['Row'];
 type Game = Database['public']['Tables']['games']['Row'];
 
+const CLAN_ICONS: Record<string, { emoji: string; image?: string }> = {
+  'klan peruna': { emoji: '⚡', image: '/icons/perun_symbol-Photoroom.png' },
+  'klan welesa': { emoji: '🐺', image: '/icons/weles_icon_symbol-Photoroom.png' },
+  'klan mokoszy': { emoji: '🌿', image: '/icons/mokosz_symbol-Photoroom.png' },
+};
+
+const GOD_AVATAR_IMAGES: Record<string, string> = {
+  'Perun': '/icons/perun_avatar.png',
+  'Weles': '/icons/weles_avatar.jpeg',
+  'Mokosz': '/icons/mokosz_avatar.jpeg',
+};
+
+const GOD_AVATARS: Record<string, { name: string; image: string }> = {
+  'klan peruna': { name: 'Perun', image: GOD_AVATAR_IMAGES['Perun'] },
+  'klan welesa': { name: 'Weles', image: GOD_AVATAR_IMAGES['Weles'] },
+  'klan mokoszy': { name: 'Mokosz', image: GOD_AVATAR_IMAGES['Mokosz'] },
+};
+
+function getClanKey(klanName: string): string {
+  return klanName.toLowerCase();
+}
+
 export function JoinView() {
   const [games, setGames] = useState<Game[]>([]);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
@@ -115,9 +137,6 @@ export function JoinView() {
     if (playersRes.data) setPlayers(playersRes.data);
     if (klansRes.data) setKlans(klansRes.data);
   };
-
-  const availablePlayers = players.filter(p => !p.joined_at);
-  const joinedPlayers = players.filter(p => p.joined_at);
 
   const resetPhotoState = () => {
     setPhotoFile(null);
@@ -295,12 +314,6 @@ export function JoinView() {
     return klan?.theme_color || '#888';
   };
 
-  const getKlanName = (klanId: string | null) => {
-    if (!klanId) return 'Nieznany';
-    const klan = klans.find(k => k.id === klanId);
-    return klan?.name || 'Nieznany';
-  };
-
   const selectedPlayer = players.find(p => p.id === selectedPlayerId);
 
   return (
@@ -327,11 +340,11 @@ export function JoinView() {
                 {games.map((game) => (
                   <button
                     key={game.id}
-                    className="join-player-card"
+                    className="join-game-card"
                     onClick={() => loadGameById(game.id)}
                   >
-                    <span className="join-player-card__name">{game.name}</span>
-                    <span className="join-player-card__klan">Status: {game.status}</span>
+                    <span className="join-game-card__name">{game.name}</span>
+                    <span className="join-game-card__status">Status: {game.status}</span>
                   </button>
                 ))}
               </div>
@@ -341,56 +354,80 @@ export function JoinView() {
           {/* Select from available players */}
           {selectedGameId && (
             <>
-              {availablePlayers.length > 0 && (
-                <div className="join-panel__section">
-                  <label className="join-panel__label">Dostępni gracze:</label>
-                  <div className="join-panel__players">
-                    {availablePlayers.map((player) => {
-                      const klan = klans.find(k => k.id === player.klan_id);
-                      return (
-                        <button
-                          key={player.id}
-                          className={`join-player-card ${selectedPlayerId === player.id ? 'join-player-card--selected' : ''}`}
-                          onClick={() => handleSelectPlayer(player.id)}
-                        >
-                          <span
-                            className="join-player-card__color"
-                            style={{ backgroundColor: klan?.theme_color || '#888' }}
-                          />
-                          <span className="join-player-card__name">{player.name || '(bez imienia)'}</span>
-                          <span className="join-player-card__klan">{klan?.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <div className="join-panel__section">
+                <label className="join-panel__label">Dostępni gracze:</label>
+                {klans
+                  .map((klan) => {
+                    const clanPlayers = players.filter(p => p.klan_id === klan.id);
+                    if (clanPlayers.length === 0) return null;
+                    const clanKey = getClanKey(klan.name);
+                    const clanIcon = CLAN_ICONS[clanKey] || { emoji: '⚔️' };
+                    const godAvatar = GOD_AVATARS[clanKey] || { name: 'Bóg', image: '' };
 
-              {/* Also show already joined players for testing */}
-              {joinedPlayers.length > 0 && (
-                <div className="join-panel__section">
-                  <label className="join-panel__label">Zalogowani gracze (kliknij by przejąć):</label>
-                  <div className="join-panel__players">
-                    {joinedPlayers.map((player) => {
-                      const klan = klans.find(k => k.id === player.klan_id);
-                      return (
-                        <button
-                          key={player.id}
-                          className={`join-player-card join-player-card--joined ${selectedPlayerId === player.id ? 'join-player-card--selected' : ''}`}
-                          onClick={() => handleSelectPlayer(player.id)}
-                        >
+                    return (
+                      <div key={klan.id} className="join-clan-section">
+                        <header className="join-clan-section__header">
+                          <div className="join-clan-section__god-avatar">
+                            {godAvatar.image ? (
+                              <img src={godAvatar.image} alt={godAvatar.name} />
+                            ) : (
+                              <span>✨</span>
+                            )}
+                          </div>
+                          <div
+                            className="join-clan-section__clan-icon"
+                            style={{ '--klan-color': klan.theme_color } as React.CSSProperties}
+                          >
+                            {clanIcon.image ? (
+                              <img src={clanIcon.image} alt={klan.name} />
+                            ) : (
+                              <span>{clanIcon.emoji}</span>
+                            )}
+                          </div>
                           <span
-                            className="join-player-card__color"
-                            style={{ backgroundColor: klan?.theme_color || '#888' }}
-                          />
-                          <span className="join-player-card__name">{player.name || '(bez imienia)'}</span>
-                          <span className="join-player-card__klan">{klan?.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                            className="join-clan-section__clan-name"
+                            style={{ color: klan.theme_color }}
+                          >
+                            {klan.name}
+                          </span>
+                        </header>
+
+                        <div className="join-clan-section__players">
+                          {clanPlayers.map((player) => {
+                            const isJoined = !!player.joined_at;
+                            const isSelected = selectedPlayerId === player.id;
+                            return (
+                              <button
+                                key={player.id}
+                                className={`join-clan-player ${isSelected ? 'join-clan-player--selected' : ''} ${isJoined ? 'join-clan-player--joined' : ''}`}
+                                onClick={() => handleSelectPlayer(player.id)}
+                              >
+                                <div className="join-clan-player__avatar">
+                                  {player.avatar_url ? (
+                                    <img src={player.avatar_url} alt={player.name} />
+                                  ) : (
+                                    <div className="join-clan-player__avatar-placeholder">
+                                      {clanIcon.image ? (
+                                        <img src={clanIcon.image} alt="" />
+                                      ) : (
+                                        <span>{clanIcon.emoji}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="join-clan-player__name">{player.name || '(bez imienia)'}</span>
+                                {isJoined && <span className="join-clan-player__badge">Dołączył</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                {players.length === 0 && (
+                  <p className="join-panel__empty">Brak graczy w tej grze.</p>
+                )}
+              </div>
             </>
           )}
 
@@ -407,16 +444,40 @@ export function JoinView() {
 
               <div className="join-panel__preview">
                 <span className="join-panel__preview-label">Twój Klan:</span>
-                <div
-                  className="join-panel__preview-klan"
-                  style={{ borderColor: getKlanColor(selectedPlayer.klan_id) }}
-                >
-                  <span
-                    className="join-panel__preview-color"
-                    style={{ backgroundColor: getKlanColor(selectedPlayer.klan_id) }}
-                  />
-                  <span>{getKlanName(selectedPlayer.klan_id)}</span>
-                </div>
+                {(() => {
+                  const klan = klans.find(k => k.id === selectedPlayer.klan_id);
+                  if (!klan) return null;
+                  const clanKey = getClanKey(klan.name);
+                  const clanIcon = CLAN_ICONS[clanKey] || { emoji: '⚔️' };
+                  const godAvatar = GOD_AVATARS[clanKey] || { name: 'Bóg', image: '' };
+                  return (
+                    <div
+                      className="join-panel__preview-klan"
+                      style={{ borderColor: klan.theme_color, '--klan-color': klan.theme_color } as React.CSSProperties}
+                    >
+                      <div className="join-panel__preview-god">
+                        {godAvatar.image ? (
+                          <img src={godAvatar.image} alt={godAvatar.name} />
+                        ) : (
+                          <span>✨</span>
+                        )}
+                      </div>
+                      <div className="join-panel__preview-clan-icon">
+                        {clanIcon.image ? (
+                          <img src={clanIcon.image} alt={klan.name} />
+                        ) : (
+                          <span>{clanIcon.emoji}</span>
+                        )}
+                      </div>
+                      <span
+                        className="join-panel__preview-name"
+                        style={{ color: klan.theme_color }}
+                      >
+                        {klan.name}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
 
               {existingAvatar ? (
