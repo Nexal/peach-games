@@ -138,7 +138,6 @@ export function IntroVideoView() {
         poster={config.poster}
         preload="auto"
         playsInline
-        crossOrigin="anonymous"
         onEnded={handleEnded}
         onError={handleError}
         onClick={phase === 'playing' ? undefined : handlePlay}
