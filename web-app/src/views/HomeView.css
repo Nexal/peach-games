@@ -737,8 +737,8 @@
 }
 
 .logo-overlay__intro-icon {
-  width: 42px;
-  height: 42px;
+  width: 63px;
+  height: 63px;
   object-fit: contain;
   filter: drop-shadow(0 0 8px var(--klan-color, #888));
 }
@@ -773,8 +773,8 @@
     padding: 10px 12px;
   }
   .logo-overlay__intro-icon {
-    width: 36px;
-    height: 36px;
+    width: 54px;
+    height: 54px;
   }
   .logo-overlay__intro-label {
     font-size: 0.65rem;
