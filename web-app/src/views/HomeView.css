@@ -10,7 +10,7 @@
 }
 
 .view--home-focused .view__content {
-  overflow: visible;
+  overflow-y: auto;
 }
 
 .view--home-focused .view__header--compact {
