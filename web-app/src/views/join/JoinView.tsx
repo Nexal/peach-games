@@ -286,7 +286,7 @@ export function JoinView() {
       game_id: selectedGameId || '',
     });
 
-    window.location.href = '/';
+    window.location.href = '/intro';
   };
 
   const getKlanColor = (klanId: string | null) => {

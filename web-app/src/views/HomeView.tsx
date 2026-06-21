@@ -4,6 +4,7 @@ import { useGame, usePlayerSession } from '../App';
 import { supabase } from '../lib/supabase';
 import { transformPhoto } from '../lib/geminiTransform';
 import type { GameStatus } from '../hooks/useGameStatus';
+import { CLAN_INTRO_LIST, getClanIntroIcon } from '../lib/clanIntros';
 import './HomeView.css';
 import { ClanLeaderboardView } from './ClanLeaderboardView';
 
@@ -282,6 +283,30 @@ export function HomeView() {
             alt="PeachGames Logo"
             className="logo-overlay__img"
           />
+          <div className="logo-overlay__intro-section" onClick={(e) => e.stopPropagation()}>
+            <span className="logo-overlay__intro-title">Obejrzyj intro klanów</span>
+            <div className="logo-overlay__intro-buttons">
+              {CLAN_INTRO_LIST.map((clan) => {
+                const icon = getClanIntroIcon(clan.label.toLowerCase());
+                return (
+                  <button
+                    key={clan.short}
+                    type="button"
+                    className="logo-overlay__intro-btn"
+                    style={{ '--klan-color': clan.color } as React.CSSProperties}
+                    onClick={() => {
+                      window.location.href = `/intro?klan=${clan.short}`;
+                    }}
+                    aria-label={`Odtwórz intro ${clan.label}`}
+                  >
+                    {icon && <img src={icon} alt="" className="logo-overlay__intro-icon" />}
+                    <span className="logo-overlay__intro-label">{clan.label}</span>
+                    <span className="logo-overlay__intro-play" aria-hidden="true">▶</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
       <header className="view__header view__header--compact">

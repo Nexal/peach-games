@@ -7,6 +7,7 @@ import { MapView } from './views/MapView';
 import { QuestsView } from './views/QuestsView';
 import { ShopView } from './views/ShopView';
 import { JoinView } from './views/join/JoinView';
+import { IntroVideoView } from './views/intro/IntroVideoView';
 import { AdminAuthProvider, useAdminAuth } from './lib/admin/AdminAuth';
 import { AdminLoginView } from './views/admin/AdminLoginView';
 import { AdminDashboardView } from './views/admin/AdminDashboardView';
@@ -36,6 +37,7 @@ function AppContent() {
   const { isAuthenticated } = useAdminAuth();
   const [showAdmin, setShowAdmin] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
   const [session, setSession] = useState<PlayerSession | null>(null);
   const { status: gameStatus } = useGameStatus(session?.game_id);
   const [showSplash, setShowSplash] = useState(false);
@@ -50,11 +52,10 @@ function AppContent() {
   useEffect(() => {
     const verifyAndSetSession = async () => {
       const pathname = window.location.pathname;
-      if (pathname === '/join' || pathname === '/admin') {
+      if (pathname === '/join' || pathname === '/admin' || pathname === '/intro') {
         setSession(null);
         return;
       }
-
       const stored = getPlayerSession();
       if (!stored?.id || !stored?.game_id) {
         setSession(null);
@@ -98,6 +99,7 @@ function AppContent() {
       const pathname = window.location.pathname;
       setShowAdmin(pathname === '/admin');
       setShowJoin(pathname === '/join');
+      setShowIntro(pathname === '/intro');
     };
     window.addEventListener('popstate', handleRouteChange);
     handleRouteChange();
@@ -107,7 +109,7 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    if (showJoin || showAdmin) return;
+    if (showJoin || showAdmin || showIntro) return;
     if (splashShownRef.current) return;
     if (!session) return;
 
@@ -139,6 +141,8 @@ function AppContent() {
 
     if (showJoin) return <JoinView />;
 
+    if (showIntro) return <IntroVideoView />;
+
     if (!session) return <HomeView />;
 
     switch (activeTab) {
@@ -165,7 +169,7 @@ function AppContent() {
           </div>
         )}
         {renderView()}
-        {!showAdmin && !showJoin && session && <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />}
+        {!showAdmin && !showJoin && !showIntro && session && <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />}
         </GameProvider>
       </PlayerPositionProvider>
     </PlayerContext.Provider>

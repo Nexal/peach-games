@@ -1,0 +1,100 @@
+.intro-video {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.intro-video--loading {
+  background: #000;
+}
+
+.intro-video__player {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  display: block;
+}
+
+.intro-video--idle .intro-video__player {
+  pointer-events: none;
+}
+
+.intro-video--playing .intro-video__player {
+  pointer-events: auto;
+}
+
+.intro-video__tap-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  background: rgba(0, 0, 0, 0.55);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.intro-video__clan-icon {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px var(--klan-color, #FFD700)) drop-shadow(0 0 36px var(--klan-color, #FFD700));
+  animation: intro-pulse 2s ease-in-out infinite;
+}
+
+.intro-video__clan-icon-fallback {
+  font-size: 120px;
+  line-height: 1;
+  filter: drop-shadow(0 0 18px currentColor);
+  animation: intro-pulse 2s ease-in-out infinite;
+}
+
+.intro-video__play-triangle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 52px;
+  color: #fff;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.9), 0 2px 6px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  z-index: 2;
+  margin-top: 8px;
+}
+
+.intro-video__hint {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: 'Metamorphous', serif;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes intro-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.92; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  .intro-video__clan-icon {
+    width: 110px;
+    height: 110px;
+  }
+  .intro-video__clan-icon-fallback {
+    font-size: 96px;
+  }
+  .intro-video__play-triangle {
+    font-size: 42px;
+  }
+}
