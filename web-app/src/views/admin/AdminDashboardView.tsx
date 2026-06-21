@@ -18,9 +18,11 @@ type God = Database['public']['Tables']['gods']['Row'];
 
 const DEFAULT_TTS_VOICE_ID = 'rpg9PEuAEDV7I1OjYrbj';
 
-async function generateTTS(text: string, voiceId: string = DEFAULT_TTS_VOICE_ID, retries = 3): Promise<string | null> {
+async function generateTTS(text: string, voiceId: string = DEFAULT_TTS_VOICE_ID, apiKey?: string | null, retries = 3): Promise<string | null> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
+      const body: Record<string, string> = { text, voice_id: voiceId };
+      if (apiKey) body.api_key = apiKey;
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-tts`,
         {
@@ -29,7 +31,7 @@ async function generateTTS(text: string, voiceId: string = DEFAULT_TTS_VOICE_ID,
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ text, voice_id: voiceId }),
+          body: JSON.stringify(body),
         }
       );
 
@@ -52,7 +54,7 @@ async function generateTTS(text: string, voiceId: string = DEFAULT_TTS_VOICE_ID,
 
 export function AdminDashboardView() {
   const { logout } = useAdminAuth();
-  type AdminTab = 'games' | 'klans' | 'players' | 'quests' | 'submissions' | 'chat' | 'map';
+  type AdminTab = 'games' | 'klans' | 'players' | 'quests' | 'submissions' | 'chat' | 'map' | 'gods';
   const [activeTab, setActiveTab] = useState<AdminTab>('games');
   const [games, setGames] = useState<Game[]>([]);
   const [klans, setKlans] = useState<Klan[]>([]);
@@ -234,7 +236,7 @@ export function AdminDashboardView() {
 
       let audioUrl: string | null = null;
       try {
-        audioUrl = await generateTTS(announcementText, voiceId);
+        audioUrl = await generateTTS(announcementText, voiceId, (firstGod as any)?.elevenlabs_api_key);
       } catch (err) {
         console.error('[updateGameStatus] TTS generation failed:', err);
       }
@@ -578,6 +580,9 @@ export function AdminDashboardView() {
             selectedGodId={selectedGodId}
           />
         )}
+        {activeTab === 'gods' && selectedGameId && (
+          <GodsPanel gods={gods} klans={klans} gameId={selectedGameId} onGodsChanged={() => loadGods(selectedGameId!)} />
+        )}
       </main>
 
       <nav className="admin-tabs">
@@ -623,7 +628,122 @@ export function AdminDashboardView() {
         >
           🗺️ Mapa
         </button>
+        <button
+          className={`admin-tabs__item ${activeTab === 'gods' ? 'admin-tabs__item--active' : ''}`}
+          onClick={() => setActiveTab('gods')}
+        >
+          👤 Bogowie
+        </button>
       </nav>
+    </div>
+  );
+}
+
+function GodsPanel({
+  gods,
+  klans,
+  gameId,
+  onGodsChanged,
+}: {
+  gods: God[];
+  klans: Klan[];
+  gameId: string;
+  onGodsChanged: () => void;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editVoiceId, setEditVoiceId] = useState('');
+  const [editApiKey, setEditApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState<string | null>(null);
+
+  const gameGods = gods.filter(g => {
+    const klan = klans.find(k => k.id === g.klan_id);
+    return klan?.game_id === gameId;
+  });
+
+  const startEdit = (god: God) => {
+    setEditingId(god.id);
+    setEditVoiceId(god.voice_id || '');
+    setEditApiKey(god.elevenlabs_api_key || '');
+  };
+
+  const saveEdit = async (godId: string) => {
+    await supabase.from('gods').update({
+      voice_id: editVoiceId || null,
+      elevenlabs_api_key: editApiKey || null,
+    }).eq('id', godId);
+    setEditingId(null);
+    onGodsChanged();
+  };
+
+  return (
+    <div className="admin-panel">
+      <div className="admin-panel__section">
+        <h2 className="admin-panel__title">Konfiguracja Bogów</h2>
+        <p className="admin-panel__hint">Skonfiguruj voice_id i klucz API ElevenLabs dla każdego boga.</p>
+        <div className="admin-gods-list">
+          {gameGods.length === 0 && <p className="admin-panel__empty">Brak bogów w tej grze</p>}
+          {gameGods.map((god) => {
+            const klan = klans.find(k => k.id === god.klan_id);
+            const isEditing = editingId === god.id;
+            return (
+              <div key={god.id} className="admin-god-card">
+                <div className="admin-god-card__header">
+                  <span className="admin-god-card__name" style={{ color: klan?.theme_color }}>
+                    {god.name}
+                  </span>
+                  <span className="admin-god-card__klan">{klan?.name}</span>
+                </div>
+                {isEditing ? (
+                  <div className="admin-god-card__edit">
+                    <label className="admin-god-card__label">Voice ID:</label>
+                    <input
+                      type="text"
+                      value={editVoiceId}
+                      onChange={(e) => setEditVoiceId(e.target.value)}
+                      placeholder="ElevenLabs Voice ID..."
+                      className="admin-panel__input"
+                    />
+                    <label className="admin-god-card__label">API Key:</label>
+                    <div className="admin-god-card__key-row">
+                      <input
+                        type={showApiKey === god.id ? 'text' : 'password'}
+                        value={editApiKey}
+                        onChange={(e) => setEditApiKey(e.target.value)}
+                        placeholder="Klucz API ElevenLabs..."
+                        className="admin-panel__input"
+                      />
+                      <button
+                        type="button"
+                        className="admin-player-card__btn"
+                        onClick={() => setShowApiKey(showApiKey === god.id ? null : god.id)}
+                        title={showApiKey === god.id ? 'Ukryj klucz' : 'Pokaż klucz'}
+                      >
+                        {showApiKey === god.id ? '🙈' : '👁️'}
+                      </button>
+                    </div>
+                    <div className="admin-god-card__actions">
+                      <button onClick={() => saveEdit(god.id)} className="admin-player-card__btn admin-player-card__btn--save">✓ Zapisz</button>
+                      <button onClick={() => setEditingId(null)} className="admin-player-card__btn">✕ Anuluj</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="admin-god-card__info">
+                    <div className="admin-god-card__field">
+                      <span className="admin-god-card__label">Voice ID:</span>
+                      <span className="admin-god-card__value">{god.voice_id || '—'}</span>
+                    </div>
+                    <div className="admin-god-card__field">
+                      <span className="admin-god-card__label">API Key:</span>
+                      <span className="admin-god-card__value">{god.elevenlabs_api_key ? '••••••••' : '—'}</span>
+                    </div>
+                    <button onClick={() => startEdit(god)} className="admin-player-card__btn">✏️ Edytuj</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1567,9 +1687,11 @@ function ChatPanel({
       if (data) setMessages(data.reverse());
   };
 
-  const generateTTS = async (text: string, voiceId: string, retries = 3): Promise<string | null> => {
+  const generateTTS = async (text: string, voiceId: string, apiKey?: string | null, retries = 3): Promise<string | null> => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
+        const body: Record<string, string> = { text, voice_id: voiceId };
+        if (apiKey) body.api_key = apiKey;
         const response = await fetch(
           'https://xmanqwjuqylwhizkqjsi.supabase.co/functions/v1/generate-tts',
           {
@@ -1578,7 +1700,7 @@ function ChatPanel({
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
             },
-            body: JSON.stringify({ text, voice_id: voiceId }),
+            body: JSON.stringify(body),
           }
         );
 
@@ -1600,6 +1722,7 @@ function ChatPanel({
 
   const selectedGod = gods.find(g => g.id === selectedGodId);
   const selectedGodVoiceId = selectedGod?.voice_id || 'rpg9PEuAEDV7I1OjYrbj';
+  const selectedGodApiKey = (selectedGod as any)?.elevenlabs_api_key || null;
 
   const generatePreview = async () => {
     if (!inputText.trim()) return;
@@ -1607,7 +1730,7 @@ function ChatPanel({
     setIsGeneratingPreview(true);
     setPreviewAudio(null);
 
-    const audioUrl = await generateTTS(inputText, selectedGodVoiceId);
+    const audioUrl = await generateTTS(inputText, selectedGodVoiceId, selectedGodApiKey);
     if (audioUrl) {
       setPreviewAudio(audioUrl);
       if (audioPreviewRef.current) {
@@ -1630,7 +1753,7 @@ function ChatPanel({
 
     if (ttsEnabled && !audioUrl) {
       setIsGeneratingPreview(true);
-      audioUrl = await generateTTS(inputText, selectedGodVoiceId);
+      audioUrl = await generateTTS(inputText, selectedGodVoiceId, selectedGodApiKey);
       setIsGeneratingPreview(false);
     }
 

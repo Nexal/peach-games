@@ -5,6 +5,7 @@ const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1";
 interface RequestBody {
   text: string;
   voice_id: string;
+  api_key?: string;
 }
 
 const corsHeaders = {
@@ -19,7 +20,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { text, voice_id }: RequestBody = await req.json();
+    const { text, voice_id, api_key }: RequestBody = await req.json();
 
     if (!text || !voice_id) {
       return new Response(
@@ -28,7 +29,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const apiKey = Deno.env.get("ELEVENLABS_API_KEY");
+    const apiKey = api_key || Deno.env.get("ELEVENLABS_API_KEY");
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: "ElevenLabs API key not configured" }),

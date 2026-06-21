@@ -295,6 +295,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          elevenlabs_api_key: string | null
           id: string
           klan_id: string | null
           name: string
@@ -303,6 +304,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          elevenlabs_api_key?: string | null
           id?: string
           klan_id?: string | null
           name: string
@@ -311,6 +313,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          elevenlabs_api_key?: string | null
           id?: string
           klan_id?: string | null
           name?: string

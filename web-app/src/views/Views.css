@@ -1129,6 +1129,90 @@
   font-size: 0.95rem;
 }
 
+/* Admin Gods Panel */
+.admin-panel__hint {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.admin-gods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-god-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.admin-god-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-god-card__name {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.admin-god-card__klan {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.admin-god-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-god-card__field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-god-card__label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  min-width: 70px;
+}
+
+.admin-god-card__value {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--color-text-main);
+  word-break: break-all;
+}
+
+.admin-god-card__edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-god-card__key-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-god-card__key-row .admin-panel__input {
+  flex: 1;
+}
+
+.admin-god-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 /* Admin Chat Panel */
 .admin-panel--chat {
   display: flex;
