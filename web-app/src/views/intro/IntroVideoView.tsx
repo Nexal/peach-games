@@ -116,6 +116,18 @@ export function IntroVideoView() {
     goHome();
   }, [goHome]);
 
+  const stallCountRef = useRef(0);
+
+  const handleStalled = useCallback(() => {
+    if (stallCountRef.current >= 3) return;
+    stallCountRef.current += 1;
+    const video = videoRef.current;
+    if (!video) return;
+    console.warn(`[IntroVideo] Buforowanie utknęło (${stallCountRef.current}/3) — próbuję wznowić`);
+    video.load();
+    video.play().catch(() => {});
+  }, []);
+
   const handleError = useCallback(() => {
     console.warn('[IntroVideo] Błąd ładowania wideo — przekierowanie na /');
     goHome();
@@ -136,9 +148,10 @@ export function IntroVideoView() {
         className="intro-video__player"
         src={config.video}
         poster={config.poster}
-        preload="auto"
+        preload="metadata"
         playsInline
         onEnded={handleEnded}
+        onStalled={handleStalled}
         onError={handleError}
         onClick={phase === 'playing' ? undefined : handlePlay}
       />
