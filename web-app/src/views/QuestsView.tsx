@@ -75,7 +75,7 @@ export function QuestsView() {
       (supabase as any).from('quest_completions').select('*').eq('klan_id', session.klan_id).eq('game_id', session.game_id),
       (supabase as any).from('tasks').select('*'),
       (supabase as any).from('task_completions').select('*'),
-      (supabase as any).from('map_markers').select('id, quest_id, task_id, lat, lng').eq('game_id', session.game_id).in('type', ['qr', 'photo']),
+      (supabase as any).from('map_markers').select('id, quest_id, task_id, lat, lng').eq('game_id', session.game_id).in('type', ['qr', 'photo', 'chase']),
     ]);
 
     if (questsRes.data) {
