@@ -343,10 +343,12 @@ function MapContent() {
 
       {markers.map((marker) => {
         let icon = questIcon;
-        if (marker.type === 'clan_base') icon = clanIcon;
-        if (marker.type === 'chase') icon = chaseIcon;
-        if (marker.type === 'qr') icon = qrIcon;
-        if (marker.type === 'photo') icon = photoIcon;
+        if (marker.icon_url) {
+          icon = new L.Icon({ iconUrl: marker.icon_url, iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] });
+        } else if (marker.type === 'clan_base') icon = clanIcon;
+        else if (marker.type === 'chase') icon = chaseIcon;
+        else if (marker.type === 'qr') icon = qrIcon;
+        else if (marker.type === 'photo') icon = photoIcon;
 
         if (marker.type === 'qr' || marker.type === 'photo') {
           const isActive = marker.task_id
