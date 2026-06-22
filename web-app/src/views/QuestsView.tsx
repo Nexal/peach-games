@@ -52,6 +52,7 @@ export function QuestsView() {
   const [uploadTask, setUploadTask] = useState<{ taskId: string; questActivationId: string } | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [textFeedback, setTextFeedback] = useState<{ taskId: string; type: 'success' | 'error'; text: string } | null>(null);
+  const [expandedQuest, setExpandedQuest] = useState<QuestWithState | null>(null);
 
   const loadSubmissions = useCallback(async () => {
     if (!session?.game_id || !session?.klan_id) return;
@@ -406,6 +407,7 @@ export function QuestsView() {
               state={state}
               isActivating={activating === quest.id}
               onActivate={() => activateQuest(quest.id)}
+              onExpand={() => setExpandedQuest(quest)}
             />
           );
         })}
@@ -436,10 +438,20 @@ export function QuestsView() {
               onSubmitText={(taskId, answer) => submitTextAnswer(taskId, answer)}
               textFeedback={textFeedback}
               submissions={submissions}
+              onExpand={() => setExpandedQuest(quest)}
             />
           );
         })}
       </main>
+
+      {expandedQuest && (
+        <QuestDetailModal
+          quest={expandedQuest}
+          state={getQuestState(expandedQuest, session.klan_id)}
+          submissions={submissions}
+          onClose={() => setExpandedQuest(null)}
+        />
+      )}
 
       {qrQuest && (
         <QRScannerModal
@@ -469,19 +481,29 @@ export function QuestsView() {
   );
 }
 
+function truncateDescription(desc: string | null, maxSentences = 2): string {
+  if (!desc) return '';
+  const sentences = desc.split(/(?<=[.!?])\s+/);
+  if (sentences.length <= maxSentences) return desc;
+  return sentences.slice(0, maxSentences).join(' ') + '…';
+}
+
 function ChaseQuestCard({
   quest,
   state,
   isActivating,
   onActivate,
+  onExpand,
 }: {
   quest: QuestWithState;
   state: QuestState;
   isActivating: boolean;
   onActivate: () => void;
+  onExpand: () => void;
 }) {
   const { playerPosition, activeQuests } = useGame();
   const isChaseActive = !!activeQuests[quest.id];
+  const shortDesc = truncateDescription(quest.description);
 
   return (
     <div className={`quest-card quest-card--chase ${state === 'active' ? 'quest-card--active' : ''} ${state === 'completed' ? 'quest-card--completed' : ''}`}>
@@ -489,7 +511,12 @@ function ChaseQuestCard({
         <span className="quest-card__icon">{state === 'completed' ? '✅' : '🏇'}</span>
         <div className="quest-card__info">
           <h3 className="quest-card__title">{quest.title}</h3>
-          <p className="quest-card__desc">{quest.description}</p>
+          <p className="quest-card__desc">{shortDesc}</p>
+          {(quest.description && quest.description !== shortDesc) && (
+            <button className="quest-card__expand-btn" onClick={(e) => { e.stopPropagation(); onExpand(); }}>
+              czytaj więcej…
+            </button>
+          )}
         </div>
         <span className="quest-card__status">
           {state === 'completed' ? 'UKOŃCZONE' : state === 'active' ? 'W TRAKCIE' : state === 'available' ? 'DOSTĘPNA' : 'NIEDOSTĘPNA'}
@@ -532,6 +559,7 @@ function QuestCard({
   onSubmitText,
   textFeedback,
   submissions,
+  onExpand,
 }: {
   quest: QuestWithState;
   state: QuestState;
@@ -542,6 +570,7 @@ function QuestCard({
   onSubmitText: (taskId: string, answer: string) => void;
   textFeedback: { taskId: string; type: 'success' | 'error'; text: string } | null;
   submissions: Submission[];
+  onExpand: () => void;
 }) {
   const typeIcons: Record<string, string> = {
     gps: '📍',
@@ -560,6 +589,7 @@ function QuestCard({
   };
 
   const [textAnswer, setTextAnswer] = useState('');
+  const shortDesc = truncateDescription(quest.description);
 
   const completedTasks = quest.tasks.filter((t) => t.completed).length;
   const totalTasks = quest.tasks.length;
@@ -571,7 +601,12 @@ function QuestCard({
         <span className="quest-card__icon">{typeIcons[quest.type] || '❓'}</span>
         <div className="quest-card__info">
           <h3 className="quest-card__title">{quest.title}</h3>
-          <p className="quest-card__desc">{quest.description}</p>
+          <p className="quest-card__desc">{shortDesc}</p>
+          {(quest.description && quest.description !== shortDesc) && (
+            <button className="quest-card__expand-btn" onClick={(e) => { e.stopPropagation(); onExpand(); }}>
+              czytaj więcej…
+            </button>
+          )}
         </div>
         <span className={`quest-card__status ${state !== 'active' && state !== 'completed' ? 'quest-card__status--available' : ''}`}>
           {state === 'completed' ? 'UKOŃCZONE' : state === 'active' ? 'W TRAKCIE' : state === 'available' ? 'DOSTĘPNY' : 'NIEDOSTĘPNY'}
@@ -690,6 +725,80 @@ function QuestCard({
       {state === 'active' && quest.type !== 'qr' && quest.tasks.length === 0 && (
         <div className="quest-card__instructions">📍 Udaj się na miejsce wskazane na mapie</div>
       )}
+    </div>
+  );
+}
+
+function QuestDetailModal({
+  quest,
+  state,
+  submissions,
+  onClose,
+}: {
+  quest: QuestWithState;
+  state: QuestState;
+  submissions: Submission[];
+  onClose: () => void;
+}) {
+  const typeLabels: Record<string, string> = {
+    gps: 'Lokacja GPS',
+    qr: 'Kod QR',
+    photo: 'Dowód foto',
+    logic: 'Logika',
+    chase: 'Gonitwa',
+  };
+
+  return (
+    <div className="quest-detail-overlay" onClick={onClose}>
+      <div className="quest-detail-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="quest-detail-modal__close" onClick={onClose}>✕</button>
+        
+        <h2 className="quest-detail-modal__title">{quest.title}</h2>
+        
+        <div className="quest-detail-modal__meta">
+          <span className={`quest-detail-modal__status quest-detail-modal__status--${state}`}>
+            {state === 'completed' ? '✅ UKOŃCZONY' : state === 'active' ? '⚡ W TRAKCIE' : state === 'available' ? '📋 DOSTĘPNY' : '🔒 NIEDOSTĘPNY'}
+          </span>
+          <span>🔥 {quest.reward_points} pkt</span>
+          <span>{typeLabels[quest.type] || quest.type}</span>
+        </div>
+
+        <p className="quest-detail-modal__desc">{quest.description}</p>
+
+        {quest.tasks.length > 0 && (
+          <div className="quest-detail-modal__tasks">
+            <h3 className="quest-detail-modal__tasks-title">
+              Zadania ({quest.tasks.filter(t => t.completed).length}/{quest.tasks.length})
+            </h3>
+            {quest.tasks.map((task, idx) => {
+              const taskSub = submissions.find(s => s.task_id === task.id);
+              return (
+                <div key={task.id} className={`quest-detail-modal__task ${task.completed ? 'quest-detail-modal__task--done' : ''}`}>
+                  <span className="quest-detail-modal__task-icon">
+                    {task.completed ? '✅' : idx === quest.currentTaskIndex && state === 'active' ? '🔓' : '🔒'}
+                  </span>
+                  <div className="quest-detail-modal__task-info">
+                    <span className="quest-detail-modal__task-title">{task.title}</span>
+                    {task.description && (
+                      <span className="quest-detail-modal__task-desc">{task.description}</span>
+                    )}
+                  </div>
+                  <span className="quest-detail-modal__task-points">+{task.reward_points}🔥</span>
+                  {taskSub && (
+                    <span className={`quest-detail-modal__task-sub quest-detail-modal__task-sub--${taskSub.status}`}>
+                      {taskSub.status === 'pending' ? '⏳' : taskSub.status === 'approved' ? '✅' : '❌'}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <button className="quest-detail-modal__done" onClick={onClose}>
+          Zamknij
+        </button>
+      </div>
     </div>
   );
 }
