@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { usePlayerSession, useGame } from '../App';
 import { QRScannerModal } from '../components/quest/QRScannerModal';
@@ -153,6 +153,11 @@ export function QuestsView() {
     setLoading(false);
   }, [session?.game_id, session?.klan_id]);
 
+  const loadQuestsRef = useRef(loadQuests);
+  loadQuestsRef.current = loadQuests;
+  const loadSubmissionsRef = useRef(loadSubmissions);
+  loadSubmissionsRef.current = loadSubmissions;
+
   useEffect(() => {
     if (!session?.game_id || !session?.klan_id) {
       setLoading(false);
@@ -173,17 +178,17 @@ export function QuestsView() {
         const relevant = (payload.old?.klan_id === session.klan_id || payload.new?.klan_id === session.klan_id);
         if (relevant) {
           console.log('[QuestsView] quest_activations event received for our klan');
-          loadQuests();
+          loadQuestsRef.current();
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, () => {
         console.log('[QuestsView] task_completions event received');
-        loadQuests();
+        loadQuestsRef.current();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_completions', filter: `game_id=eq.${session.game_id}` }, (payload: any) => {
         if (payload.old?.klan_id === session.klan_id || payload.new?.klan_id === session.klan_id) {
           console.log('[QuestsView] quest_completions event received for our klan');
-          loadQuests();
+          loadQuestsRef.current();
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, (payload: any) => {
@@ -191,8 +196,8 @@ export function QuestsView() {
         const sub = payload.new || payload.old;
         if (sub?.klan_id === session.klan_id) {
           console.log('[QuestsView] Submission event for OUR klan:', sub.id, sub.status);
-          loadSubmissions();
-          loadQuests();
+           loadSubmissionsRef.current();
+           loadQuestsRef.current();
         } else {
           console.log('[QuestsView] Submission event for DIFFERENT klan:', sub?.klan_id, 'our klan:', session.klan_id);
         }
