@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase';
 import type { MapMarker } from '../types/map.types';
 import { DEFAULT_MAP_CONFIG, TILE_LAYERS } from '../types/map.types';
 import { LocationMarker, CenterOnLocationButton } from '../components/map/MapControls';
-import { AnimatedMarker, PulsingMarker } from '../components/map/AnimatedMarkers';
 import { QRScannerModal } from '../components/quest/QRScannerModal';
 import { MediaUploadModal } from '../components/quest/MediaUploadModal';
 import { PreGameSplash } from '../components/PreGameSplash';
@@ -291,8 +290,6 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
     <>
       <TileLayer key={mapTheme} url={TILE_LAYERS[mapTheme].url} attribution={TILE_LAYERS[mapTheme].attribution} />
       <LocationMarker watchPosition={true} />
-      <AnimatedMarker center={DEFAULT_MAP_CONFIG.center} orbitRadius={100} speed={0.5} />
-      <PulsingMarker position={DEFAULT_MAP_CONFIG.center} />
 
       <Marker position={DEFAULT_MAP_CONFIG.center} icon={baseIcon}>
         <Popup>

@@ -20,10 +20,10 @@ export interface MapConfig {
 }
 
 export const DEFAULT_MAP_CONFIG: MapConfig = {
-  center: [50.089864, 19.713925], // Ognisko / Baza
+  center: [50.089739, 19.713854], // Ognisko / Baza
   zoom: 16,
-  maxZoom: 19,
-  minZoom: 13,
+  maxZoom: 21,
+  minZoom: 9,
 };
 
 export const TILE_LAYERS = {
