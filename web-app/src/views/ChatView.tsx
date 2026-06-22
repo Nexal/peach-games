@@ -419,6 +419,11 @@ export function ChatView() {
                   style={{
                     '--msg-klan-color': isGod ? (clanColor || '#FFD700') : clanColor,
                     '--msg-klan-color-rgb': isGod ? hexToRgb(clanColor || '#FFD700') : clanColorRgb,
+                    ...(isGod ? {
+                      borderColor: `${clanColor || '#FFD700'}66`,
+                      background: `linear-gradient(135deg, ${clanColor || '#FFD700'}22 0%, ${clanColor || '#FFD700'}08 100%)`,
+                      boxShadow: `0 6px 20px ${clanColor || '#FFD700'}33`,
+                    } : {}),
                   } as React.CSSProperties}
                   title={msg.created_at ? new Date(msg.created_at).toLocaleString('pl-PL') : ''}
                 >
@@ -437,7 +442,7 @@ export function ChatView() {
                     ) : null}
                     {isGod ? <>{godIcon ? <img src={godIcon} alt={msg.sender} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', marginRight: 4, verticalAlign: 'middle', cursor: 'pointer' }} onClick={() => setEnlargedImage(godIcon)} /> : <span>📢</span>} {msg.sender}</> : isGlobal ? `${msg.sender} (${clan?.name || '?'})` : `${msg.sender}`}
                   </span>
-                  <span className="chat-message__content" style={isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>{msg.content}</span>
+                  <span className="chat-message__content" style={isGod ? { color: clanColor || '#FFD700' } : isGlobal ? (isOwnMessage ? { color: '#ffffff' } : { color: clanColor, filter: 'brightness(1.4)' }) : undefined}>{msg.content}</span>
                   {msg.image_url && (
                     <img src={msg.image_url} alt="Załącznik" className="chat-message__image" onClick={() => setEnlargedImage(msg.image_url)} />
                   )}
