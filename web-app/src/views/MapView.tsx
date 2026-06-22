@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { usePlayerSession, useGame } from '../App';
 import { supabase } from '../lib/supabase';
 import type { MapMarker } from '../types/map.types';
@@ -66,7 +66,7 @@ function ChaseMarker({ questId }: { questId: string }) {
   );
 }
 
-function MapContent() {
+function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, number] | null; onFocusHandled?: () => void }) {
   const { session } = usePlayerSession();
   useGame();
   const [markers, setMarkers] = useState<MapMarker[]>([]);
@@ -81,6 +81,14 @@ function MapContent() {
   const [showClanMembers, setShowClanMembers] = useState(true);
   const [mapTheme, setMapTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem('map_theme') as 'dark' | 'light') || 'dark');
   const [enlargedAvatar, setEnlargedAvatar] = useState<string | null>(null);
+  const map = useMap();
+
+  useEffect(() => {
+    if (focusPoint && focusPoint[0] && focusPoint[1]) {
+      map.flyTo(focusPoint, 17, { animate: true, duration: 0.8 });
+      onFocusHandled?.();
+    }
+  }, [focusPoint, map, onFocusHandled]);
 
   const clanMembers = useClanMemberPositions(
     session?.game_id,
@@ -476,7 +484,7 @@ function MapContent() {
   );
 }
 
-export function MapView() {
+export function MapView({ focusPoint, onFocusHandled }: { focusPoint?: [number, number] | null; onFocusHandled?: () => void }) {
   const { session, gameStatus } = usePlayerSession();
 
   return (
@@ -498,7 +506,7 @@ export function MapView() {
               zoomControl={true}
               attributionControl={false}
             >
-              <MapContent />
+              <MapContent focusPoint={focusPoint} onFocusHandled={onFocusHandled} />
             </MapContainer>
           </div>
         ) : (

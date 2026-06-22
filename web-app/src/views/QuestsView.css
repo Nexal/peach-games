@@ -557,3 +557,53 @@
 .quest-detail-modal__done:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+.quest-detail-modal__deactivate {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 12px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #ef4444;
+  font-family: 'Metamorphous', serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.quest-detail-modal__deactivate:hover {
+  background: rgba(220, 38, 38, 0.15);
+}
+
+.quest-card__secondary-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.quest-card__secondary-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-main);
+  font-family: 'Metamorphous', serif;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.quest-card__secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.quest-card__secondary-btn--danger {
+  border-color: rgba(220, 38, 38, 0.25);
+  color: #ef4444;
+}
+
+.quest-card__secondary-btn--danger:hover {
+  background: rgba(220, 38, 38, 0.1);
+}

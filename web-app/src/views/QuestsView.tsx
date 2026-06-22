@@ -22,6 +22,8 @@ interface TaskProgress {
   scannedMarkerIds: string[];
   completed: boolean;
   correctAnswer: string | null;
+  markerLat: number | null;
+  markerLng: number | null;
 }
 
 interface QuestWithState extends Quest {
@@ -44,7 +46,7 @@ function getQuestState(q: QuestWithState, klanId: string | undefined): QuestStat
 }
 
 export function QuestsView() {
-  const { session, gameStatus } = usePlayerSession();
+  const { session, gameStatus, navigateTo, setMapFocus } = usePlayerSession();
   const [quests, setQuests] = useState<QuestWithState[]>([]);
   const [loading, setLoading] = useState(true);
   const [qrQuest, setQrQuest] = useState<QuestWithState | null>(null);
@@ -73,7 +75,7 @@ export function QuestsView() {
       (supabase as any).from('quest_completions').select('*').eq('klan_id', session.klan_id).eq('game_id', session.game_id),
       (supabase as any).from('tasks').select('*'),
       (supabase as any).from('task_completions').select('*'),
-      (supabase as any).from('map_markers').select('id, quest_id, task_id').eq('game_id', session.game_id).eq('type', 'qr'),
+      (supabase as any).from('map_markers').select('id, quest_id, task_id, lat, lng').eq('game_id', session.game_id).in('type', ['qr', 'photo']),
     ]);
 
     if (questsRes.data) {
@@ -117,6 +119,7 @@ export function QuestsView() {
             foundIncomplete = true;
           }
 
+          const firstMarker = taskMarkers[0] as any;
           tasks.push({
             id: task.id,
             title: task.title,
@@ -128,6 +131,8 @@ export function QuestsView() {
             scannedMarkerIds,
             completed: taskCompleted,
             correctAnswer: task.correct_answer || null,
+            markerLat: firstMarker?.lat ?? null,
+            markerLng: firstMarker?.lng ?? null,
           });
         });
 
@@ -218,6 +223,25 @@ export function QuestsView() {
     }
 
     loadQuests();
+  }, [session, loadQuests]);
+
+  const deactivateQuest = useCallback(async (questId: string) => {
+    if (!session?.game_id || !session?.klan_id) return;
+
+    const { error } = await (supabase as any)
+      .from('quest_activations')
+      .delete()
+      .eq('quest_id', questId)
+      .eq('klan_id', session.klan_id)
+      .is('completed_at', null);
+
+    if (error) {
+      console.error('[QuestsView] deactivateQuest error:', error);
+      return;
+    }
+
+    loadQuests();
+    setExpandedQuest(null);
   }, [session, loadQuests]);
 
   const submitTextAnswer = useCallback(async (taskId: string, answer: string) => {
@@ -429,6 +453,8 @@ export function QuestsView() {
               state={state}
               isActivating={activating === quest.id}
               onActivate={() => activateQuest(quest.id)}
+              onDeactivate={() => deactivateQuest(quest.id)}
+              onNavigateToMap={(lat, lng) => { setMapFocus([lat, lng]); navigateTo('map'); }}
               onScan={() => setQrQuest(quest)}
               onUploadPhoto={(taskId: string) => {
                 if (quest.activationId) {
@@ -450,6 +476,7 @@ export function QuestsView() {
           state={getQuestState(expandedQuest, session.klan_id)}
           submissions={submissions}
           onClose={() => setExpandedQuest(null)}
+          onDeactivate={() => deactivateQuest(expandedQuest.id)}
         />
       )}
 
@@ -557,6 +584,8 @@ function QuestCard({
   state,
   isActivating,
   onActivate,
+  onDeactivate,
+  onNavigateToMap,
   onScan,
   onUploadPhoto,
   onSubmitText,
@@ -568,6 +597,8 @@ function QuestCard({
   state: QuestState;
   isActivating: boolean;
   onActivate: () => void;
+  onDeactivate: () => void;
+  onNavigateToMap: (lat: number, lng: number) => void;
   onScan: () => void;
   onUploadPhoto: (taskId: string) => void;
   onSubmitText: (taskId: string, answer: string) => void;
@@ -734,6 +765,23 @@ function QuestCard({
       {state === 'active' && quest.type !== 'qr' && quest.tasks.length === 0 && (
         <div className="quest-card__instructions">📍 Udaj się na miejsce wskazane na mapie</div>
       )}
+
+      {state === 'active' && currentTask?.markerLat != null && currentTask?.markerLng != null && (
+        <div className="quest-card__secondary-actions">
+          <button
+            className="quest-card__secondary-btn"
+            onClick={() => onNavigateToMap(currentTask.markerLat!, currentTask.markerLng!)}
+          >
+            🗺️ Pokaż na mapie
+          </button>
+          <button
+            className="quest-card__secondary-btn quest-card__secondary-btn--danger"
+            onClick={onDeactivate}
+          >
+            ❌ Dezaktywuj quest
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -743,11 +791,13 @@ function QuestDetailModal({
   state,
   submissions,
   onClose,
+  onDeactivate,
 }: {
   quest: QuestWithState;
   state: QuestState;
   submissions: Submission[];
   onClose: () => void;
+  onDeactivate: () => void;
 }) {
   const typeLabels: Record<string, string> = {
     gps: 'Lokacja GPS',
@@ -802,6 +852,12 @@ function QuestDetailModal({
               );
             })}
           </div>
+        )}
+
+        {state === 'active' && (
+          <button className="quest-detail-modal__deactivate" onClick={onDeactivate}>
+            ❌ Dezaktywuj quest
+          </button>
         )}
 
         <button className="quest-detail-modal__done" onClick={onClose}>

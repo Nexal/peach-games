@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext, useRef } from 'react';
-import { useTabNavigation } from './hooks/useTabNavigation';
+import { useTabNavigation, type TabId } from './hooks/useTabNavigation';
 import { TabBar } from './components/tab-bar/TabBar';
 import { HomeView } from './views/HomeView';
 import { ChatView } from './views/ChatView';
@@ -24,12 +24,16 @@ interface PlayerContextValue {
   session: PlayerSession | null;
   refreshSession: () => void;
   gameStatus: GameStatus | null;
+  navigateTo: (tab: TabId) => void;
+  setMapFocus: (latlng: [number, number]) => void;
 }
 
 const PlayerContext = createContext<PlayerContextValue>({
   session: null,
   refreshSession: () => {},
   gameStatus: null,
+  navigateTo: () => {},
+  setMapFocus: () => {},
 });
 
 function AppContent() {
@@ -44,6 +48,7 @@ function AppContent() {
   const [splashClosing, setSplashClosing] = useState(false);
   const splashShownRef = useRef(false);
   const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [mapFocus, setMapFocus] = useState<[number, number] | null>(null);
 
   const refreshSession = () => {
     setSession(getPlayerSession());
@@ -148,7 +153,7 @@ function AppContent() {
 
     switch (activeTab) {
       case 'home': return <HomeView />;
-      case 'map': return <MapView />;
+      case 'map': return <MapView focusPoint={mapFocus} onFocusHandled={() => setMapFocus(null)} />;
       case 'chat': return <ChatView />;
       case 'quests': return <QuestsView />;
       case 'shop': return <ShopView />;
@@ -157,7 +162,7 @@ function AppContent() {
   };
 
   return (
-    <PlayerContext.Provider value={{ session, refreshSession, gameStatus }}>
+    <PlayerContext.Provider value={{ session, refreshSession, gameStatus, navigateTo: setActiveTab, setMapFocus }}>
       <PlayerPositionProvider>
         <GameProvider>
         {showSplash && (
