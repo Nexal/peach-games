@@ -214,7 +214,8 @@ export function QuestsView() {
 
   const { scan, feedback } = useQRScanner(loadQuests);
 
-  const activateQuest = useCallback(async (questId: string) => {
+  const activateQuest = useCallback(async (quest: QuestWithState) => {
+    const questId = quest.id;
     if (!session?.game_id || !session?.klan_id) return;
 
     setActivating(questId);
@@ -238,10 +239,35 @@ export function QuestsView() {
       return;
     }
 
+    if (quest.type === 'chase') {
+      const trajectory = quest.trajectory
+        ? (typeof quest.trajectory === 'string' ? JSON.parse(quest.trajectory) : quest.trajectory)
+        : null;
+      const firstPoint = trajectory?.[0];
+
+      await (supabase as any).from('chase_sessions')
+        .update({ completed_at: new Date().toISOString() })
+        .eq('quest_id', questId)
+        .eq('klan_id', session.klan_id)
+        .is('completed_at', null);
+
+      await (supabase as any).from('chase_sessions').insert({
+        quest_id: questId,
+        klan_id: session.klan_id,
+        game_id: session.game_id,
+        started_at: new Date().toISOString(),
+        start_lat: firstPoint?.lat ?? 50.090483,
+        start_lng: firstPoint?.lng ?? 19.713861,
+        speed_mps: 2.0,
+        catch_distance_m: 5,
+        bearing: 0,
+      });
+    }
+
     loadQuests();
   }, [session, loadQuests]);
 
-  const deactivateQuest = useCallback(async (questId: string) => {
+  const deactivateQuest = useCallback(async (questId: string, isChase?: boolean) => {
     if (!session?.game_id || !session?.klan_id) return;
 
     const { error } = await (supabase as any)
@@ -255,6 +281,14 @@ export function QuestsView() {
     if (error) {
       console.error('[QuestsView] deactivateQuest error:', error);
       return;
+    }
+
+    if (isChase) {
+      await (supabase as any).from('chase_sessions')
+        .update({ completed_at: new Date().toISOString() })
+        .eq('quest_id', questId)
+        .eq('klan_id', session.klan_id)
+        .is('completed_at', null);
     }
 
     loadQuests();
@@ -448,7 +482,9 @@ export function QuestsView() {
               quest={quest}
               state={state}
               isActivating={activating === quest.id}
-              onActivate={() => activateQuest(quest.id)}
+              onActivate={() => activateQuest(quest)}
+              onDeactivate={() => deactivateQuest(quest.id, true)}
+              onNavigateToMap={(lat, lng) => { setMapFocus([lat, lng]); navigateTo('map'); }}
               onExpand={() => setExpandedQuest(quest)}
             />
           );
@@ -470,8 +506,8 @@ export function QuestsView() {
               quest={quest}
               state={state}
               isActivating={activating === quest.id}
-              onActivate={() => activateQuest(quest.id)}
-              onDeactivate={() => deactivateQuest(quest.id)}
+              onActivate={() => activateQuest(quest)}
+              onDeactivate={() => deactivateQuest(quest.id, quest.type === 'chase')}
               onNavigateToMap={(lat, lng) => { setMapFocus([lat, lng]); navigateTo('map'); }}
               onScan={() => setQrQuest(quest)}
               onUploadPhoto={(taskId: string) => {
@@ -494,7 +530,7 @@ export function QuestsView() {
           state={getQuestState(expandedQuest, session.klan_id)}
           submissions={submissions}
           onClose={() => setExpandedQuest(null)}
-          onDeactivate={() => deactivateQuest(expandedQuest.id)}
+          onDeactivate={() => deactivateQuest(expandedQuest.id, expandedQuest.type === 'chase')}
         />
       )}
 
@@ -538,17 +574,22 @@ function ChaseQuestCard({
   state,
   isActivating,
   onActivate,
+  onDeactivate,
+  onNavigateToMap,
   onExpand,
 }: {
   quest: QuestWithState;
   state: QuestState;
   isActivating: boolean;
   onActivate: () => void;
+  onDeactivate: () => void;
+  onNavigateToMap: (lat: number, lng: number) => void;
   onExpand: () => void;
 }) {
   const { playerPosition, activeQuests } = useGame();
   const isChaseActive = !!activeQuests[quest.id];
   const shortDesc = truncateDescription(quest.description);
+  const firstTask = quest.tasks[0];
 
   return (
     <div className={`quest-card quest-card--chase ${state === 'active' ? 'quest-card--active' : ''} ${state === 'completed' ? 'quest-card--completed' : ''}`}>
@@ -592,6 +633,25 @@ function ChaseQuestCard({
         >
           {!playerPosition ? '📍 Włącz GPS aby aktywować' : isActivating ? '⏳ Aktywowanie...' : '🚀 Aktywuj gonitwę'}
         </button>
+      )}
+
+      {state === 'active' && (
+        <div className="quest-card__secondary-actions">
+          {firstTask?.markerLat != null && firstTask?.markerLng != null && (
+            <button
+              className="quest-card__secondary-btn"
+              onClick={() => onNavigateToMap(firstTask.markerLat!, firstTask.markerLng!)}
+            >
+              🗺️ Pokaż na mapie
+            </button>
+          )}
+          <button
+            className="quest-card__secondary-btn quest-card__secondary-btn--danger"
+            onClick={onDeactivate}
+          >
+            ❌ Zatrzymaj gonitwę
+          </button>
+        </div>
       )}
     </div>
   );
