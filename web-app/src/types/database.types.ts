@@ -76,7 +76,6 @@ export type Database = {
         Row: {
           area: Json | null
           catch_distance_m: number
-          icon_url: string | null
           quest_id: string
           speed_mps: number
           waypoint_count: number
@@ -84,7 +83,6 @@ export type Database = {
         Insert: {
           area?: Json | null
           catch_distance_m?: number
-          icon_url?: string | null
           quest_id: string
           speed_mps?: number
           waypoint_count?: number
@@ -92,7 +90,6 @@ export type Database = {
         Update: {
           area?: Json | null
           catch_distance_m?: number
-          icon_url?: string | null
           quest_id?: string
           speed_mps?: number
           waypoint_count?: number
@@ -114,7 +111,6 @@ export type Database = {
           completed_at: string | null
           completed_by_player_id: string | null
           game_id: string | null
-          icon_url: string | null
           id: string
           klan_id: string | null
           quest_id: string | null
@@ -132,7 +128,6 @@ export type Database = {
           completed_at?: string | null
           completed_by_player_id?: string | null
           game_id?: string | null
-          icon_url?: string | null
           id?: string
           klan_id?: string | null
           quest_id?: string | null
@@ -150,7 +145,6 @@ export type Database = {
           completed_at?: string | null
           completed_by_player_id?: string | null
           game_id?: string | null
-          icon_url?: string | null
           id?: string
           klan_id?: string | null
           quest_id?: string | null

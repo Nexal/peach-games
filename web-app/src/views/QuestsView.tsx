@@ -282,7 +282,6 @@ export function QuestsView() {
           bearing: 0,
           reward_points: task.reward_points,
           trajectory: taskTrajectory,
-          icon_url: config?.icon_url ?? null,
         });
       }
     }

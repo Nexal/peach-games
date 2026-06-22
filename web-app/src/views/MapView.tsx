@@ -77,12 +77,8 @@ function ChaseInstanceMarker({
     }
   }, [instance?.position, playerPosition, instance?.session, onCatch]);
 
-  const icon = instance.iconUrl
-    ? new L.Icon({ iconUrl: instance.iconUrl, iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -22] })
-    : chaseIcon;
-
   return (
-    <Marker position={instance.position!} icon={icon}>
+    <Marker position={instance.position!} icon={chaseIcon}>
       <Popup>
         <div className="map-popup map-popup--chase">
           <h3>🐎 Gonitwa!</h3>

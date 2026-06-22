@@ -53,7 +53,6 @@ interface ChaseInstance {
   position: MarkerPosition;
   questId: string;
   taskId: string;
-  iconUrl?: string | null;
 }
 
 export type { ChaseInstance };
@@ -301,7 +300,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           position,
           questId,
           taskId: row.task_id || row.id,
-          iconUrl: row.icon_url ?? null,
         });
       }
 
@@ -352,7 +350,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             position,
             questId,
             taskId: row.task_id || row.id,
-            iconUrl: row.icon_url ?? null,
           };
 
           setActiveQuests(prev => {

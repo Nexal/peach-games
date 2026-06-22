@@ -1,1 +1,0 @@
-ALTER TABLE chase_configs ADD COLUMN IF NOT EXISTS icon_url TEXT;

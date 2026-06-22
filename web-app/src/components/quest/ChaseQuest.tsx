@@ -235,7 +235,6 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
             reward_points: 100,
             task_id: null,
             trajectory: null,
-            icon_url: null,
           };
           setActiveSession(newSession);
           startTimer(newSession);
