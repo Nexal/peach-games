@@ -367,10 +367,10 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
         else if (marker.type === 'qr') icon = qrIcon;
         else if (marker.type === 'photo') icon = photoIcon;
 
-        if (marker.type === 'qr' || marker.type === 'photo') {
+        if (marker.type === 'qr' || marker.type === 'photo' || marker.type === 'chase') {
           const isActive = marker.task_id
             ? currentTaskIds.includes(marker.task_id) || (marker.quest_id ? showAllMarkersQuestIds.has(marker.quest_id) : false)
-            : false;
+            : (marker.quest_id ? showAllMarkersQuestIds.has(marker.quest_id) : false);
           if (!isActive) return null;
         }
 
