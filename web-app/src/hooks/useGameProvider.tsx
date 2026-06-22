@@ -605,7 +605,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
 
     const taskPoints = instance.session.reward_points || 0;
-    if (taskPoints > 0) {
+    if (taskPoints > 0 && activations?.[0]) {
       const { data: klanData } = await supabase
         .from('klans')
         .select('points')
@@ -616,6 +616,36 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           .from('klans')
           .update({ points: (klanData.points || 0) + taskPoints })
           .eq('id', session.klan_id);
+      }
+    }
+
+    if (activations?.[0]) {
+      const { data: allTasks } = await supabase
+        .from('tasks')
+        .select('id, reward_points')
+        .eq('quest_id', questId);
+
+      const { data: completedTasks } = await supabase
+        .from('task_completions')
+        .select('task_id')
+        .in('task_id', (allTasks || []).map((t: any) => t.id))
+        .eq('quest_activation_id', activations[0].id);
+
+      if ((completedTasks || []).length >= (allTasks || []).length) {
+        const totalPoints = (allTasks || []).reduce((sum: number, t: any) => sum + (t.reward_points || 0), 0);
+
+        await supabase.from('quest_completions').insert({
+          quest_id: questId,
+          klan_id: session.klan_id,
+          game_id: session.game_id,
+          completed_by_player_id: session.id,
+          points_awarded: totalPoints,
+        });
+
+        await supabase
+          .from('quest_activations')
+          .update({ completed_at: new Date().toISOString(), completed_by_player_id: session.id })
+          .eq('id', activations[0].id);
       }
     }
   }, [session, activeQuests]);
