@@ -87,6 +87,8 @@ export type Database = {
           start_lat: number
           start_lng: number
           started_at: string | null
+          task_id: string | null
+          trajectory: Json | null
         }
         Insert: {
           bearing: number
@@ -102,6 +104,8 @@ export type Database = {
           start_lat: number
           start_lng: number
           started_at?: string | null
+          task_id?: string | null
+          trajectory?: Json | null
         }
         Update: {
           bearing?: number
@@ -117,6 +121,8 @@ export type Database = {
           start_lat?: number
           start_lng?: number
           started_at?: string | null
+          task_id?: string | null
+          trajectory?: Json | null
         }
         Relationships: [
           {
@@ -152,6 +158,13 @@ export type Database = {
             columns: ["quest_id"]
             isOneToOne: false
             referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chase_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]

@@ -240,10 +240,12 @@ export function QuestsView() {
     }
 
     if (quest.type === 'chase') {
-      const trajectory = quest.trajectory
+      const questTrajectory = quest.trajectory
         ? (typeof quest.trajectory === 'string' ? JSON.parse(quest.trajectory) : quest.trajectory)
         : null;
-      const firstPoint = trajectory?.[0];
+      const firstPoint = questTrajectory?.[0];
+      const baseLat = firstPoint?.lat ?? 50.090002;
+      const baseLng = firstPoint?.lng ?? 19.713846;
 
       await (supabase as any).from('chase_sessions')
         .update({ completed_at: new Date().toISOString() })
@@ -251,21 +253,45 @@ export function QuestsView() {
         .eq('klan_id', session.klan_id)
         .is('completed_at', null);
 
-      await (supabase as any).from('chase_sessions').insert({
-        quest_id: questId,
-        klan_id: session.klan_id,
-        game_id: session.game_id,
-        started_at: new Date().toISOString(),
-        start_lat: firstPoint?.lat ?? 50.090483,
-        start_lng: firstPoint?.lng ?? 19.713861,
-        speed_mps: 2.0,
-        catch_distance_m: 5,
-        bearing: 0,
-      });
+      for (const task of quest.tasks) {
+        const taskTrajectory = questTrajectory
+          ? generateRandomTrajectory(baseLat, baseLng, 20)
+          : null;
+
+        await (supabase as any).from('chase_sessions').insert({
+          quest_id: questId,
+          task_id: task.id,
+          klan_id: session.klan_id,
+          game_id: session.game_id,
+          started_at: new Date().toISOString(),
+          start_lat: baseLat,
+          start_lng: baseLng,
+          speed_mps: 2.0,
+          catch_distance_m: 5,
+          bearing: 0,
+          reward_points: task.reward_points,
+          trajectory: taskTrajectory,
+        });
+      }
     }
 
     loadQuests();
   }, [session, loadQuests]);
+
+  const generateRandomTrajectory = useCallback((centerLat: number, centerLng: number, radiusM: number) => {
+    const latPerM = 1 / 111320;
+    const lngPerM = 1 / (111320 * Math.cos(centerLat * Math.PI / 180));
+    const points = [];
+    for (let i = 0; i < 30; i++) {
+      const angle = (i / 30) * 2 * Math.PI * 3;
+      const dist = radiusM * (0.3 + 0.7 * Math.random());
+      points.push({
+        lat: Math.round((centerLat + dist * latPerM * Math.cos(angle)) * 1e6) / 1e6,
+        lng: Math.round((centerLng + dist * lngPerM * Math.sin(angle)) * 1e6) / 1e6,
+      });
+    }
+    return points;
+  }, []);
 
   const deactivateQuest = useCallback(async (questId: string, isChase?: boolean) => {
     if (!session?.game_id || !session?.klan_id) return;
@@ -587,7 +613,7 @@ function ChaseQuestCard({
   onExpand: () => void;
 }) {
   const { playerPosition, activeQuests } = useGame();
-  const isChaseActive = !!activeQuests[quest.id];
+  const isChaseActive = (activeQuests[quest.id]?.instances?.length || 0) > 0;
   const shortDesc = truncateDescription(quest.description);
   const firstTask = quest.tasks[0];
 
@@ -745,9 +771,9 @@ function QuestCard({
       {state === 'active' && quest.tasks.length > 0 && (
         <div className="quest-card__tasks">
           {quest.tasks.map((task, idx) => (
-            <div key={task.id} className={`quest-card__task ${task.completed ? 'quest-card__task--done' : ''} ${idx === quest.currentTaskIndex ? 'quest-card__task--current' : ''}`}>
+            <div key={task.id} className={`quest-card__task ${task.completed ? 'quest-card__task--done' : ''} ${!task.completed && (quest.type === 'chase' || idx === quest.currentTaskIndex) ? 'quest-card__task--current' : ''}`}>
               <span className="quest-card__task-icon">
-                {task.completed ? '✅' : idx < quest.currentTaskIndex ? '✅' : idx === quest.currentTaskIndex ? '🔓' : '🔒'}
+                {task.completed ? '✅' : idx < quest.currentTaskIndex ? '✅' : (quest.type === 'chase' || idx === quest.currentTaskIndex) ? '🔓' : '🔒'}
               </span>
               <span className="quest-card__task-title">{task.title}</span>
               <span className="quest-card__task-reward">+{task.reward_points}🔥</span>

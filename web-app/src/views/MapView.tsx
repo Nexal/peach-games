@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { usePlayerSession, useGame } from '../App';
+import type { ChaseInstance } from '../hooks/useGameProvider';
 import { supabase } from '../lib/supabase';
 import type { MapMarker } from '../types/map.types';
 import { DEFAULT_MAP_CONFIG, TILE_LAYERS } from '../types/map.types';
@@ -38,23 +39,46 @@ function ChaseMarker({ questId }: { questId: string }) {
   const { activeQuests, completeChase, playerPosition } = useGame();
   const state = activeQuests[questId];
 
+  if (!state?.instances) return null;
+
+  return (
+    <>
+      {state.instances.filter(i => i.position).map(inst => (
+        <ChaseInstanceMarker
+          key={inst.session.id}
+          instance={inst}
+          playerPosition={playerPosition}
+          onCatch={() => completeChase(inst.session.id, questId)}
+        />
+      ))}
+    </>
+  );
+}
+
+function ChaseInstanceMarker({
+  instance,
+  playerPosition,
+  onCatch,
+}: {
+  instance: ChaseInstance;
+  playerPosition: { lat: number; lng: number } | null;
+  onCatch: () => void;
+}) {
   useEffect(() => {
-    if (!state?.position || !state?.session || !playerPosition) return;
+    if (!instance?.position || !playerPosition) return;
 
     const distance = getDistanceM(
       playerPosition.lat, playerPosition.lng,
-      state.position.lat, state.position.lng
+      instance.position.lat, instance.position.lng
     );
 
-    if (distance <= (state.session.catch_distance_m || 20)) {
-      completeChase(state.session.id, questId);
+    if (distance <= (instance.session.catch_distance_m || 20)) {
+      onCatch();
     }
-  }, [state?.position, playerPosition, state?.session, completeChase, questId]);
-
-  if (!state?.position) return null;
+  }, [instance?.position, playerPosition, instance?.session, onCatch]);
 
   return (
-    <Marker position={state.position} icon={chaseIcon}>
+    <Marker position={instance.position!} icon={chaseIcon}>
       <Popup>
         <div className="map-popup map-popup--chase">
           <h3>🐎 Gonitwa!</h3>

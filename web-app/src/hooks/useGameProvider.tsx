@@ -47,10 +47,18 @@ interface GameContextValue {
   setChatOpen: (open: boolean) => void;
 }
 
-interface QuestState {
-  session: ChaseSession | null;
+interface ChaseInstance {
+  session: ChaseSession;
   trajectory: { lat: number; lng: number }[] | null;
   position: MarkerPosition;
+  questId: string;
+  taskId: string;
+}
+
+export type { ChaseInstance };
+
+interface QuestState {
+  instances: ChaseInstance[];
 }
 
 const GameContext = createContext<GameContextValue>({
@@ -228,17 +236,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         let hasChanges = false;
 
         for (const [questId, state] of Object.entries(prev)) {
-          if (!state.session || state.session.completed_at) continue;
-          if (!state.trajectory || state.trajectory.length < 2) continue;
+          const updatedInstances = state.instances.map(inst => {
+            if (!inst.trajectory || inst.trajectory.length < 2) return inst;
+            if (inst.session.completed_at) return inst;
 
-          const startedAt = new Date(state.session.started_at!).getTime();
-          const elapsedSeconds = (Date.now() - startedAt) / 1000;
-          const newPos = calculatePositionFromTrajectory(state.trajectory, elapsedSeconds, state.session.speed_mps);
+            const startedAt = new Date(inst.session.started_at!).getTime();
+            const elapsedSeconds = (Date.now() - startedAt) / 1000;
+            const newPos = calculatePositionFromTrajectory(inst.trajectory, elapsedSeconds, inst.session.speed_mps);
 
-          if (newPos.lat !== state.position?.lat || newPos.lng !== state.position?.lng) {
-            next[questId] = { ...state, position: newPos };
-            hasChanges = true;
-          }
+            if (newPos.lat !== inst.position?.lat || newPos.lng !== inst.position?.lng) {
+              hasChanges = true;
+              return { ...inst, position: newPos };
+            }
+            return inst;
+          });
+          next[questId] = { instances: updatedInstances };
         }
 
         return hasChanges ? next : prev;
@@ -262,15 +274,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         .is('completed_at', null);
 
       if (error) return;
-      if (!data) return;
+      if (!data) { setActiveQuests({}); return; }
 
       const states: Record<string, QuestState> = {};
       for (const row of data as any[]) {
-        const trajectory = row.quests?.trajectory
-          ? (typeof row.quests.trajectory === 'string'
-              ? JSON.parse(row.quests.trajectory)
-              : row.quests.trajectory)
+        const sessionTrajectory = row.trajectory
+          ? (typeof row.trajectory === 'string' ? JSON.parse(row.trajectory) : row.trajectory)
           : null;
+        const questTrajectory = row.quests?.trajectory
+          ? (typeof row.quests.trajectory === 'string' ? JSON.parse(row.quests.trajectory) : row.quests.trajectory)
+          : null;
+        const trajectory = sessionTrajectory || questTrajectory;
 
         const startedAt = new Date(row.started_at).getTime();
         const elapsedSeconds = (Date.now() - startedAt) / 1000;
@@ -278,7 +292,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           ? calculatePositionFromTrajectory(trajectory, elapsedSeconds, row.speed_mps)
           : null;
 
-        states[row.quest_id] = { session: row as ChaseSession, trajectory, position };
+        const questId = row.quest_id;
+        if (!states[questId]) states[questId] = { instances: [] };
+        states[questId].instances.push({
+          session: row as ChaseSession,
+          trajectory,
+          position,
+          questId,
+          taskId: row.task_id || row.id,
+        });
       }
 
       setActiveQuests(states);
@@ -299,17 +321,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const questId = row.quest_id;
 
         if (payload.eventType === 'INSERT' && !row.completed_at) {
-          const { data: questData } = await supabase
-            .from('quests')
-            .select('trajectory')
-            .eq('id', questId)
-            .single();
-
-          const trajectory = questData?.trajectory
-            ? (typeof questData.trajectory === 'string'
-                ? JSON.parse(questData.trajectory)
-                : questData.trajectory)
+          const sessionTrajectory = row.trajectory
+            ? (typeof row.trajectory === 'string' ? JSON.parse(row.trajectory) : row.trajectory)
             : null;
+          let trajectory = sessionTrajectory;
+          if (!trajectory) {
+            const { data: questData } = await supabase
+              .from('quests')
+              .select('trajectory')
+              .eq('id', questId)
+              .single();
+            trajectory = questData?.trajectory
+              ? (typeof questData.trajectory === 'string'
+                  ? JSON.parse(questData.trajectory)
+                  : questData.trajectory)
+              : null;
+          }
 
           const startedAt = new Date(row.started_at).getTime();
           const elapsedSeconds = (Date.now() - startedAt) / 1000;
@@ -317,15 +344,29 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             ? calculatePositionFromTrajectory(trajectory, elapsedSeconds, row.speed_mps)
             : null;
 
-          setActiveQuests(prev => ({
-            ...prev,
-            [questId]: { session: row as ChaseSession, trajectory, position },
-          }));
+          const instance: ChaseInstance = {
+            session: row as ChaseSession,
+            trajectory,
+            position,
+            questId,
+            taskId: row.task_id || row.id,
+          };
+
+          setActiveQuests(prev => {
+            const existing = prev[questId]?.instances || [];
+            return { ...prev, [questId]: { instances: [...existing, instance] } };
+          });
         } else if (payload.eventType === 'UPDATE' && row.completed_at) {
           setActiveQuests(prev => {
-            const next = { ...prev };
-            delete next[questId];
-            return next;
+            const quest = prev[questId];
+            if (!quest) return prev;
+            const filtered = quest.instances.filter(i => i.session.id !== row.id);
+            if (filtered.length === 0) {
+              const next = { ...prev };
+              delete next[questId];
+              return next;
+            }
+            return { ...prev, [questId]: { instances: filtered } };
           });
         }
       })
@@ -519,14 +560,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const completeChase = useCallback(async (chaseId: string, questId: string) => {
     if (!session?.id) return;
 
-    const state = activeQuests[questId];
-    if (!state?.session || state.session.completed_at) return;
-
     setActiveQuests(prev => {
-      const next = { ...prev };
-      delete next[questId];
-      return next;
+      const quest = prev[questId];
+      if (!quest) return prev;
+      const filtered = quest.instances.filter(i => i.session.id !== chaseId);
+      if (filtered.length === 0) {
+        const next = { ...prev };
+        delete next[questId];
+        return next;
+      }
+      return { ...prev, [questId]: { instances: filtered } };
     });
+
+    const state = activeQuests[questId];
+    const instance = state?.instances.find(i => i.session.id === chaseId);
+    if (!instance || instance.session.completed_at) return;
 
     const { error } = await supabase
       .from('chase_sessions')
@@ -538,25 +586,37 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     if (error) { console.error('[GameProvider] completeChase error:', error); return; }
 
-    await supabase.from('quest_completions').insert({
-      quest_id: questId,
-      klan_id: session.klan_id,
-      game_id: session.game_id,
-      completed_by_player_id: session.id,
-      points_awarded: state.session.reward_points || 0,
-    });
+    const { data: activations } = await supabase
+      .from('quest_activations')
+      .select('id')
+      .eq('quest_id', questId)
+      .eq('klan_id', session.klan_id)
+      .is('completed_at', null)
+      .is('deactivated_at', null)
+      .limit(1);
 
-    const { data: klanData } = await supabase
-      .from('klans')
-      .select('points')
-      .eq('id', session.klan_id)
-      .single();
+    if (activations?.[0]) {
+      await supabase.from('task_completions').upsert({
+        quest_activation_id: activations[0].id,
+        task_id: instance.taskId,
+        completed_at: new Date().toISOString(),
+        completed_by_player_id: session.id,
+      }, { onConflict: 'quest_activation_id,task_id', ignoreDuplicates: false });
+    }
 
-    if (klanData) {
-      await supabase
+    const taskPoints = instance.session.reward_points || 0;
+    if (taskPoints > 0) {
+      const { data: klanData } = await supabase
         .from('klans')
-        .update({ points: (klanData.points || 0) + (state.session.reward_points || 0) })
-        .eq('id', session.klan_id);
+        .select('points')
+        .eq('id', session.klan_id)
+        .single();
+      if (klanData) {
+        await supabase
+          .from('klans')
+          .update({ points: (klanData.points || 0) + taskPoints })
+          .eq('id', session.klan_id);
+      }
     }
   }, [session, activeQuests]);
 
@@ -605,10 +665,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       ? calculatePositionFromTrajectory(trajectory, elapsedSeconds, data.speed_mps)
       : null;
 
-    setActiveQuests(prev => ({
-      ...prev,
-      [questId]: { session: data, trajectory, position },
-    }));
+    setActiveQuests(prev => {
+      const existing = prev[questId]?.instances || [];
+      return { ...prev, [questId]: { instances: [...existing, {
+        session: data,
+        trajectory,
+        position,
+        questId,
+        taskId: data.task_id || data.id,
+      }] } };
+    });
   }, [session, playerPosition]);
 
   const dismissCompletion = useCallback(() => {
@@ -620,7 +686,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const getMarkerPosition = useCallback((questId: string): MarkerPosition => {
-    return activeQuests[questId]?.position || null;
+    return activeQuests[questId]?.instances[0]?.position || null;
   }, [activeQuests]);
 
   const activateQRQuest = useCallback((questId: string, targetLat: number, targetLng: number) => {
@@ -720,8 +786,11 @@ export function useChase(questId: string) {
   useEffect(() => {
     const state = activeQuests[questId];
     if (state) {
-      setPosition(state.position);
-      setSession(state.session);
+      const first = state.instances[0];
+      if (first) {
+        setPosition(first.position);
+        setSession(first.session);
+      }
     } else {
       setPosition(null);
       setSession(null);
