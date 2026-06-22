@@ -1161,6 +1161,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      insert_noc_kupaly_skrzaty_quests: {
+        Args: { p_game_id: string }
+        Returns: undefined
+      }
       insert_sample_map_markers: {
         Args: {
           p_game_id: string

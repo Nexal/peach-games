@@ -784,14 +784,16 @@ function QuestCard({
         <div className="quest-card__instructions">📍 Udaj się na miejsce wskazane na mapie</div>
       )}
 
-      {state === 'active' && currentTask?.markerLat != null && currentTask?.markerLng != null && (
+      {state === 'active' && (
         <div className="quest-card__secondary-actions">
-          <button
-            className="quest-card__secondary-btn"
-            onClick={() => onNavigateToMap(currentTask.markerLat!, currentTask.markerLng!)}
-          >
-            🗺️ Pokaż na mapie
-          </button>
+          {currentTask?.markerLat != null && currentTask?.markerLng != null && (
+            <button
+              className="quest-card__secondary-btn"
+              onClick={() => onNavigateToMap(currentTask.markerLat!, currentTask.markerLng!)}
+            >
+              🗺️ Pokaż na mapie
+            </button>
+          )}
           <button
             className="quest-card__secondary-btn quest-card__secondary-btn--danger"
             onClick={onDeactivate}

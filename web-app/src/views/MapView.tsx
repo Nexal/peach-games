@@ -361,7 +361,7 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
       {markers.map((marker) => {
         let icon = questIcon;
         if (marker.icon_url) {
-          icon = new L.Icon({ iconUrl: marker.icon_url, iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] });
+          icon = new L.Icon({ iconUrl: marker.icon_url, iconSize: [48, 48], iconAnchor: [24, 24], popupAnchor: [0, -24] });
         } else if (marker.type === 'clan_base') icon = clanIcon;
         else if (marker.type === 'chase') icon = chaseIcon;
         else if (marker.type === 'qr') icon = qrIcon;
