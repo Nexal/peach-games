@@ -72,6 +72,38 @@ export type Database = {
           },
         ]
       }
+      chase_configs: {
+        Row: {
+          area: Json | null
+          catch_distance_m: number
+          quest_id: string
+          speed_mps: number
+          waypoint_count: number
+        }
+        Insert: {
+          area?: Json | null
+          catch_distance_m?: number
+          quest_id: string
+          speed_mps?: number
+          waypoint_count?: number
+        }
+        Update: {
+          area?: Json | null
+          catch_distance_m?: number
+          quest_id?: string
+          speed_mps?: number
+          waypoint_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chase_configs_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: true
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chase_sessions: {
         Row: {
           bearing: number
