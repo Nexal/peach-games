@@ -120,8 +120,11 @@ export function AdminDashboardView() {
       .eq('klans.game_id', gameId);
     if (data) {
       setGods(data);
-      if (data.length > 0 && !selectedGodId) {
-        setSelectedGodId(data[0].id);
+      if (data.length > 0) {
+        const validGod = data.find((g: any) => g.id === selectedGodId);
+        if (!validGod) {
+          setSelectedGodId(data[0].id);
+        }
       }
     }
   };

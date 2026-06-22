@@ -19,6 +19,7 @@ const GOD_ICONS: Record<string, string> = {
   'Weles': '/icons/weles_avatar.jpeg',
   'Mokosz': '/icons/mokosz_avatar.jpeg',
   'Bogowie': '',
+  'Bóg': '',
 };
 
 function getClanIcon(klanName: string): string {
@@ -403,9 +404,9 @@ export function ChatView() {
             )}
             {messages.map((msg) => {
               const isOwnMessage = msg.sender === playerSession.name;
-              const isGod = !!msg.god_id || msg.sender === 'Bogowie';
+              const isGod = !!msg.god_id || msg.sender === 'Bogowie' || msg.sender === 'Bóg';
               const isGlobal = msg.klan_id === null;
-              const isSystemNotification = msg.sender === 'Bogowie';
+              const isSystemNotification = msg.sender === 'Bogowie' || msg.sender === 'Bóg';
               const clan = klans.find(k => k.id === (msg.sender_klan_id || msg.klan_id));
               const clanColor = clan?.theme_color || '#888888';
               const clanColorRgb = hexToRgb(clanColor);
