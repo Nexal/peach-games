@@ -1,10 +1,10 @@
 import L from 'leaflet';
 
 export const baseIcon = new L.Icon({
-  iconUrl: '/markers/ognisko-Photoroom.png',
-  iconSize: [48, 26],
-  iconAnchor: [24, 26],
-  popupAnchor: [0, -26],
+  iconUrl: '/markers/ognisko-Photoroom (1).png',
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40],
 });
 
 export const questIcon = new L.Icon({
