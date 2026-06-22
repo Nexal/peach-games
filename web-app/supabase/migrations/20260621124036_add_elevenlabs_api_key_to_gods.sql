@@ -1,0 +1,1 @@
+ALTER TABLE gods ADD COLUMN IF NOT EXISTS elevenlabs_api_key TEXT;
