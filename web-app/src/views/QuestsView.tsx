@@ -420,20 +420,14 @@ export function QuestsView() {
     );
 
     const taskPoints = task.reward_points || 0;
+    let awardedPoints = taskPoints;
 
     if (taskPoints > 0) {
-      const { data: klanData } = await (supabase as any)
-        .from('klans')
-        .select('points')
-        .eq('id', session.klan_id)
-        .maybeSingle();
-
-      if (klanData) {
-        await (supabase as any)
-          .from('klans')
-          .update({ points: (klanData.points || 0) + taskPoints })
-          .eq('id', session.klan_id);
-      }
+      const { data: result } = await (supabase as any).rpc('award_clan_points', {
+        p_klan_id: session.klan_id,
+        p_base_points: taskPoints,
+      });
+      if (result) awardedPoints = result;
     }
 
     // Broadcast notification
@@ -480,7 +474,7 @@ export function QuestsView() {
       });
     } else {
       await (supabase as any).from('messages').insert({
-        content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${taskPoints} 🔥)!`,
+        content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${awardedPoints} 🔥)!`,
         sender: 'Bogowie',
         player_id: null,
         game_id: session.game_id,

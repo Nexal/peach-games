@@ -676,7 +676,121 @@
 }
 
 /* Placeholder views */
-.view--shop .view__content,
+/* ====== Shop ====== */
+.view--shop .view__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 4px 100px 4px;
+}
+
+.view--shop .view__content .shop-items {
+  width: 100%;
+}
+
+.shop-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 20px;
+  padding: 6px 16px;
+  margin-top: 12px;
+}
+
+.shop-balance__icon {
+  font-size: 1.2rem;
+}
+
+.shop-balance__points {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-perun);
+}
+
+.shop-balance__label {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+/* Shop card type colors (left border accent on quest-card) */
+.shop-card--buff {
+  border-left: 3px solid #4CAF50 !important;
+}
+
+.shop-card--curse {
+  border-left: 3px solid #e53935 !important;
+}
+
+.shop-card--tool {
+  border-left: 3px solid #FF9800 !important;
+}
+
+.shop-card--soldout {
+  opacity: 0.5;
+}
+
+.shop-card--owned {
+  opacity: 0.7;
+  border-color: rgba(46, 139, 87, 0.3) !important;
+}
+
+/* Type badge inside title */
+.shop-card__badge {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.shop-card__badge--buff {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4CAF50;
+}
+
+.shop-card__badge--curse {
+  background: rgba(229, 57, 53, 0.15);
+  color: #e53935;
+}
+
+.shop-card__badge--tool {
+  background: rgba(255, 152, 0, 0.15);
+  color: #FF9800;
+}
+
+/* Active status badge (gold pulse like quest-card--active) */
+.quest-card__status--buff {
+  background: rgba(255, 215, 0, 0.2);
+  color: var(--color-perun);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Countdown block (reuses quest-card__success green background) */
+.shop-card__countdown {
+  background: rgba(46, 139, 87, 0.2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Price low color */
+.shop-card__price--low {
+  color: #e53935 !important;
+}
+
+/* Stock empty indicator */
+.shop-card__stock--empty {
+  color: #e53935;
+  font-weight: 700;
+}
+
+/* Placeholder views */
 .view--profile .view__content {
   justify-content: center;
   align-items: center;
@@ -853,8 +967,9 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 20px;
-  padding-bottom: 100px;
+  padding-bottom: 140px;
 }
 
 .admin-panel {
@@ -2149,4 +2264,200 @@
 .admin-chapters-toggle:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* ====== Admin Shop Panel ====== */
+.admin-shop {
+  padding: 16px;
+}
+
+.admin-shop__title {
+  font-size: 1.2rem;
+  color: var(--color-perun);
+  margin: 0 0 16px 0;
+}
+
+.admin-shop__section {
+  margin-bottom: 24px;
+}
+
+.admin-shop__section-title {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin: 0 0 12px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.admin-shop__empty {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 4px 0;
+}
+
+.admin-shop-catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-shop-catalog__item {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.admin-shop-catalog__item--inactive {
+  opacity: 0.5;
+}
+
+.admin-shop-catalog__icon {
+  font-size: 1.5rem;
+  min-width: 36px;
+  text-align: center;
+}
+
+.admin-shop-catalog__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-shop-catalog__type {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.admin-shop-catalog__desc {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.admin-shop-catalog__limits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.admin-shop-catalog__purchased {
+  opacity: 0.6;
+}
+
+.admin-shop__limit-input {
+  width: 50px;
+  padding: 2px 4px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  color: var(--color-text-main);
+  font-family: 'Metamorphous', serif;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.admin-shop__btn {
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  color: var(--color-text-muted);
+  font-family: 'Metamorphous', serif;
+  font-size: 0.68rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-shop__btn--save {
+  border-color: rgba(76, 175, 80, 0.3);
+  color: #4CAF50;
+}
+
+.admin-shop__btn--danger {
+  border-color: rgba(229, 57, 53, 0.3);
+  color: #e53935;
+}
+
+.admin-shop__btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.admin-shop-klan {
+  margin-bottom: 16px;
+}
+
+.admin-shop-klan__name {
+  font-size: 0.9rem;
+  margin: 0 0 8px 0;
+}
+
+.admin-shop-effects {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-shop-effects__item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.78rem;
+}
+
+.admin-shop-effects__item--buff {
+  border-color: rgba(76, 175, 80, 0.2);
+}
+
+.admin-shop-effects__item--curse {
+  border-color: rgba(229, 57, 53, 0.2);
+}
+
+.admin-shop-effects__item--inactive {
+  opacity: 0.5;
+}
+
+.admin-shop-effects__name {
+  flex: 1;
+  color: var(--color-text-main);
+}
+
+.admin-shop-effects__timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-perun);
+  min-width: 42px;
+  text-align: right;
+}
+
+.admin-shop-effects__target {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.admin-shop-effects__status {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.admin-shop-details__summary {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px 0;
 }

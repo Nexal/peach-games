@@ -54,7 +54,7 @@ async function generateTTS(text: string, voiceId: string = DEFAULT_TTS_VOICE_ID,
 
 export function AdminDashboardView() {
   const { logout } = useAdminAuth();
-  type AdminTab = 'games' | 'klans' | 'players' | 'quests' | 'submissions' | 'chat' | 'map' | 'gods' | 'chapters';
+  type AdminTab = 'games' | 'klans' | 'players' | 'quests' | 'submissions' | 'chat' | 'map' | 'gods' | 'chapters' | 'sklep';
   const [activeTab, setActiveTab] = useState<AdminTab>('games');
   const [games, setGames] = useState<Game[]>([]);
   const [klans, setKlans] = useState<Klan[]>([]);
@@ -589,6 +589,9 @@ export function AdminDashboardView() {
         {activeTab === 'chapters' && selectedGameId && (
           <ChaptersPanel gameId={selectedGameId} klans={klans} gods={gods} />
         )}
+        {activeTab === 'sklep' && selectedGameId && (
+          <ShopPanel gameId={selectedGameId} klans={klans} />
+        )}
       </main>
 
       <nav className="admin-tabs">
@@ -645,6 +648,12 @@ export function AdminDashboardView() {
           onClick={() => setActiveTab('chapters')}
         >
           📖 Rozdziały
+        </button>
+        <button
+          className={`admin-tabs__item ${activeTab === 'sklep' ? 'admin-tabs__item--active' : ''}`}
+          onClick={() => setActiveTab('sklep')}
+        >
+          ⚗️ Sklep
         </button>
       </nav>
     </div>
@@ -2464,6 +2473,192 @@ function ChaptersPanel({ gameId, klans, gods }: { gameId: string; klans: any[]; 
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ShopPanel({ gameId, klans }: { gameId: string; klans: any[] }) {
+  const [catalog, setCatalog] = useState<any[]>([]);
+  const [purchases, setPurchases] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editMaxGame, setEditMaxGame] = useState('');
+  const [editMaxKlan, setEditMaxKlan] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [sending, setSending] = useState<string | null>(null);
+  const [effectNow, setEffectNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setEffectNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!gameId) return;
+    setLoading(true);
+    Promise.all([
+      supabase.from('shop_items').select('*').eq('game_id', gameId).order('sort_order'),
+      supabase.from('clan_items').select('*').eq('game_id', gameId),
+    ]).then(([{ data: c }, { data: p }]) => {
+      if (c) setCatalog(c);
+      if (p) setPurchases(p);
+      setLoading(false);
+    });
+  }, [gameId]);
+
+  const handleSaveLimit = async (itemId: string) => {
+    setSending(itemId);
+    await supabase.from('shop_items').update({
+      max_per_game: editMaxGame ? parseInt(editMaxGame) : null,
+      max_per_klan: editMaxKlan ? parseInt(editMaxKlan) : null,
+      price: editPrice ? parseInt(editPrice) : undefined,
+    }).eq('id', itemId);
+    setCatalog(prev => prev.map(c => c.id === itemId ? {
+      ...c,
+      max_per_game: editMaxGame ? parseInt(editMaxGame) : null,
+      max_per_klan: editMaxKlan ? parseInt(editMaxKlan) : null,
+      price: editPrice ? parseInt(editPrice) : c.price,
+    } : c));
+    setEditingId(null);
+    setSending(null);
+  };
+
+  const handleToggleActive = async (itemId: string, current: boolean) => {
+    await supabase.from('shop_items').update({ is_active: !current }).eq('id', itemId);
+    setCatalog(prev => prev.map(c => c.id === itemId ? { ...c, is_active: !current } : c));
+  };
+
+  const handleDeactivateBuff = async (purchaseId: string) => {
+    await supabase.from('clan_items').update({ active: false }).eq('id', purchaseId);
+    setPurchases(prev => prev.map(p => p.id === purchaseId ? { ...p, active: false } : p));
+  };
+
+  const handleDeletePurchase = async (purchaseId: string) => {
+    await supabase.from('clan_items').delete().eq('id', purchaseId);
+    setPurchases(prev => prev.filter(p => p.id !== purchaseId));
+  };
+
+  const now = effectNow;
+  const klanMap = new Map(klans.map(k => [k.id, k]));
+
+  const purchasesByKlan = new Map<string, any[]>();
+  for (const p of purchases) {
+    if (!purchasesByKlan.has(p.klan_id)) purchasesByKlan.set(p.klan_id, []);
+    purchasesByKlan.get(p.klan_id)!.push(p);
+  }
+
+  return (
+    <div className="admin-shop">
+      <h2 className="admin-shop__title">⚗️ Zarządzanie Sklepem</h2>
+
+      <section className="admin-shop__section">
+        <h3 className="admin-shop__section-title">Katalog przedmiotów</h3>
+        {loading ? <p>Ładowanie...</p> : (
+          <div className="admin-shop-catalog">
+            {catalog.map(item => {
+              const purchasedCount = purchases.filter(p => p.shop_item_id === item.id).length;
+              const isEditing = editingId === item.id;
+              return (
+                <div key={item.id} className={`admin-shop-catalog__item ${!item.is_active ? 'admin-shop-catalog__item--inactive' : ''}`}>
+                  <div className="admin-shop-catalog__icon">{item.icon}</div>
+                  <div className="admin-shop-catalog__info">
+                    <strong>{item.name}</strong>
+                    <span className="admin-shop-catalog__type">{item.type}</span>
+                    <span className="admin-shop-catalog__desc">{item.description}</span>
+                    <div className="admin-shop-catalog__limits">
+                      {isEditing ? (
+                        <>
+                          <label>🌍 max/game: <input type="number" className="admin-shop__limit-input" defaultValue={item.max_per_game ?? ''} onChange={e => setEditMaxGame(e.target.value)} /></label>
+                          <label>🏠 max/klan: <input type="number" className="admin-shop__limit-input" defaultValue={item.max_per_klan ?? ''} onChange={e => setEditMaxKlan(e.target.value)} /></label>
+                          <label>🔥 cena: <input type="number" className="admin-shop__limit-input" defaultValue={item.price} onChange={e => setEditPrice(e.target.value)} /></label>
+                          <button className="admin-shop__btn admin-shop__btn--save" onClick={() => handleSaveLimit(item.id)} disabled={sending === item.id}>💾</button>
+                          <button className="admin-shop__btn" onClick={() => setEditingId(null)}>✕</button>
+                        </>
+                      ) : (
+                        <>
+                          <span>🌍 max/game: {item.max_per_game ?? '∞'}</span>
+                          <span>🏠 max/klan: {item.max_per_klan ?? '∞'}</span>
+                          <span>🔥 {item.price}</span>
+                          <span className="admin-shop-catalog__purchased">(kupiono: {purchasedCount})</span>
+                          <button className="admin-shop__btn" onClick={() => { setEditingId(item.id); setEditMaxGame(item.max_per_game?.toString() ?? ''); setEditMaxKlan(item.max_per_klan?.toString() ?? ''); setEditPrice(item.price.toString()); }}>✏️</button>
+                        </>
+                      )}
+                      <button
+                        className={`admin-shop__btn ${item.is_active ? 'admin-shop__btn--danger' : 'admin-shop__btn--save'}`}
+                        onClick={() => handleToggleActive(item.id, item.is_active)}
+                      >
+                        {item.is_active ? 'Ukryj' : 'Pokaż'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="admin-shop__section">
+        <h3 className="admin-shop__section-title">Aktywne buffy / klątwy</h3>
+        {klans.map(klan => {
+          const clanPurchases = purchasesByKlan.get(klan.id) || [];
+          const activeEffects = clanPurchases.filter(p => {
+            if (!p.active || !p.activated_at || !p.duration_seconds) return false;
+            const expiresAt = new Date(p.activated_at).getTime() + p.duration_seconds * 1000;
+            return expiresAt > now;
+          });
+          const inactivePurchases = clanPurchases.filter(p => !activeEffects.includes(p));
+
+          return (
+            <div key={klan.id} className="admin-shop-klan">
+              <h4 className="admin-shop-klan__name" style={{ color: klan.theme_color }}>
+                {klan.name}
+              </h4>
+
+              {activeEffects.length === 0 && inactivePurchases.length === 0 ? (
+                <p className="admin-shop__empty">(brak zakupów)</p>
+              ) : (
+                <>
+                  {activeEffects.length > 0 && (
+                    <div className="admin-shop-effects">
+                      {activeEffects.map(effect => {
+                        const remaining = Math.max(0, Math.floor(((new Date(effect.activated_at).getTime() + effect.duration_seconds * 1000) - now) / 1000));
+                        const m = Math.floor(remaining / 60);
+                        const s = remaining % 60;
+                        return (
+                          <div key={effect.id} className={`admin-shop-effects__item admin-shop-effects__item--${effect.type}`}>
+                            <span className="admin-shop-effects__name">{effect.name}</span>
+                            <span className="admin-shop-effects__timer">{m}:{s.toString().padStart(2, '0')}</span>
+                            {effect.target_klan_id && (
+                              <span className="admin-shop-effects__target">→ {klanMap.get(effect.target_klan_id)?.name || '?'}</span>
+                            )}
+                            <button className="admin-shop__btn admin-shop__btn--danger" onClick={() => handleDeactivateBuff(effect.id)}>⏹ Wyłącz</button>
+                            <button className="admin-shop__btn admin-shop__btn--danger" onClick={() => handleDeletePurchase(effect.id)} title="Usuwa zakup i przywraca limit per-klan">🗑 Usuń + limit</button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {inactivePurchases.length > 0 && (
+                    <details className="admin-shop-details">
+                      <summary className="admin-shop-details__summary">Nieaktywne / wygasłe ({inactivePurchases.length})</summary>
+                      <div className="admin-shop-effects">
+                        {inactivePurchases.map(p => (
+                          <div key={p.id} className="admin-shop-effects__item admin-shop-effects__item--inactive">
+                            <span className="admin-shop-effects__name">{p.name}</span>
+                            <span className="admin-shop-effects__status">{p.active ? 'Wygasły' : 'Nieaktywny'}</span>
+                            <button className="admin-shop__btn admin-shop__btn--danger" onClick={() => handleDeletePurchase(p.id)} title="Usuwa zakup i przywraca limit per-klan">🗑 Usuń + limit</button>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </section>
     </div>
   );
 }

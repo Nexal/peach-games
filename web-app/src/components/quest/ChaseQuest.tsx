@@ -144,20 +144,10 @@ export function useChaseQuest(quest: Quest, playerPosition: { lat: number; lng: 
         },
       });
 
-      const { data: klanData } = await supabase
-        .from('klans')
-        .select('points')
-        .eq('id', session.klan_id)
-        .limit(1);
-
-      if (klanData?.[0]) {
-        await supabase
-          .from('klans')
-          .update({
-            points: (klanData[0].points || 0) + (chaseSession.reward_points || 0),
-          })
-          .eq('id', session.klan_id);
-      }
+      await supabase.rpc('award_clan_points', {
+        p_klan_id: session.klan_id,
+        p_base_points: chaseSession.reward_points || 0,
+      });
 
       if (channelRef.current) {
         channelRef.current.send({

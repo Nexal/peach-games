@@ -606,17 +606,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     const taskPoints = instance.session.reward_points || 0;
     if (taskPoints > 0 && activations?.[0]) {
-      const { data: klanData } = await supabase
-        .from('klans')
-        .select('points')
-        .eq('id', session.klan_id)
-        .single();
-      if (klanData) {
-        await supabase
-          .from('klans')
-          .update({ points: (klanData.points || 0) + taskPoints })
-          .eq('id', session.klan_id);
-      }
+      await supabase.rpc('award_clan_points', {
+        p_klan_id: session.klan_id,
+        p_base_points: taskPoints,
+      });
     }
 
     if (activations?.[0]) {

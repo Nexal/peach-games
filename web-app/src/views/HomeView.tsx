@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { setPlayerSession, clearPlayerSession } from '../lib/playerSession';
 import { useGame, usePlayerSession } from '../App';
 import { supabase } from '../lib/supabase';
@@ -50,9 +50,75 @@ export function HomeView() {
   const [nameSaved, setNameSaved] = useState(false);
   const [enlargedAvatar, setEnlargedAvatar] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeEffects, setActiveEffects] = useState<{
+    id: string;
+    name: string;
+    icon: string;
+    type: string;
+    activatedAt: string;
+    durationSeconds: number;
+  }[]>([]);
+  const [effectNow, setEffectNow] = useState(0);
+
+  useEffect(() => {
+    setEffectNow(Date.now());
+    const interval = setInterval(() => setEffectNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const clanIcon = session ? getClanIcon(session.klan_name) : { emoji: '⚔️' };
   const godAvatarUrl = session ? getGodAvatar(session.klan_name) : '';
+
+  useEffect(() => {
+    if (!session?.klan_id || !session?.game_id) return;
+
+    const loadEffects = () => {
+      supabase
+        .from('clan_items')
+        .select('id, name, type, effect, duration_seconds, activated_at, active')
+        .eq('klan_id', session.klan_id)
+        .eq('game_id', session.game_id)
+        .eq('active', true)
+        .then(({ data }) => {
+          if (!data) return;
+          const now = Date.now();
+          const effects = data
+            .map((item) => {
+              if (!item.activated_at || !item.duration_seconds) return null;
+              const expiresAt = new Date(item.activated_at).getTime() + item.duration_seconds * 1000;
+              if (expiresAt <= now) return null;
+              const effect = item.effect as Record<string, unknown>;
+              let icon = item.type === 'curse' ? '💀' : '⚡';
+              if (effect?.type === 'points_multiplier') icon = '⚡';
+              else if (effect?.type === 'curse_immunity') icon = '🛡️';
+              else if (effect?.type === 'reveal_hidden_quests') icon = '🔮';
+              return { id: item.id, name: item.name, icon, type: item.type, activatedAt: item.activated_at, durationSeconds: item.duration_seconds };
+            })
+            .filter(Boolean);
+          setActiveEffects(effects as typeof activeEffects);
+        });
+    };
+
+    loadEffects();
+
+    const channel = supabase
+      .channel('home-active-effects')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'clan_items', filter: `klan_id=eq.${session.klan_id}` },
+        () => loadEffects(),
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'clan_items', filter: `klan_id=eq.${session.klan_id}` },
+        () => loadEffects(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.klan_id, session?.game_id]);
 
   const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -385,6 +451,27 @@ export function HomeView() {
           <span className="home-aura__ogniki-icon">🔥</span>
           <span className="home-aura__ogniki-value">{klanPoints}</span>
         </div>
+
+        {activeEffects.length > 0 && (
+          <div className="home-active-effects">
+            {activeEffects.map(effect => {
+              const expiresAt = new Date(effect.activatedAt).getTime() + effect.durationSeconds * 1000;
+              const remaining = Math.max(0, Math.floor((expiresAt - effectNow) / 1000));
+              const m = Math.floor(remaining / 60);
+              const s = remaining % 60;
+              return (
+                <div
+                  key={effect.id}
+                  className={`home-active-effects__item home-active-effects__item--${effect.type}`}
+                >
+                  <span className="home-active-effects__icon">{effect.icon}</span>
+                  <span className="home-active-effects__name">{effect.name}</span>
+                  <span className="home-active-effects__timer">{m}:{s.toString().padStart(2, '0')}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <p className="home-aura__hint">
           Zbieraj ogniki, wznieś swój klan na szczyt

@@ -210,9 +210,12 @@ export type Database = {
           description: string | null
           duration_seconds: number | null
           effect: Json
+          game_id: string | null
           id: string
           klan_id: string | null
           name: string
+          shop_item_id: string | null
+          target_klan_id: string | null
           target_type: string
           type: string
           uses_remaining: number | null
@@ -225,9 +228,12 @@ export type Database = {
           description?: string | null
           duration_seconds?: number | null
           effect: Json
+          game_id?: string | null
           id?: string
           klan_id?: string | null
           name: string
+          shop_item_id?: string | null
+          target_klan_id?: string | null
           target_type: string
           type: string
           uses_remaining?: number | null
@@ -240,17 +246,48 @@ export type Database = {
           description?: string | null
           duration_seconds?: number | null
           effect?: Json
+          game_id?: string | null
           id?: string
           klan_id?: string | null
           name?: string
+          shop_item_id?: string | null
+          target_klan_id?: string | null
           target_type?: string
           type?: string
           uses_remaining?: number | null
         }
         Relationships: [
           {
+            foreignKeyName: "clan_items_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_items_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "clan_items_klan_id_fkey"
             columns: ["klan_id"]
+            isOneToOne: false
+            referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_items_shop_item_id_fkey"
+            columns: ["shop_item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_items_target_klan_id_fkey"
+            columns: ["target_klan_id"]
             isOneToOne: false
             referencedRelation: "klans"
             referencedColumns: ["id"]
@@ -969,6 +1006,72 @@ export type Database = {
           },
         ]
       }
+      shop_items: {
+        Row: {
+          created_at: string | null
+          description: string
+          duration_seconds: number | null
+          effect: Json
+          game_id: string | null
+          icon: string
+          id: string
+          is_active: boolean | null
+          max_per_game: number | null
+          max_per_klan: number | null
+          name: string
+          price: number
+          sort_order: number | null
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          duration_seconds?: number | null
+          effect?: Json
+          game_id?: string | null
+          icon: string
+          id?: string
+          is_active?: boolean | null
+          max_per_game?: number | null
+          max_per_klan?: number | null
+          name: string
+          price: number
+          sort_order?: number | null
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          duration_seconds?: number | null
+          effect?: Json
+          game_id?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          max_per_game?: number | null
+          max_per_klan?: number | null
+          name?: string
+          price?: number
+          sort_order?: number | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_items_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_items_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       story_chapters: {
         Row: {
           audio_url: string | null
@@ -1237,6 +1340,10 @@ export type Database = {
       }
     }
     Functions: {
+      award_clan_points: {
+        Args: { p_base_points: number; p_klan_id: string }
+        Returns: number
+      }
       create_game: {
         Args: { game_description?: string; game_name: string }
         Returns: string

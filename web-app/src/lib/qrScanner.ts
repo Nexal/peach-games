@@ -135,20 +135,14 @@ export async function scanQRCode(
 
   if (allScanned) {
     const taskPoints = currentTask.reward_points || 0;
+    let awardedPoints = taskPoints;
 
     if (taskPoints > 0) {
-      const { data: klanData } = await (supabase as any)
-        .from('klans')
-        .select('points')
-        .eq('id', klanId)
-        .maybeSingle();
-
-      if (klanData) {
-        await (supabase as any)
-          .from('klans')
-          .update({ points: (klanData.points || 0) + taskPoints })
-          .eq('id', klanId);
-      }
+      const { data: result } = await (supabase as any).rpc('award_clan_points', {
+        p_klan_id: klanId,
+        p_base_points: taskPoints,
+      });
+      if (result) awardedPoints = result;
     }
 
     // Broadcast notification o ukończeniu taska
@@ -166,7 +160,7 @@ export async function scanQRCode(
     const questTitle = questData?.title || 'Nieznany quest';
     const klanName = klanInfo?.name || 'Klan';
     await (supabase as any).from('messages').insert({
-      content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${taskPoints} 🔥)!`,
+      content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${awardedPoints} 🔥)!`,
       sender: 'god',
       game_id: gameId,
       klan_id: null,

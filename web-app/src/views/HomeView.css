@@ -267,6 +267,57 @@
   opacity: 0.6;
 }
 
+/* Active effects (buffs/debuffs) */
+.home-active-effects {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+  width: 100%;
+  max-width: 280px;
+  align-self: center;
+}
+
+.home-active-effects__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.home-active-effects__item--buff {
+  border-color: rgba(76, 175, 80, 0.25);
+  background: rgba(76, 175, 80, 0.06);
+}
+
+.home-active-effects__item--curse {
+  border-color: rgba(229, 57, 53, 0.25);
+  background: rgba(229, 57, 53, 0.06);
+}
+
+.home-active-effects__icon {
+  font-size: 1.1rem;
+  min-width: 24px;
+  text-align: center;
+}
+
+.home-active-effects__name {
+  flex: 1;
+  color: var(--color-text-main);
+}
+
+.home-active-effects__timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  min-width: 42px;
+  text-align: right;
+}
+
 .home-hero__avatar-edit {
   position: absolute;
   bottom: 12px;

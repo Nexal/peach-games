@@ -256,18 +256,10 @@ export function ChaseProvider({ children }: { children: React.ReactNode }) {
       metadata: { completed_by: session.id, player_name: session.name },
     });
 
-    const { data: klanData } = await supabase
-      .from('klans')
-      .select('points')
-      .eq('id', session.klan_id)
-      .single();
-
-    if (klanData) {
-      await supabase
-        .from('klans')
-        .update({ points: (klanData.points || 0) + (state.session.reward_points || 0) })
-        .eq('id', session.klan_id);
-    }
+    await supabase.rpc('award_clan_points', {
+      p_klan_id: session.klan_id,
+      p_base_points: state.session.reward_points || 0,
+    });
   }, [session, chaseStates]);
 
   const subscribeToChase = useCallback((questId: string, callback: (pos: MarkerPosition) => void) => {
