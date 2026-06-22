@@ -72,6 +72,7 @@ function MapContent() {
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [chaseQuestIds, setChaseQuestIds] = useState<string[]>([]);
   const [currentTaskIds, setCurrentTaskIds] = useState<string[]>([]);
+  const [showAllMarkersQuestIds, setShowAllMarkersQuestIds] = useState<Set<string>>(new Set());
   const [scanningMarker, setScanningMarker] = useState<MapMarker | null>(null);
   const [uploadingMarker, setUploadingMarker] = useState<MapMarker | null>(null);
   const [photoActivations, setPhotoActivations] = useState<Record<string, string>>({});
@@ -175,6 +176,15 @@ function MapContent() {
 
       const questIds = activations.map((a: any) => a.quest_id);
       const activationIds = activations.map((a: any) => a.id);
+
+      // Fetch quests with show_all_markers flag
+      const { data: questsWithFlag } = await (supabase as any)
+        .from('quests')
+        .select('id, show_all_markers')
+        .in('id', questIds)
+        .eq('show_all_markers', true);
+      const showAllIds = new Set<string>((questsWithFlag || []).map((q: any) => q.id));
+      setShowAllMarkersQuestIds(showAllIds);
 
       const [
         { data: tasks },
@@ -339,7 +349,9 @@ function MapContent() {
         if (marker.type === 'photo') icon = photoIcon;
 
         if (marker.type === 'qr' || marker.type === 'photo') {
-          const isActive = marker.task_id ? currentTaskIds.includes(marker.task_id) : false;
+          const isActive = marker.task_id
+            ? currentTaskIds.includes(marker.task_id) || (marker.quest_id ? showAllMarkersQuestIds.has(marker.quest_id) : false)
+            : false;
           if (!isActive) return null;
         }
 

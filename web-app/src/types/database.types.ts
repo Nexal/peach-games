@@ -800,6 +800,7 @@ export type Database = {
           qr_secret: string | null
           requires_chapter_id: string | null
           reward_points: number | null
+          show_all_markers: boolean | null
           title: string
           trajectory: Json | null
           type: string
@@ -812,6 +813,7 @@ export type Database = {
           qr_secret?: string | null
           requires_chapter_id?: string | null
           reward_points?: number | null
+          show_all_markers?: boolean | null
           title: string
           trajectory?: Json | null
           type: string
@@ -824,6 +826,7 @@ export type Database = {
           qr_secret?: string | null
           requires_chapter_id?: string | null
           reward_points?: number | null
+          show_all_markers?: boolean | null
           title?: string
           trajectory?: Json | null
           type?: string
