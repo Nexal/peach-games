@@ -266,7 +266,7 @@ export function QuestsView() {
           started_at: new Date().toISOString(),
           start_lat: baseLat,
           start_lng: baseLng,
-          speed_mps: 2.0,
+          speed_mps: 5.0,
           catch_distance_m: 5,
           bearing: 0,
           reward_points: task.reward_points,
@@ -294,7 +294,7 @@ export function QuestsView() {
         lng: Math.round(((1-u)*(1-v)*corners[0].lng + u*(1-v)*corners[1].lng + u*v*corners[2].lng + (1-u)*v*corners[3].lng) * 1e6) / 1e6,
       };
     };
-    return Array.from({ length: 30 }, () => randomPointInQuad());
+    return Array.from({ length: 50 }, () => randomPointInQuad());
   }, []);
 
   const deactivateQuest = useCallback(async (questId: string, isChase?: boolean) => {
