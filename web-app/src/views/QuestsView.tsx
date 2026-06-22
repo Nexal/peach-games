@@ -674,9 +674,6 @@ function ChaseQuestCard({
         </span>
         <div className="quest-card__info">
           <h3 className="quest-card__title">{quest.title}</h3>
-          {quest.icon_url ? (
-            <img src={quest.icon_url} alt="" className="quest-card__title-icon" />
-          ) : null}
           <p className="quest-card__desc">{shortDesc}</p>
           {(quest.description && quest.description !== shortDesc) && (
             <button className="quest-card__expand-btn" onClick={(e) => { e.stopPropagation(); onExpand(); }}>
