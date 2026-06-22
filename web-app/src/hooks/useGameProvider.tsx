@@ -634,13 +634,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if ((completedTasks || []).length >= (allTasks || []).length) {
         const totalPoints = (allTasks || []).reduce((sum: number, t: any) => sum + (t.reward_points || 0), 0);
 
-        await supabase.from('quest_completions').insert({
+        await supabase.from('quest_completions').upsert({
           quest_id: questId,
           klan_id: session.klan_id,
           game_id: session.game_id,
           completed_by_player_id: session.id,
           points_awarded: totalPoints,
-        });
+        }, { onConflict: 'quest_id,klan_id', ignoreDuplicates: true });
 
         await supabase
           .from('quest_activations')
