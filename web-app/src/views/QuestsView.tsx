@@ -169,17 +169,22 @@ export function QuestsView() {
 
     const channel = supabase
       .channel('quests_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_activations', filter: `klan_id=eq.${session.klan_id}` }, () => {
-        console.log('[QuestsView] quest_activations event received');
-        loadQuests();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_activations', filter: `game_id=eq.${session.game_id}` }, (payload: any) => {
+        const relevant = (payload.old?.klan_id === session.klan_id || payload.new?.klan_id === session.klan_id);
+        if (relevant) {
+          console.log('[QuestsView] quest_activations event received for our klan');
+          loadQuests();
+        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, () => {
         console.log('[QuestsView] task_completions event received');
         loadQuests();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_completions', filter: `klan_id=eq.${session.klan_id}` }, () => {
-        console.log('[QuestsView] quest_completions event received');
-        loadQuests();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_completions', filter: `game_id=eq.${session.game_id}` }, (payload: any) => {
+        if (payload.old?.klan_id === session.klan_id || payload.new?.klan_id === session.klan_id) {
+          console.log('[QuestsView] quest_completions event received for our klan');
+          loadQuests();
+        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, (payload: any) => {
         console.log('[QuestsView] submissions event received:', payload.event, payload.new, payload.old);
