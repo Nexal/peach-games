@@ -292,9 +292,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         event: '*',
         schema: 'public',
         table: 'chase_sessions',
-        filter: `klan_id=eq.${session.klan_id}`,
       }, async (payload: any) => {
-        const row = payload.new;
+        const row = payload.new || payload.old;
+        if (row?.klan_id !== session.klan_id) return;
+        if (!row?.quest_id) return;
         const questId = row.quest_id;
 
         if (payload.eventType === 'INSERT' && !row.completed_at) {
