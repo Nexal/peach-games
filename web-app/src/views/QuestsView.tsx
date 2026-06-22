@@ -665,7 +665,13 @@ function ChaseQuestCard({
   return (
     <div className={`quest-card quest-card--chase ${state === 'active' ? 'quest-card--active' : ''} ${state === 'completed' ? 'quest-card--completed' : ''}`}>
       <div className="quest-card__header">
-        <span className="quest-card__icon">{state === 'completed' ? '✅' : '🏇'}</span>
+        <span className="quest-card__icon">
+          {quest.icon_url ? (
+            <img src={quest.icon_url} alt="" className="quest-card__icon-img" />
+          ) : (
+            state === 'completed' ? '✅' : '🏇'
+          )}
+        </span>
         <div className="quest-card__info">
           <h3 className="quest-card__title">{quest.title}</h3>
           {quest.icon_url ? (
