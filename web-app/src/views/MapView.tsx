@@ -182,6 +182,8 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
       if (!activations || activations.length === 0) {
         setCurrentTaskIds([]);
         setTaskProgress({});
+        setShowAllMarkersQuestIds(new Set());
+        setPhotoActivations({});
         return;
       }
 
@@ -259,7 +261,13 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
 
     const channel = supabase
       .channel('quest_activations_tasks_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_activations', filter: `game_id=eq.${session.game_id}` }, () => fetchTasksRef.current())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_activations' }, (payload: any) => {
+        const record = payload.new || payload.old;
+        if (record?.game_id === session.game_id && record?.klan_id === session.klan_id) {
+          console.log('[MapView] quest_activations event, type:', payload.eventType);
+          setTimeout(() => fetchTasksRef.current(), 250);
+        }
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, () => fetchTasksRef.current())
       .subscribe();
 
