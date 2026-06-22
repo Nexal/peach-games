@@ -22,10 +22,10 @@ export const clanIcon = new L.Icon({
 });
 
 export const chaseIcon = new L.Icon({
-  iconUrl: '/markers/chase.svg',
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-  popupAnchor: [0, -20],
+  iconUrl: '/markers/zary-bogow-Photoroom.png',
+  iconSize: [44, 44],
+  iconAnchor: [22, 22],
+  popupAnchor: [0, -22],
 });
 
 export const qrIcon = new L.Icon({
