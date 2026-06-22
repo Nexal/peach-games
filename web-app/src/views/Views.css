@@ -2067,3 +2067,86 @@
 .admin-panel__toggle:hover {
   color: #fff;
 }
+
+/* Chapters Grid */
+.admin-chapters-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admin-chapters-grid__row {
+  display: flex;
+  align-items: center;
+  padding: 4px 2px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-chapters-grid__row--header {
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.admin-chapters-grid__cell {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-chapters-grid__cell--name {
+  flex: 2;
+  min-width: 120px;
+  font-size: 0.85rem;
+}
+
+.admin-chapters-grid__cell--klan {
+  flex: 1;
+  justify-content: center;
+  min-width: 60px;
+}
+
+.admin-chapters-grid__number {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.admin-chapters-toggle {
+  width: 40px;
+  height: 32px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-chapters-toggle:hover:not(:disabled) {
+  border-color: var(--color-perun);
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.admin-chapters-toggle--on {
+  border-color: var(--color-mokosz);
+  background: rgba(46, 139, 87, 0.15);
+  color: var(--color-mokosz);
+}
+
+.admin-chapters-toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

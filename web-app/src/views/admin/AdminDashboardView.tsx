@@ -54,7 +54,7 @@ async function generateTTS(text: string, voiceId: string = DEFAULT_TTS_VOICE_ID,
 
 export function AdminDashboardView() {
   const { logout } = useAdminAuth();
-  type AdminTab = 'games' | 'klans' | 'players' | 'quests' | 'submissions' | 'chat' | 'map' | 'gods';
+  type AdminTab = 'games' | 'klans' | 'players' | 'quests' | 'submissions' | 'chat' | 'map' | 'gods' | 'chapters';
   const [activeTab, setActiveTab] = useState<AdminTab>('games');
   const [games, setGames] = useState<Game[]>([]);
   const [klans, setKlans] = useState<Klan[]>([]);
@@ -586,6 +586,9 @@ export function AdminDashboardView() {
         {activeTab === 'gods' && selectedGameId && (
           <GodsPanel gods={gods} klans={klans} gameId={selectedGameId} onGodsChanged={() => loadGods(selectedGameId!)} />
         )}
+        {activeTab === 'chapters' && selectedGameId && (
+          <ChaptersPanel gameId={selectedGameId} klans={klans} gods={gods} />
+        )}
       </main>
 
       <nav className="admin-tabs">
@@ -636,6 +639,12 @@ export function AdminDashboardView() {
           onClick={() => setActiveTab('gods')}
         >
           👤 Bogowie
+        </button>
+        <button
+          className={`admin-tabs__item ${activeTab === 'chapters' ? 'admin-tabs__item--active' : ''}`}
+          onClick={() => setActiveTab('chapters')}
+        >
+          📖 Rozdziały
         </button>
       </nav>
     </div>
@@ -2350,6 +2359,110 @@ function MapPanel({ gameId, klans, selectedGodId }: MapPanelProps) {
             })}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ChaptersPanel({ gameId, klans, gods }: { gameId: string; klans: any[]; gods: any[] }) {
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [progress, setProgress] = useState<Record<string, Record<string, boolean>>>({});
+  const [sending, setSending] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const [{ data: ch }, { data: pr }] = await Promise.all([
+        supabase.from('story_chapters').select('*').eq('game_id', gameId).order('chapter_number'),
+        supabase.from('klan_chapter_progress').select('*').eq('game_id', gameId),
+      ]);
+      setChapters(ch || []);
+      const map: Record<string, Record<string, boolean>> = {};
+      for (const p of (pr || [])) {
+        if (!map[p.chapter_id]) map[p.chapter_id] = {};
+        map[p.chapter_id][p.klan_id] = !!p.is_active;
+      }
+      setProgress(map);
+    };
+    load();
+
+    const channel = supabase
+      .channel('admin_chapter_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'klan_chapter_progress', filter: `game_id=eq.${gameId}` }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [gameId]);
+
+  const toggleChapter = async (chapterId: string, klanId: string, klanName: string, chapterName: string) => {
+    const current = progress[chapterId]?.[klanId] || false;
+    const newState = !current;
+    setSending(`${chapterId}:${klanId}`);
+
+    const { error } = await supabase.from('klan_chapter_progress').upsert({
+      chapter_id: chapterId,
+      klan_id: klanId,
+      game_id: gameId,
+      is_active: newState,
+      activated_at: newState ? new Date().toISOString() : null,
+    }, { onConflict: 'chapter_id,klan_id,game_id' });
+
+    if (!error && newState) {
+      const god = gods.find(g => g.klan_id === klanId);
+      await supabase.from('messages').insert({
+        content: `Rozdział "${chapterName}" został otwarty! Nowe questy czekają na klan ${klanName}.`,
+        sender: god?.name || 'Bogowie',
+        god_id: god?.id || null,
+        klan_id: klanId,
+        game_id: gameId,
+        player_id: null,
+        sender_klan_id: klanId,
+      });
+    }
+
+    setSending(null);
+  };
+
+  if (!chapters.length) return <div className="admin-panel__empty">Brak rozdziałów w tej grze. Dodaj je przez SQL.</div>;
+
+  return (
+    <div className="admin-panel">
+      <div className="admin-panel__section">
+        <h2 className="admin-panel__title">Zarządzanie rozdziałami</h2>
+        <p className="admin-panel__hint">
+          Włącz/wyłącz rozdziały dla poszczególnych klanów. Questy z wymaganiem rozdziału będą widoczne tylko gdy rozdział jest aktywny dla danego klanu.
+        </p>
+        <div className="admin-chapters-grid">
+          <div className="admin-chapters-grid__row admin-chapters-grid__row--header">
+            <span className="admin-chapters-grid__cell admin-chapters-grid__cell--name">Rozdział</span>
+            {klans.map(k => (
+              <span key={k.id} className="admin-chapters-grid__cell admin-chapters-grid__cell--klan" style={{ color: k.theme_color }}>
+                {gods.find(g => g.klan_id === k.id)?.name || k.name}
+              </span>
+            ))}
+          </div>
+          {chapters.map(ch => (
+            <div key={ch.id} className="admin-chapters-grid__row">
+              <span className="admin-chapters-grid__cell admin-chapters-grid__cell--name">
+                <strong>{ch.title}</strong>
+                <span className="admin-chapters-grid__number">#{ch.chapter_number}</span>
+              </span>
+              {klans.map(k => {
+                const active = progress[ch.id]?.[k.id] || false;
+                const key = `${ch.id}:${k.id}`;
+                return (
+                  <span key={k.id} className="admin-chapters-grid__cell admin-chapters-grid__cell--klan">
+                    <button
+                      className={`admin-chapters-toggle ${active ? 'admin-chapters-toggle--on' : ''}`}
+                      onClick={() => toggleChapter(ch.id, k.id, k.name, ch.title)}
+                      disabled={sending === key}
+                    >
+                      {sending === key ? '⏳' : active ? '✅' : '☐'}
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

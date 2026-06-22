@@ -374,6 +374,62 @@ export type Database = {
           },
         ]
       }
+      klan_chapter_progress: {
+        Row: {
+          activated_at: string | null
+          chapter_id: string
+          game_id: string
+          id: string
+          is_active: boolean | null
+          klan_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          chapter_id: string
+          game_id: string
+          id?: string
+          is_active?: boolean | null
+          klan_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          chapter_id?: string
+          game_id?: string
+          id?: string
+          is_active?: boolean | null
+          klan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "klan_chapter_progress_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "story_chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "klan_chapter_progress_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "klan_chapter_progress_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "klan_chapter_progress_klan_id_fkey"
+            columns: ["klan_id"]
+            isOneToOne: false
+            referencedRelation: "klans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       klans: {
         Row: {
           game_id: string | null

@@ -38,9 +38,10 @@ interface QuestWithState extends Quest {
 
 type QuestState = 'unavailable' | 'available' | 'active' | 'completed';
 
-function getQuestState(q: QuestWithState, klanId: string | undefined): QuestState {
+function getQuestState(q: QuestWithState, klanId: string | undefined, activeChapterIds?: Set<string>): QuestState {
   if (q.completed) return 'completed';
   if (q.klan_id && q.klan_id !== klanId) return 'unavailable';
+  if (q.requires_chapter_id && activeChapterIds && !activeChapterIds.has(q.requires_chapter_id)) return 'unavailable';
   if (q.activated) return 'active';
   return 'available';
 }
@@ -55,6 +56,7 @@ export function QuestsView() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [textFeedback, setTextFeedback] = useState<{ taskId: string; type: 'success' | 'error'; text: string } | null>(null);
   const [expandedQuest, setExpandedQuest] = useState<QuestWithState | null>(null);
+  const [activeChapterIds, setActiveChapterIds] = useState<Set<string>>(new Set());
 
   const loadSubmissions = useCallback(async () => {
     if (!session?.game_id || !session?.klan_id) return;
@@ -69,14 +71,18 @@ export function QuestsView() {
   const loadQuests = useCallback(async () => {
     if (!session?.game_id || !session?.klan_id) return;
 
-    const [questsRes, activationsRes, completionsRes, tasksRes, taskCompletionsRes, markersRes] = await Promise.all([
+    const [questsRes, activationsRes, completionsRes, tasksRes, taskCompletionsRes, markersRes, chaptersRes] = await Promise.all([
       (supabase as any).from('quests').select('*').eq('game_id', session.game_id),
       (supabase as any).from('quest_activations').select('*').eq('klan_id', session.klan_id).eq('game_id', session.game_id).is('deactivated_at', null),
       (supabase as any).from('quest_completions').select('*').eq('klan_id', session.klan_id).eq('game_id', session.game_id),
       (supabase as any).from('tasks').select('*'),
       (supabase as any).from('task_completions').select('*'),
       (supabase as any).from('map_markers').select('id, quest_id, task_id, lat, lng').eq('game_id', session.game_id).in('type', ['qr', 'photo', 'chase']),
+      (supabase as any).from('klan_chapter_progress').select('chapter_id').eq('klan_id', session.klan_id).eq('game_id', session.game_id).eq('is_active', true),
     ]);
+
+    const chapterIds = new Set<string>((chaptersRes.data || []).map((c: any) => c.chapter_id));
+    setActiveChapterIds(chapterIds);
 
     if (questsRes.data) {
       const activations = (activationsRes.data as any[]) || [];
@@ -188,6 +194,12 @@ export function QuestsView() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_completions', filter: `game_id=eq.${session.game_id}` }, (payload: any) => {
         if (payload.old?.klan_id === session.klan_id || payload.new?.klan_id === session.klan_id) {
           console.log('[QuestsView] quest_completions event received for our klan');
+          loadQuestsRef.current();
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'klan_chapter_progress', filter: `game_id=eq.${session.game_id}` }, (payload: any) => {
+        if (payload.old?.klan_id === session.klan_id || payload.new?.klan_id === session.klan_id) {
+          console.log('[QuestsView] chapter progress event for our klan');
           loadQuestsRef.current();
         }
       })
@@ -528,8 +540,12 @@ export function QuestsView() {
     );
   }
 
-  const chaseQuests = quests.filter((q) => q.type === 'chase');
-  const otherQuests = quests.filter((q) => q.type !== 'chase');
+  const visibleQuests = quests.filter(q => {
+    if (q.requires_chapter_id && activeChapterIds && !activeChapterIds.has(q.requires_chapter_id)) return false;
+    return true;
+  });
+  const chaseQuests = visibleQuests.filter((q) => q.type === 'chase');
+  const otherQuests = visibleQuests.filter((q) => q.type !== 'chase');
 
   return (
     <div className="view view--quests">
@@ -546,7 +562,7 @@ export function QuestsView() {
         )}
 
         {chaseQuests.map((quest) => {
-          const state = getQuestState(quest, session.klan_id);
+          const state = getQuestState(quest, session.klan_id, activeChapterIds);
           return (
             <ChaseQuestCard
               key={quest.id}
@@ -570,7 +586,7 @@ export function QuestsView() {
         )}
 
         {otherQuests.map((quest) => {
-          const state = getQuestState(quest, session.klan_id);
+          const state = getQuestState(quest, session.klan_id, activeChapterIds);
           return (
             <QuestCard
               key={quest.id}
@@ -598,7 +614,7 @@ export function QuestsView() {
       {expandedQuest && (
         <QuestDetailModal
           quest={expandedQuest}
-          state={getQuestState(expandedQuest, session.klan_id)}
+          state={getQuestState(expandedQuest, session.klan_id, activeChapterIds)}
           submissions={submissions}
           onClose={() => setExpandedQuest(null)}
           onDeactivate={() => deactivateQuest(expandedQuest.id, expandedQuest.type === 'chase')}
