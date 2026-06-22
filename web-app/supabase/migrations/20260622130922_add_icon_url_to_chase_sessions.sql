@@ -1,0 +1,1 @@
+ALTER TABLE chase_sessions ADD COLUMN IF NOT EXISTS icon_url TEXT;
