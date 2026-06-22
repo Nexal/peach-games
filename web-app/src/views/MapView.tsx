@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { usePlayerSession, useGame } from '../App';
 import { supabase } from '../lib/supabase';
@@ -82,6 +82,8 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
   const [mapTheme, setMapTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem('map_theme') as 'dark' | 'light') || 'dark');
   const [enlargedAvatar, setEnlargedAvatar] = useState<string | null>(null);
   const map = useMap();
+
+  const fetchTasksRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (focusPoint && focusPoint[0] && focusPoint[1]) {
@@ -252,12 +254,13 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
       setPhotoActivations(activationMap);
     };
 
+    fetchTasksRef.current = fetchCurrentTasks;
     fetchCurrentTasks();
 
     const channel = supabase
       .channel('quest_activations_tasks_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_activations', filter: `game_id=eq.${session.game_id}` }, fetchCurrentTasks)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, fetchCurrentTasks)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quest_activations', filter: `game_id=eq.${session.game_id}` }, () => fetchTasksRef.current())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, () => fetchTasksRef.current())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
