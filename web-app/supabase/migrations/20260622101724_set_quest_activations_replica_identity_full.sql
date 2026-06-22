@@ -1,0 +1,1 @@
+ALTER TABLE quest_activations REPLICA IDENTITY FULL;
