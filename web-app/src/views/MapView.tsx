@@ -367,15 +367,15 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
         else if (marker.type === 'qr') icon = qrIcon;
         else if (marker.type === 'photo') icon = photoIcon;
 
-        if (marker.type === 'qr' || marker.type === 'photo' || marker.type === 'chase') {
+        if (marker.type === 'chase') return null;
+        if (marker.type === 'qr' || marker.type === 'photo') {
           const isActive = marker.task_id
             ? currentTaskIds.includes(marker.task_id) || (marker.quest_id ? showAllMarkersQuestIds.has(marker.quest_id) : false)
-            : (marker.quest_id ? showAllMarkersQuestIds.has(marker.quest_id) : false);
+            : false;
           if (!isActive) return null;
         }
 
         if (marker.type === 'quest' && marker.clan_id && marker.clan_id !== session?.klan_id) return null;
-        if (marker.type === 'chase' && marker.clan_id && marker.clan_id !== session?.klan_id) return null;
 
         const progress = marker.task_id ? taskProgress[marker.task_id] : undefined;
 
