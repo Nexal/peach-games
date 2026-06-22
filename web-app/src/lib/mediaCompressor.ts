@@ -1,6 +1,6 @@
 import { supabaseUrl } from './supabase';
 
-export const IMAGE_MAX_SIZE = 5 * 1024 * 1024; // 5MB
+export const IMAGE_MAX_SIZE = 20 * 1024 * 1024; // 20MB
 export const VIDEO_MAX_SIZE = 50 * 1024 * 1024; // 50MB (reduced for mobile stability)
 export const VIDEO_MAX_DURATION = 180; // 180 seconds
 
@@ -110,7 +110,7 @@ export async function compressVideo(
         URL.revokeObjectURL(video.src);
         const blob = new Blob(chunks, { type: mimeType });
         if (blob.size > VIDEO_MAX_SIZE) {
-          reject(new Error('Wideo jest za duże po kompresji (max 150MB)'));
+          reject(new Error(`Wideo jest za du\u017Ce po kompresji (max ${VIDEO_MAX_SIZE / 1024 / 1024}MB)`));
           return;
         }
         onProgress?.(100);

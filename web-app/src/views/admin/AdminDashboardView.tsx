@@ -478,17 +478,18 @@ export function AdminDashboardView() {
       metadata: { media_url: submission.media_url, submission_id: submissionId },
     }, { onConflict: 'quest_activation_id,task_id' });
 
-    // Update klan points
-    const { data: klanData } = await supabase.from('klans').select('points').eq('id', klanId).maybeSingle();
-    if (klanData) {
-      await supabase.from('klans').update({ points: (klanData.points || 0) + points }).eq('id', klanId);
-    }
+    // Update klan points via RPC (obsługuje aktywne buffy)
+    const { data: awarded } = await supabase.rpc('award_clan_points', {
+      p_klan_id: klanId,
+      p_base_points: points,
+    });
+    const awardedPoints = awarded || points;
 
     // Broadcast notification
     const { data: klanInfo } = await supabase.from('klans').select('name').eq('id', klanId).single();
     const klanName = klanInfo?.name || 'Klan';
     await supabase.from('messages').insert({
-      content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${points} 🔥)!`,
+      content: `${klanName} ukończył zadanie \u201e${taskTitle}" w que\u015bcie \u201e${questTitle}" (+${awardedPoints} \uD83D\uDD25)!`,
       sender: 'Bogowie',
       player_id: null,
       game_id: selectedGameId,
@@ -498,8 +499,51 @@ export function AdminDashboardView() {
       tts_requested: false,
     });
 
+    // Sprawdź czy wszystkie taski questa są ukończone → auto-zalicz questa
+    const { data: activation } = await (supabase as any)
+      .from('quest_activations')
+      .select('quest_id')
+      .eq('id', questActivationId)
+      .single();
+    if (activation) {
+      const questId = activation.quest_id;
+      const questTasks = tasks.filter(t => t.quest_id === questId);
+      const { count } = await supabase
+        .from('task_completions')
+        .select('*', { count: 'exact', head: true })
+        .eq('quest_activation_id', questActivationId);
+
+      if (count && count >= questTasks.length) {
+        const sumPoints = questTasks.reduce((sum, t) => sum + (t.reward_points || 0), 0);
+
+        await supabase.from('quest_completions').insert({
+          quest_id: questId,
+          klan_id: klanId,
+          game_id: selectedGameId,
+          points_awarded: sumPoints,
+          completed_by_player_id: null,
+          completed_at: new Date().toISOString(),
+        });
+
+        await supabase.from('quest_activations').update({
+          completed_at: new Date().toISOString(),
+        }).eq('id', questActivationId);
+
+        await supabase.from('messages').insert({
+          content: `${klanName} uko\u0144czy\u0142 quest \u201e${questTitle}" (+${sumPoints} \uD83D\uDD25)!`,
+          sender: 'Bogowie',
+          player_id: null,
+          game_id: selectedGameId,
+          god_id: null,
+          klan_id: null,
+          sender_klan_id: klanId,
+          tts_requested: false,
+        });
+      }
+    }
+
     if (selectedGameId) loadSubmissionsDirect(selectedGameId);
-    alert(`✅ Zatwierdzono zgłoszenie (+${points} 🔥)`);
+    alert(`\u2705 Zatwierdzono zgłoszenie (+${awardedPoints} \uD83D\uDD25)`);
   };
 
   const handleRejectSubmission = async (submissionId: string, comment: string) => {

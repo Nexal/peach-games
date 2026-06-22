@@ -38,10 +38,10 @@ export function MediaUploadModal({ taskId, questActivationId, klanId, gameId, on
       return 'To nie jest plik wideo.';
     }
     if (type === 'photo' && file.size > IMAGE_MAX_SIZE) {
-      return `Zdjęcie jest za duże (max 5MB). Rozmiar: ${(file.size / 1024 / 1024).toFixed(1)}MB`;
+      return `Zdjęcie jest za duże (max ${IMAGE_MAX_SIZE / 1024 / 1024}MB). Rozmiar: ${(file.size / 1024 / 1024).toFixed(1)}MB`;
     }
     if (type === 'video' && file.size > VIDEO_MAX_SIZE) {
-      return `Wideo jest za duże (max 150MB). Rozmiar: ${(file.size / 1024 / 1024).toFixed(1)}MB`;
+      return `Wideo jest za duże (max ${VIDEO_MAX_SIZE / 1024 / 1024}MB). Rozmiar: ${(file.size / 1024 / 1024).toFixed(1)}MB`;
     }
     return null;
   };
