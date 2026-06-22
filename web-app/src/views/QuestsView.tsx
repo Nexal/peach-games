@@ -511,6 +511,9 @@ function ChaseQuestCard({
         <span className="quest-card__icon">{state === 'completed' ? '✅' : '🏇'}</span>
         <div className="quest-card__info">
           <h3 className="quest-card__title">{quest.title}</h3>
+          {quest.icon_url ? (
+            <img src={quest.icon_url} alt="" className="quest-card__title-icon" />
+          ) : null}
           <p className="quest-card__desc">{shortDesc}</p>
           {(quest.description && quest.description !== shortDesc) && (
             <button className="quest-card__expand-btn" onClick={(e) => { e.stopPropagation(); onExpand(); }}>
@@ -598,7 +601,13 @@ function QuestCard({
   return (
     <div className={`quest-card ${state === 'active' ? 'quest-card--active' : ''} ${state === 'completed' ? 'quest-card--completed' : ''}`}>
       <div className="quest-card__header">
-        <span className="quest-card__icon">{typeIcons[quest.type] || '❓'}</span>
+        <span className="quest-card__icon">
+          {quest.icon_url ? (
+            <img src={quest.icon_url} alt="" className="quest-card__icon-img" />
+          ) : (
+            typeIcons[quest.type] || '❓'
+          )}
+        </span>
         <div className="quest-card__info">
           <h3 className="quest-card__title">{quest.title}</h3>
           <p className="quest-card__desc">{shortDesc}</p>

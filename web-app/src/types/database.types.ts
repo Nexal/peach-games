@@ -795,6 +795,7 @@ export type Database = {
         Row: {
           description: string | null
           game_id: string | null
+          icon_url: string | null
           id: string
           klan_id: string | null
           qr_secret: string | null
@@ -808,6 +809,7 @@ export type Database = {
         Insert: {
           description?: string | null
           game_id?: string | null
+          icon_url?: string | null
           id?: string
           klan_id?: string | null
           qr_secret?: string | null
@@ -821,6 +823,7 @@ export type Database = {
         Update: {
           description?: string | null
           game_id?: string | null
+          icon_url?: string | null
           id?: string
           klan_id?: string | null
           qr_secret?: string | null

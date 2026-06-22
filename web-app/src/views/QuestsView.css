@@ -45,6 +45,21 @@
   flex-shrink: 0;
 }
 
+.quest-card__icon-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.quest-card__title-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
 .quest-card__info {
   flex: 1;
 }
