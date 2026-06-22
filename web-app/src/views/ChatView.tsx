@@ -406,7 +406,7 @@ export function ChatView() {
               const isOwnMessage = msg.sender === playerSession.name;
               const isGod = !!msg.god_id || msg.sender === 'Bogowie' || msg.sender === 'Bóg';
               const isGlobal = msg.klan_id === null;
-              const isSystemNotification = msg.sender === 'Bogowie' || msg.sender === 'Bóg';
+              const isSystemNotification = msg.sender === 'Bogowie';
               const clan = klans.find(k => k.id === (msg.sender_klan_id || msg.klan_id));
               const clanColor = clan?.theme_color || '#888888';
               const clanColorRgb = hexToRgb(clanColor);
