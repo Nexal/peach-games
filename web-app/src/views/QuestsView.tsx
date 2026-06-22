@@ -219,11 +219,17 @@ export function QuestsView() {
 
     setActivating(questId);
 
-    const { error } = await (supabase as any).from('quest_activations').insert({
-      quest_id: questId,
-      klan_id: session.klan_id,
-      game_id: session.game_id,
-    });
+    const { error } = await (supabase as any)
+      .from('quest_activations')
+      .upsert({
+        quest_id: questId,
+        klan_id: session.klan_id,
+        game_id: session.game_id,
+        activated_at: new Date().toISOString(),
+        completed_at: null,
+        deactivated_at: null,
+        completed_by_player_id: null,
+      }, { onConflict: 'quest_id,klan_id' });
 
     setActivating(null);
 
