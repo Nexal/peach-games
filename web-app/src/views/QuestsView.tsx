@@ -71,7 +71,7 @@ export function QuestsView() {
 
     const [questsRes, activationsRes, completionsRes, tasksRes, taskCompletionsRes, markersRes] = await Promise.all([
       (supabase as any).from('quests').select('*').eq('game_id', session.game_id),
-      (supabase as any).from('quest_activations').select('*').eq('klan_id', session.klan_id).eq('game_id', session.game_id),
+      (supabase as any).from('quest_activations').select('*').eq('klan_id', session.klan_id).eq('game_id', session.game_id).is('deactivated_at', null),
       (supabase as any).from('quest_completions').select('*').eq('klan_id', session.klan_id).eq('game_id', session.game_id),
       (supabase as any).from('tasks').select('*'),
       (supabase as any).from('task_completions').select('*'),
@@ -240,10 +240,11 @@ export function QuestsView() {
 
     const { error } = await (supabase as any)
       .from('quest_activations')
-      .delete()
+      .update({ deactivated_at: new Date().toISOString() })
       .eq('quest_id', questId)
       .eq('klan_id', session.klan_id)
-      .is('completed_at', null);
+      .is('completed_at', null)
+      .is('deactivated_at', null);
 
     if (error) {
       console.error('[QuestsView] deactivateQuest error:', error);
@@ -277,6 +278,7 @@ export function QuestsView() {
       .eq('quest_id', quest!.id)
       .eq('klan_id', session.klan_id)
       .is('completed_at', null)
+      .is('deactivated_at', null)
       .limit(1);
 
     if (!activation || activation.length === 0) return;

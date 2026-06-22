@@ -661,6 +661,7 @@ export type Database = {
           activated_at: string | null
           completed_at: string | null
           completed_by_player_id: string | null
+          deactivated_at: string | null
           game_id: string
           id: string
           klan_id: string
@@ -670,6 +671,7 @@ export type Database = {
           activated_at?: string | null
           completed_at?: string | null
           completed_by_player_id?: string | null
+          deactivated_at?: string | null
           game_id: string
           id?: string
           klan_id: string
@@ -679,6 +681,7 @@ export type Database = {
           activated_at?: string | null
           completed_at?: string | null
           completed_by_player_id?: string | null
+          deactivated_at?: string | null
           game_id?: string
           id?: string
           klan_id?: string

@@ -174,7 +174,8 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
         .select('id, quest_id')
         .eq('game_id', session.game_id)
         .eq('klan_id', session.klan_id)
-        .is('completed_at', null);
+        .is('completed_at', null)
+        .is('deactivated_at', null);
 
       if (!activations || activations.length === 0) {
         setCurrentTaskIds([]);
