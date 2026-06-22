@@ -520,7 +520,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (!session?.id) return;
 
     const state = activeQuests[questId];
-    if (!state?.session) return;
+    if (!state?.session || state.session.completed_at) return;
+
+    setActiveQuests(prev => {
+      const next = { ...prev };
+      delete next[questId];
+      return next;
+    });
 
     const { error } = await supabase
       .from('chase_sessions')
