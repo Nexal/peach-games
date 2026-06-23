@@ -485,19 +485,10 @@ export function AdminDashboardView() {
     });
     const awardedPoints = awarded || points;
 
-    // Broadcast notification
+    // Broadcast notification — consolidated when it's the last task
     const { data: klanInfo } = await supabase.from('klans').select('name').eq('id', klanId).single();
     const klanName = klanInfo?.name || 'Klan';
-    await supabase.from('messages').insert({
-      content: `${klanName} ukończył zadanie \u201e${taskTitle}" w que\u015bcie \u201e${questTitle}" (+${awardedPoints} \uD83D\uDD25)!`,
-      sender: 'Bogowie',
-      player_id: null,
-      game_id: selectedGameId,
-      god_id: null,
-      klan_id: null,
-      sender_klan_id: klanId,
-      tts_requested: false,
-    });
+    let isLastTask = false;
 
     // Sprawdź czy wszystkie taski questa są ukończone → auto-zalicz questa
     const { data: activation } = await (supabase as any)
@@ -514,13 +505,18 @@ export function AdminDashboardView() {
         .eq('quest_activation_id', questActivationId);
 
       if (count && count >= questTasks.length) {
-        const sumPoints = questTasks.reduce((sum, t) => sum + (t.reward_points || 0), 0);
+        isLastTask = true;
+        // Suma: bazowe punkty już ukończonych tasków + obecny (z buffem)
+        const previouslyCompletedBase = questTasks
+          .filter(t => t.id !== taskId)
+          .reduce((sum, t) => sum + (t.reward_points || 0), 0);
+        const questAwardedTotal = previouslyCompletedBase + awardedPoints;
 
         await supabase.from('quest_completions').insert({
           quest_id: questId,
           klan_id: klanId,
           game_id: selectedGameId,
-          points_awarded: sumPoints,
+          points_awarded: questAwardedTotal,
           completed_by_player_id: null,
           completed_at: new Date().toISOString(),
         });
@@ -530,7 +526,7 @@ export function AdminDashboardView() {
         }).eq('id', questActivationId);
 
         await supabase.from('messages').insert({
-          content: `${klanName} uko\u0144czy\u0142 quest \u201e${questTitle}" (+${sumPoints} \uD83D\uDD25)!`,
+          content: `${klanName} ukończył zadanie \u201e${taskTitle}" ko\u0144cz\u0105c quest \u201e${questTitle}" (+${questAwardedTotal} \uD83D\uDD25)!`,
           sender: 'Bogowie',
           player_id: null,
           game_id: selectedGameId,
@@ -540,6 +536,19 @@ export function AdminDashboardView() {
           tts_requested: false,
         });
       }
+    }
+
+    if (!isLastTask) {
+      await supabase.from('messages').insert({
+        content: `${klanName} ukończył zadanie \u201e${taskTitle}" w que\u015bcie \u201e${questTitle}" (+${awardedPoints} \uD83D\uDD25)!`,
+        sender: 'Bogowie',
+        player_id: null,
+        game_id: selectedGameId,
+        god_id: null,
+        klan_id: null,
+        sender_klan_id: klanId,
+        tts_requested: false,
+      });
     }
 
     if (selectedGameId) loadSubmissionsDirect(selectedGameId);

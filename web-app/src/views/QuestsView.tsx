@@ -446,7 +446,11 @@ export function QuestsView() {
     const taskTitle = task.title || 'Nieznane zadanie';
 
     const allTasksDone = quest!.tasks.every(t => t.completed || t.id === taskId);
-    const totalPoints = quest!.tasks.reduce((sum, t) => sum + (t.reward_points || 0), 0);
+    // Suma bazowa już ukończonych tasków (bez obecnego) + obecny z buffem
+    const previouslyCompletedBase = quest!.tasks
+      .filter(t => t.completed && t.id !== taskId)
+      .reduce((sum, t) => sum + (t.reward_points || 0), 0);
+    const questAwardedTotal = previouslyCompletedBase + awardedPoints;
 
     if (allTasksDone) {
       await (supabase as any).from('quest_completions').insert({
@@ -454,7 +458,7 @@ export function QuestsView() {
         klan_id: session.klan_id,
         game_id: session.game_id,
         completed_by_player_id: session.id,
-        points_awarded: totalPoints,
+        points_awarded: questAwardedTotal,
       });
 
       await (supabase as any)
@@ -463,7 +467,7 @@ export function QuestsView() {
         .eq('id', activationId);
 
       await (supabase as any).from('messages').insert({
-        content: `${klanName} ukończył quest „${questTitle}" (+${totalPoints} 🔥)!`,
+        content: `${klanName} ukończył zadanie „${taskTitle}" kończąc quest „${questTitle}" (+${questAwardedTotal} 🔥)!`,
         sender: 'Bogowie',
         player_id: null,
         game_id: session.game_id,
@@ -485,7 +489,7 @@ export function QuestsView() {
       });
     }
 
-    setTextFeedback({ taskId, type: 'success', text: allTasksDone ? `✅ Quest ukończony! +${totalPoints} 🔥` : '✅ Poprawna odpowiedź!' });
+    setTextFeedback({ taskId, type: 'success', text: allTasksDone ? `✅ Quest ukończony! +${questAwardedTotal} 🔥` : '✅ Poprawna odpowiedź!' });
     setTimeout(() => setTextFeedback(null), 3000);
     loadQuests();
   }, [session, quests, loadQuests]);

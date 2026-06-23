@@ -145,7 +145,6 @@ export async function scanQRCode(
       if (result) awardedPoints = result;
     }
 
-    // Broadcast notification o ukończeniu taska
     const taskTitle = currentTask.title || 'Nieznane zadanie';
     const { data: questData } = await (supabase as any)
       .from('quests')
@@ -159,27 +158,23 @@ export async function scanQRCode(
       .single();
     const questTitle = questData?.title || 'Nieznany quest';
     const klanName = klanInfo?.name || 'Klan';
-    await (supabase as any).from('messages').insert({
-      content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${awardedPoints} 🔥)!`,
-      sender: 'god',
-      game_id: gameId,
-      klan_id: null,
-      sender_klan_id: null,
-      tts_requested: false,
-    });
 
     const nextTaskIndex = tasks.indexOf(currentTask) + 1;
     const allTasksDone = nextTaskIndex >= tasks.length;
 
     if (allTasksDone) {
-      const totalPoints = tasks.reduce((sum: number, t: any) => sum + (t.reward_points || 0), 0);
+      // Suma: bazowe punkty już ukończonych tasków + obecny (z buffem)
+      const previouslyCompletedBase = tasks
+        .filter((t: any) => t !== currentTask)
+        .reduce((sum: number, t: any) => sum + (t.reward_points || 0), 0);
+      const questAwardedTotal = previouslyCompletedBase + awardedPoints;
 
       await (supabase as any).from('quest_completions').insert({
         quest_id: questId,
         klan_id: klanId,
         game_id: gameId,
         completed_by_player_id: playerId,
-        points_awarded: totalPoints,
+        points_awarded: questAwardedTotal,
       });
 
       await (supabase as any)
@@ -187,16 +182,34 @@ export async function scanQRCode(
         .update({ completed_at: new Date().toISOString(), completed_by_player_id: playerId })
         .eq('id', activationId);
 
+      await (supabase as any).from('messages').insert({
+        content: `${klanName} ukończył zadanie „${taskTitle}" kończąc quest „${questTitle}" (+${questAwardedTotal} 🔥)!`,
+        sender: 'god',
+        game_id: gameId,
+        klan_id: null,
+        sender_klan_id: null,
+        tts_requested: false,
+      });
+
       return {
         success: true,
-        message: `Quest ukończony! +${totalPoints} 🔥`,
+        message: `Quest ukończony! +${questAwardedTotal} 🔥`,
         questCompleted: true,
         taskCompleted: true,
         scannedCount: updatedScannedIds.length,
         totalCount: totalMarkers,
-        questTotalReward: totalPoints,
+        questTotalReward: questAwardedTotal,
       };
     } else {
+      await (supabase as any).from('messages').insert({
+        content: `${klanName} ukończył zadanie „${taskTitle}" w queście „${questTitle}" (+${awardedPoints} 🔥)!`,
+        sender: 'god',
+        game_id: gameId,
+        klan_id: null,
+        sender_klan_id: null,
+        tts_requested: false,
+      });
+
       return {
         success: true,
         message: `Zadanie ukończone! +${taskPoints} 🔥`,
