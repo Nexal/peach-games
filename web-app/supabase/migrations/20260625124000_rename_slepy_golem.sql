@@ -1,6 +1,4 @@
--- Insert Skrzaty quests for Noc Kupały game (Ścieżka Skrzatów / Section B)
--- Call: SELECT insert_noc_kupaly_skrzaty_quests('<game_id>');
-
+-- Update insert_noc_kupaly_skrzaty_quests: rename "Ślepy Golem - Brzoskwinia" to "Ślepy Golem"
 CREATE OR REPLACE FUNCTION insert_noc_kupaly_skrzaty_quests(p_game_id UUID)
 RETURNS void
 LANGUAGE plpgsql
@@ -12,7 +10,6 @@ DECLARE
   task1_id UUID;
   task2_id UUID;
 BEGIN
-  -- Quest 1: Poszukiwanie Złotych Kamieni (no map marker)
   INSERT INTO quests (game_id, title, description, type, reward_points, icon_url)
   VALUES (
     p_game_id,
@@ -35,7 +32,6 @@ BEGIN
   )
   RETURNING id INTO task1_id;
 
-  -- Quest 2: Ślepy Golem - Brzoskwinia (with photo map marker)
   INSERT INTO quests (game_id, title, description, type, reward_points, icon_url)
   VALUES (
     p_game_id,
@@ -58,7 +54,6 @@ BEGIN
   )
   RETURNING id INTO task2_id;
 
-  -- Map marker for Ślepy Golem at Brzoskwinia (photo type → enables photo upload from map popup)
   INSERT INTO map_markers (game_id, type, title, description, lat, lng, quest_id, task_id, icon_url, is_active)
   VALUES (
     p_game_id,
