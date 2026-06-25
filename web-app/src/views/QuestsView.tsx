@@ -577,10 +577,10 @@ export function QuestsView() {
 
       {qrQuest && (
         <QRScannerModal
-          onScan={(code) => {
+          onScan={async (code) => {
             const questId = qrQuest.id;
+            await scan(questId, code);
             setQrQuest(null);
-            scan(questId, code);
           }}
           onClose={() => setQrQuest(null)}
         />
