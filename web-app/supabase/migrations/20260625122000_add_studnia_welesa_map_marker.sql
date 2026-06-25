@@ -1,6 +1,4 @@
--- Insert Studnia Welesa quest (Noc Kupały)
--- Call: SELECT insert_studnia_welesa_quest('<game_id>');
-
+-- Replace insert_studnia_welesa_quest with map marker added
 CREATE OR REPLACE FUNCTION insert_studnia_welesa_quest(p_game_id UUID)
 RETURNS void
 LANGUAGE plpgsql
@@ -45,5 +43,37 @@ BEGIN
     '/markers/studnia_welesa-Photoroom.png',
     true
   );
+END;
+$$;
+
+-- Add map marker for existing Studnia Welesa in NOC KUPAŁY game
+DO $$
+DECLARE
+  existing_quest_id UUID;
+  existing_task_id UUID;
+BEGIN
+  SELECT id INTO existing_quest_id FROM quests
+    WHERE title = 'Studnia Welesa' AND game_id = 'ef910ea9-4fec-4ace-9ec8-8842a5674684';
+
+  IF existing_quest_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM map_markers WHERE quest_id = existing_quest_id
+  ) THEN
+    SELECT id INTO existing_task_id FROM tasks
+      WHERE quest_id = existing_quest_id ORDER BY sort_order LIMIT 1;
+
+    INSERT INTO map_markers (game_id, type, title, description, lat, lng, quest_id, task_id, icon_url, is_active)
+    VALUES (
+      'ef910ea9-4fec-4ace-9ec8-8842a5674684',
+      'photo',
+      'Studnia Welesa',
+      'Strefa Studni Welesa — napełnijcie rurę wodą, zatykając dziury i wypchnijcie jajko-niespodziankę na szczyt! Prześlijcie dowód zdjęciem!',
+      50.089940,
+      19.713924,
+      existing_quest_id,
+      existing_task_id,
+      '/markers/studnia_welesa-Photoroom.png',
+      true
+    );
+  END IF;
 END;
 $$;
