@@ -165,8 +165,7 @@ export async function scanQRCode(
     const questTitle = questData?.title || 'Nieznany quest';
     const klanName = klanInfo?.name || 'Klan';
 
-    const nextTaskIndex = tasks.indexOf(currentTask) + 1;
-    const allTasksDone = nextTaskIndex >= tasks.length;
+    const allTasksDone = tasks.every((t: any) => completedTaskIds.has(t.id) || t.id === currentTask.id);
 
     if (allTasksDone) {
       // Suma: bazowe punkty już ukończonych tasków + obecny (z buffem)
