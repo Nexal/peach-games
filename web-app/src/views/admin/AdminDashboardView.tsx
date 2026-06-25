@@ -15,6 +15,7 @@ type Task = Database['public']['Tables']['tasks']['Row'];
 type QuestActivation = Database['public']['Tables']['quest_activations']['Row'];
 type TaskCompletion = Database['public']['Tables']['task_completions']['Row'];
 type God = Database['public']['Tables']['gods']['Row'];
+type MapMarker = Database['public']['Tables']['map_markers']['Row'];
 
 const DEFAULT_TTS_VOICE_ID = 'rpg9PEuAEDV7I1OjYrbj';
 
@@ -71,6 +72,7 @@ export function AdminDashboardView() {
   const [questActivations, setQuestActivations] = useState<QuestActivation[]>([]);
   const [taskCompletions, setTaskCompletions] = useState<TaskCompletion[]>([]);
   const [gods, setGods] = useState<God[]>([]);
+  const [mapMarkers, setMapMarkers] = useState<MapMarker[]>([]);
   const [selectedGodId, setSelectedGodId] = useState<string | null>(() =>
     localStorage.getItem('peachgames_admin_selected_god_id')
   );
@@ -165,6 +167,11 @@ export function AdminDashboardView() {
     }
   };
 
+  const loadMarkers = async (gameId: string) => {
+    const { data } = await supabase.from('map_markers').select('*').eq('game_id', gameId).order('title');
+    if (data) setMapMarkers(data);
+  };
+
   const loadSubmissionsDirect = async (gameId: string) => {
     // Get klan IDs for this game first, then fetch submissions
     const { data: klansData } = await supabase.from('klans').select('id').eq('game_id', gameId);
@@ -194,6 +201,7 @@ export function AdminDashboardView() {
         loadGods(selectedGameId);
         loadQuests(selectedGameId);
         loadTasks(selectedGameId);
+        loadMarkers(selectedGameId);
         loadSubmissionsDirect(selectedGameId);
       });
     }
@@ -607,6 +615,8 @@ export function AdminDashboardView() {
             taskCompletions={taskCompletions}
             onCompleteTask={completeTask}
             onUncompleteTask={uncompleteTask}
+            mapMarkers={mapMarkers}
+            onMarkersChange={() => loadMarkers(selectedGameId)}
           />
         )}
         {activeTab === 'submissions' && selectedGameId && (
@@ -1196,6 +1206,8 @@ function QuestsPanel({
   onReset,
   onCompleteTask,
   onUncompleteTask,
+  mapMarkers,
+  onMarkersChange,
 }: {
   quests: Quest[];
   klans: Klan[];
@@ -1207,12 +1219,19 @@ function QuestsPanel({
   onReset: (questId: string) => void;
   onCompleteTask: (questId: string, taskId: string, klanId: string, customPoints?: number) => void;
   onUncompleteTask: (taskCompletionId: string, taskId: string, klanId: string) => void;
+  mapMarkers: MapMarker[];
+  onMarkersChange: () => void;
 }) {
   const [selectedQuestId, setSelectedQuestId] = useState<string>('');
   const [selectedKlanId, setSelectedKlanId] = useState<string>('');
   const [customPoints, setCustomPoints] = useState<string>('');
   const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
   const [completions, setCompletions] = useState<Database['public']['Tables']['quest_completions']['Row'][]>([]);
+  const [editingMarkerId, setEditingMarkerId] = useState<string | null>(null);
+  const [editMarkerLat, setEditMarkerLat] = useState('');
+  const [editMarkerLng, setEditMarkerLng] = useState('');
+  const [editMarkerTitle, setEditMarkerTitle] = useState('');
+  const [editMarkerSecret, setEditMarkerSecret] = useState('');
 
   useEffect(() => {
     supabase
@@ -1346,6 +1365,110 @@ function QuestsPanel({
                     })}
                   </div>
                 )}
+
+                {isExpanded && (() => {
+                  const questMarkers = mapMarkers.filter(m => m.quest_id === quest.id);
+                  const task = questTasks[0];
+                  return (
+                    <div className="admin-quest-card__tasks" style={{ marginTop: 8 }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>📍 Markery ({questMarkers.length})</span>
+                        <button
+                          className="admin-quest-card__btn"
+                          style={{ fontSize: '0.8rem', padding: '2px 8px' }}
+                          onClick={async () => {
+                            if (!navigator.geolocation) { alert('Geolokacja niedostępna'); return; }
+                            navigator.geolocation.getCurrentPosition(async (pos) => {
+                              const lat = Math.round(pos.coords.latitude * 1e6) / 1e6;
+                              const lng = Math.round(pos.coords.longitude * 1e6) / 1e6;
+                              const { error } = await (supabase as any).from('map_markers').insert({
+                                game_id: gameId,
+                                quest_id: quest.id,
+                                task_id: task?.id || null,
+                                type: quest.type === 'qr' ? 'qr' : 'photo',
+                                title: 'Nowy punkt',
+                                lat,
+                                lng,
+                                icon_url: quest.icon_url,
+                                is_active: true,
+                              });
+                              if (!error) onMarkersChange();
+                            }, () => alert('Nie udało się pobrać lokalizacji'), { enableHighAccuracy: true, timeout: 10000 });
+                          }}
+                        >
+                          ➕ Z mojej lokalizacji
+                        </button>
+                      </div>
+                      {questMarkers.map(m => (
+                        <div key={m.id} style={{ fontSize: '0.8rem', padding: '4px 8px', marginBottom: 4, background: '#1a1a2e', borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          {editingMarkerId === m.id ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                              <input style={{ width: '100%', background: '#333', color: '#fff', border: '1px solid #555', padding: 2, borderRadius: 3 }} value={editMarkerTitle} onChange={e => setEditMarkerTitle(e.target.value)} placeholder="Tytuł" />
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <input style={{ width: 80, background: '#333', color: '#fff', border: '1px solid #555', padding: 2, borderRadius: 3 }} value={editMarkerLat} onChange={e => setEditMarkerLat(e.target.value)} placeholder="Lat" />
+                                <input style={{ width: 80, background: '#333', color: '#fff', border: '1px solid #555', padding: 2, borderRadius: 3 }} value={editMarkerLng} onChange={e => setEditMarkerLng(e.target.value)} placeholder="Lng" />
+                                {(quest.type === 'qr' || m.type === 'qr') && (
+                                  <input style={{ width: 80, background: '#333', color: '#fff', border: '1px solid #555', padding: 2, borderRadius: 3 }} value={editMarkerSecret} onChange={e => setEditMarkerSecret(e.target.value)} placeholder="Hasło QR" />
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <button
+                                  className="admin-quest-card__btn"
+                                  style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                                  onClick={async () => {
+                                    const updates: Record<string, any> = { title: editMarkerTitle, lat: parseFloat(editMarkerLat), lng: parseFloat(editMarkerLng) };
+                                    if (quest.type === 'qr' || m.type === 'qr') updates.qr_secret = editMarkerSecret;
+                                    await (supabase as any).from('map_markers').update(updates).eq('id', m.id);
+                                    setEditingMarkerId(null);
+                                    onMarkersChange();
+                                  }}
+                                >💾</button>
+                                <button
+                                  className="admin-quest-card__btn"
+                                  style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                                  onClick={() => setEditingMarkerId(null)}
+                                >❌</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <span style={{ flex: 1 }}>
+                                <strong>{m.title}</strong>{' '}
+                                <span style={{ color: '#888' }}>{m.lat}, {m.lng}</span>
+                                {m.qr_secret ? <span style={{ color: '#ffd700', marginLeft: 8 }}>🔑{m.qr_secret}</span> : null}
+                              </span>
+                              <span style={{ display: 'flex', gap: 4 }}>
+                                <button
+                                  className="admin-quest-card__btn"
+                                  style={{ fontSize: '0.7rem', padding: '2px 4px' }}
+                                  onClick={() => {
+                                    setEditingMarkerId(m.id);
+                                    setEditMarkerTitle(m.title);
+                                    setEditMarkerLat(String(m.lat));
+                                    setEditMarkerLng(String(m.lng));
+                                    setEditMarkerSecret(m.qr_secret || '');
+                                  }}
+                                >✏️</button>
+                                <button
+                                  className="admin-quest-card__btn"
+                                  style={{ fontSize: '0.7rem', padding: '2px 4px' }}
+                                  onClick={async () => {
+                                    if (!confirm(`Usunąć marker "${m.title}"?`)) return;
+                                    await (supabase as any).from('map_markers').delete().eq('id', m.id);
+                                    onMarkersChange();
+                                  }}
+                                >🗑️</button>
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                      {questMarkers.length === 0 && (
+                        <div style={{ fontSize: '0.8rem', color: '#666', textAlign: 'center', padding: 8 }}>Brak markerów</div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {questCompletions.length > 0 && (
                   <div className="admin-quest-card__completions">

@@ -1394,6 +1394,10 @@ export type Database = {
         Args: { p_game_id: string }
         Returns: undefined
       }
+      insert_tropy_bogow_quest: {
+        Args: { p_game_id: string }
+        Returns: undefined
+      }
       insert_trzy_proby_rozumu_quest: {
         Args: { p_game_id: string }
         Returns: undefined
