@@ -789,9 +789,9 @@ function QuestCard({
       {state === 'active' && quest.tasks.length > 0 && (
         <div className="quest-card__tasks">
           {quest.tasks.map((task, idx) => (
-            <div key={task.id} className={`quest-card__task ${task.completed ? 'quest-card__task--done' : ''} ${!task.completed && (quest.type === 'chase' || idx === quest.currentTaskIndex) ? 'quest-card__task--current' : ''}`}>
+            <div key={task.id} className={`quest-card__task ${task.completed ? 'quest-card__task--done' : ''} ${!task.completed && (quest.show_all_markers || quest.type === 'chase' || idx === quest.currentTaskIndex) ? 'quest-card__task--current' : ''}`}>
               <span className="quest-card__task-icon">
-                {task.completed ? '✅' : idx < quest.currentTaskIndex ? '✅' : (quest.type === 'chase' || idx === quest.currentTaskIndex) ? '🔓' : '🔒'}
+                {task.completed ? '✅' : idx < quest.currentTaskIndex ? '✅' : (quest.show_all_markers || quest.type === 'chase' || idx === quest.currentTaskIndex) ? '🔓' : '🔒'}
               </span>
               <span className="quest-card__task-title">{task.title}</span>
               <span className="quest-card__task-reward">+{task.reward_points}🔥</span>
