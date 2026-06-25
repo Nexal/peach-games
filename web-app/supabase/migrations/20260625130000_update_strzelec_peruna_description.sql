@@ -1,6 +1,4 @@
--- Insert Strzelec Peruna quest (Noc Kupały)
--- Call: SELECT insert_strzelec_peruna_quest('<game_id>');
-
+-- Update insert_strzelec_peruna_quest with more atmospheric description
 CREATE OR REPLACE FUNCTION insert_strzelec_peruna_quest(p_game_id UUID)
 RETURNS void
 LANGUAGE plpgsql
