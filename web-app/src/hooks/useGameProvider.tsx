@@ -39,6 +39,7 @@ interface GameContextValue {
   activateQuest: (questId: string) => Promise<void>;
   activateQRQuest: (questId: string, targetLat: number, targetLng: number) => void;
   deactivateQRQuest: (questId: string) => void;
+  deactivateChase: (questId: string) => void;
   getMarkerPosition: (questId: string) => MarkerPosition;
   klanPoints: number;
   unreadClanMessages: number;
@@ -78,6 +79,7 @@ const GameContext = createContext<GameContextValue>({
   activateQuest: async () => {},
   activateQRQuest: () => {},
   deactivateQRQuest: () => {},
+  deactivateChase: () => {},
   getMarkerPosition: () => null,
 });
 
@@ -218,7 +220,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       (pos) => {
         const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         if (!lastPlayerPositionRef.current ||
-            getDistanceM(lastPlayerPositionRef.current.lat, lastPlayerPositionRef.current.lng, newPos.lat, newPos.lng) >= 10) {
+            getDistanceM(lastPlayerPositionRef.current.lat, lastPlayerPositionRef.current.lng, newPos.lat, newPos.lng) >= 3) {
           lastPlayerPositionRef.current = newPos;
           setPlayerPosition(newPos);
         }
@@ -776,6 +778,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const deactivateChase = useCallback((questId: string) => {
+    setActiveQuests(prev => {
+      if (!prev[questId]) return prev;
+      const next = { ...prev };
+      delete next[questId];
+      return next;
+    });
+  }, []);
+
   return (
     <GameContext.Provider value={{
       playerPosition,
@@ -793,6 +804,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       activateQuest,
       activateQRQuest,
       deactivateQRQuest,
+      deactivateChase,
       getMarkerPosition,
     }}>
       {children}

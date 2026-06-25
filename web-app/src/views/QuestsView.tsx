@@ -49,6 +49,7 @@ function getQuestState(q: QuestWithState, klanId: string | undefined, activeChap
 
 export function QuestsView() {
   const { session, gameStatus, navigateTo, setMapFocus } = usePlayerSession();
+  const { deactivateChase } = useGame();
   const [quests, setQuests] = useState<QuestWithState[]>([]);
   const [loading, setLoading] = useState(true);
   const [qrQuest, setQrQuest] = useState<QuestWithState | null>(null);
@@ -325,11 +326,13 @@ export function QuestsView() {
         .eq('quest_id', questId)
         .eq('klan_id', session.klan_id)
         .is('completed_at', null);
+
+      deactivateChase(questId);
     }
 
     loadQuests();
     setExpandedQuest(null);
-  }, [session, loadQuests]);
+  }, [session, loadQuests, deactivateChase]);
 
   const submitTextAnswer = useCallback(async (taskId: string, answer: string) => {
     if (!session?.game_id || !session?.klan_id || !session?.id) return;
