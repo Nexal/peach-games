@@ -463,6 +463,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
         if (!taskData) return;
 
+        // Only show modal if the task has actually been completed
+        if (!tc.completed_at) return;
+
         // If all tasks for this quest are completed, skip the task modal
         // — the quest completion modal will cover it
         const { count: totalTasks, error: totalErr } = await supabase
