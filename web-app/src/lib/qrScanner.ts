@@ -69,16 +69,22 @@ export async function scanQRCode(
   console.log('[QR] completedTaskIds:', [...completedTaskIds]);
 
   let currentTask: any = null;
-  for (const task of tasks) {
-    if (!completedTaskIds.has(task.id)) {
-      currentTask = task;
-      break;
-    }
+  // Find the task that this QR marker belongs to (by task_id on the marker)
+  const matchedByTask = (matchingMarkers as any[]).find((m: any) =>
+    tasks.some((t: any) => t.id === m.task_id),
+  );
+  if (matchedByTask) {
+    currentTask = tasks.find((t: any) => t.id === matchedByTask.task_id);
   }
 
   if (!currentTask) {
-    console.log('[QR] FAIL: all tasks done');
-    return { success: false, error: 'Wszystkie zadania są już ukończone.' };
+    console.log('[QR] FAIL: no task matches the scanned marker');
+    return { success: false, error: 'Nieprawidłowy kod QR.' };
+  }
+
+  if (completedTaskIds.has(currentTask.id)) {
+    console.log('[QR] FAIL: task already completed');
+    return { success: false, error: 'Ten kod został już zeskanowany.' };
   }
 
   console.log('[QR] currentTask:', currentTask);
