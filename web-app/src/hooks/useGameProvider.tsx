@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerSession } from '../App';
 import { supabase } from '../lib/supabase';
+import { generateRandomTrajectory } from '../lib/trajectory';
 import type { Database } from '../types/database.types';
 import '../styles/CompletionModal.css';
 
@@ -615,8 +616,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (activations?.[0]) {
       const { data: allTasks } = await supabase
         .from('tasks')
-        .select('id, reward_points')
-        .eq('quest_id', questId);
+        .select('id, reward_points, sort_order')
+        .eq('quest_id', questId)
+        .order('sort_order');
 
       const { data: completedTasks } = await supabase
         .from('task_completions')
@@ -639,6 +641,53 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           .from('quest_activations')
           .update({ completed_at: new Date().toISOString(), completed_by_player_id: session.id })
           .eq('id', activations[0].id);
+      } else {
+        const completedTaskIds = (completedTasks || []).map((ct: any) => ct.task_id);
+        const nextTask = (allTasks || []).find((t: any) => !completedTaskIds.includes(t.id));
+        if (nextTask) {
+          const { data: config } = await supabase
+            .from('chase_configs')
+            .select('*')
+            .eq('quest_id', questId)
+            .maybeSingle();
+
+          const speed = config?.speed_mps ?? 2.0;
+          const catchDist = config?.catch_distance_m ?? 5;
+          const wpCount = config?.waypoint_count ?? 30;
+          const area = config?.area
+            ? (typeof config.area === 'string' ? JSON.parse(config.area) : config.area)
+            : null;
+
+          const { data: questData } = await supabase
+            .from('quests')
+            .select('trajectory')
+            .eq('id', questId)
+            .single();
+
+          const questTrajectory = questData?.trajectory
+            ? (typeof questData.trajectory === 'string' ? JSON.parse(questData.trajectory) : questData.trajectory)
+            : null;
+          const firstPoint = questTrajectory?.[0];
+          const baseLat = firstPoint?.lat ?? 50.090002;
+          const baseLng = firstPoint?.lng ?? 19.713846;
+
+          const taskTrajectory = generateRandomTrajectory(wpCount, area);
+
+          await supabase.from('chase_sessions').insert({
+            quest_id: questId,
+            task_id: nextTask.id,
+            klan_id: session.klan_id,
+            game_id: session.game_id,
+            started_at: new Date().toISOString(),
+            start_lat: baseLat,
+            start_lng: baseLng,
+            speed_mps: speed,
+            catch_distance_m: catchDist,
+            bearing: 0,
+            reward_points: nextTask.reward_points,
+            trajectory: taskTrajectory,
+          });
+        }
       }
     }
   }, [session, activeQuests]);
