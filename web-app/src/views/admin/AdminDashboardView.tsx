@@ -1368,7 +1368,6 @@ function QuestsPanel({
 
                 {isExpanded && (() => {
                   const questMarkers = mapMarkers.filter(m => m.quest_id === quest.id);
-                  const task = questTasks[0];
                   return (
                     <div className="admin-quest-card__tasks" style={{ marginTop: 8 }}>
                       <div style={{ fontWeight: 'bold', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1381,11 +1380,23 @@ function QuestsPanel({
                             navigator.geolocation.getCurrentPosition(async (pos) => {
                               const lat = Math.round(pos.coords.latitude * 1e6) / 1e6;
                               const lng = Math.round(pos.coords.longitude * 1e6) / 1e6;
+                              const nextSort = questTasks.length > 0
+                                ? Math.max(...questTasks.map((t: any) => t.sort_order)) + 1
+                                : 0;
+                              const { data: newTask, error: taskErr } = await (supabase as any).from('tasks').insert({
+                                quest_id: quest.id,
+                                title: 'Nowy punkt',
+                                description: 'Dodatkowy artefakt na trasie.',
+                                type: 'qr',
+                                reward_points: 50,
+                                sort_order: nextSort,
+                              }).select().single();
+                              if (taskErr || !newTask) { alert('Błąd tworzenia tasku'); return; }
                               const { error } = await (supabase as any).from('map_markers').insert({
                                 game_id: gameId,
                                 quest_id: quest.id,
-                                task_id: task?.id || null,
-                                type: quest.type === 'qr' ? 'qr' : 'photo',
+                                task_id: newTask.id,
+                                type: 'qr',
                                 title: 'Nowy punkt',
                                 lat,
                                 lng,
@@ -1454,6 +1465,10 @@ function QuestsPanel({
                                   style={{ fontSize: '0.7rem', padding: '2px 4px' }}
                                   onClick={async () => {
                                     if (!confirm(`Usunąć marker "${m.title}"?`)) return;
+                                    if (m.task_id) {
+                                      await (supabase as any).from('task_completions').delete().eq('task_id', m.task_id);
+                                      await (supabase as any).from('tasks').delete().eq('id', m.task_id);
+                                    }
                                     await (supabase as any).from('map_markers').delete().eq('id', m.id);
                                     onMarkersChange();
                                   }}
