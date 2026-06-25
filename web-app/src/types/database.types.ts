@@ -1386,6 +1386,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      insert_strzelec_peruna_quest: {
+        Args: { p_game_id: string }
+        Returns: undefined
+      }
       insert_studnia_welesa_quest: {
         Args: { p_game_id: string }
         Returns: undefined
