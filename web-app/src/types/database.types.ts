@@ -1386,6 +1386,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      insert_studnia_welesa_quest: {
+        Args: { p_game_id: string }
+        Returns: undefined
+      }
       reset_game: { Args: never; Returns: undefined }
       update_player_position: {
         Args: {
