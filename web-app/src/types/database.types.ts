@@ -1373,6 +1373,10 @@ export type Database = {
         Args: { p_game_id: string }
         Returns: undefined
       }
+      insert_pajeczyna_mokoszy_quest: {
+        Args: { p_game_id: string }
+        Returns: undefined
+      }
       insert_sample_map_markers: {
         Args: {
           p_game_id: string
