@@ -1,6 +1,11 @@
--- Insert Strzelec Peruna quest (Noc Kupały)
--- Call: SELECT insert_strzelec_peruna_quest('<game_id>');
+-- Update Strzelec Peruna icon to Photoroom version
+UPDATE quests SET icon_url = '/markers/strzelec-peruna-Photoroom.png'
+WHERE title = 'Strzelec Peruna' AND game_id = 'ef910ea9-4fec-4ace-9ec8-8842a5674684';
 
+UPDATE map_markers SET icon_url = '/markers/strzelec-peruna-Photoroom.png'
+WHERE quest_id = (SELECT id FROM quests WHERE title = 'Strzelec Peruna' AND game_id = 'ef910ea9-4fec-4ace-9ec8-8842a5674684');
+
+-- Also update the insert function
 CREATE OR REPLACE FUNCTION insert_strzelec_peruna_quest(p_game_id UUID)
 RETURNS void
 LANGUAGE plpgsql
