@@ -1432,7 +1432,8 @@ function QuestsPanel({
                                     const { error } = await (supabase as any).from('map_markers').update(updates).eq('id', m.id);
                                     if (error) { alert(`Błąd zapisu: ${error.message || JSON.stringify(error)}`); return; }
                                     if (m.task_id) {
-                                      await (supabase as any).from('tasks').update({ title: editMarkerTitle }).eq('id', m.task_id);
+                                      const { error: taskErr } = await (supabase as any).from('tasks').update({ title: editMarkerTitle }).eq('id', m.task_id);
+                                      if (taskErr) { alert(`Błąd aktualizacji tasku: ${taskErr.message}`); return; }
                                     }
                                     setEditingMarkerId(null);
                                     onMarkersChange();
