@@ -1370,6 +1370,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      insert_dary_dla_szeptuchy_quest: {
+        Args: { p_game_id: string }
+        Returns: undefined
+      }
       insert_noc_kupaly_skrzaty_quests: {
         Args: { p_game_id: string }
         Returns: undefined
