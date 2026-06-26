@@ -1431,6 +1431,9 @@ function QuestsPanel({
                                     if (quest.type === 'qr' || m.type === 'qr') updates.qr_secret = editMarkerSecret;
                                     const { error } = await (supabase as any).from('map_markers').update(updates).eq('id', m.id);
                                     if (error) { alert(`Błąd zapisu: ${error.message || JSON.stringify(error)}`); return; }
+                                    if (m.task_id) {
+                                      await (supabase as any).from('tasks').update({ title: editMarkerTitle }).eq('id', m.task_id);
+                                    }
                                     setEditingMarkerId(null);
                                     onMarkersChange();
                                   }}
