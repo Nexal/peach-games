@@ -281,7 +281,7 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
       if (originals.length === 0) return;
 
       const latPerM = 1 / 111320;
-      const maxDist = 2; // meters per tick
+      const maxDist = 25; // meters per tick — noticeable drift
 
       setMarkers(() => {
         const newPositions: Record<string, [number, number]> = {};
