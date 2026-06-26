@@ -105,6 +105,7 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
   const [mapTheme, setMapTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem('map_theme') as 'dark' | 'light') || 'dark');
   const [enlargedAvatar, setEnlargedAvatar] = useState<string | null>(null);
   const [chaosActive, setChaosActive] = useState(false);
+  const [chaosVersion, setChaosVersion] = useState(0);
   const originalMarkersRef = useRef<MapMarker[]>([]);
   const chaosTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const map = useMap();
@@ -188,7 +189,7 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
         return expiresAt > now;
       });
 
-      setChaosActive(chaosCurses && chaosCurses.length > 0);
+      const isChaos = chaosCurses && chaosCurses.length > 0;
 
       const { data } = await (supabase as any)
         .from('map_markers')
@@ -197,7 +198,7 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
         .eq('is_active', true);
 
       if (data) {
-        setMarkers(data.map((m: any) => ({
+        const loaded: MapMarker[] = data.map((m: any) => ({
           id: m.id,
           position: [m.lat ?? 0, m.lng ?? 0] as [number, number],
           title: m.title,
@@ -209,7 +210,18 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
           quest_id: m.quest_id ?? undefined,
           task_id: m.task_id ?? undefined,
           reward_points: m.reward_points ?? undefined,
-        })));
+        }));
+
+        if (isChaos) {
+          originalMarkersRef.current = loaded;
+          setChaosActive(true);
+          setChaosVersion(v => v + 1);
+        } else {
+          setMarkers(loaded);
+          setChaosActive(false);
+        }
+      } else {
+        setChaosActive(false);
       }
 
       (supabase as any)
@@ -257,16 +269,8 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
         clearInterval(chaosTimerRef.current);
         chaosTimerRef.current = null;
       }
-      originalMarkersRef.current = [];
       return;
     }
-
-    setMarkers(prev => {
-      if (originalMarkersRef.current.length === 0) {
-        originalMarkersRef.current = prev;
-      }
-      return prev;
-    });
 
     const jitterMarkers = () => {
       const originals = originalMarkersRef.current;
@@ -282,21 +286,18 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
           const dLat = dist * Math.cos(angle) * latPerM;
           const dLng = dist * Math.sin(angle) / (111320 * Math.cos((m.position[0] ?? 50.09) * Math.PI / 180));
 
-          let newLat = (originals.length > 0 ? originals.find(o => o.id === m.id)?.position[0] ?? m.position[0] : m.position[0]) + dLat;
-          let newLng = (originals.length > 0 ? originals.find(o => o.id === m.id)?.position[1] ?? m.position[1] : m.position[1]) + dLng;
+          let newLat = m.position[0] + dLat;
+          let newLng = m.position[1] + dLng;
 
           // Clamp to 30m radius from original
-          const orig = originals.find(o => o.id === m.id);
-          if (orig) {
-            const origLat = orig.position[0];
-            const origLng = orig.position[1];
-            const dLatFromOrig = (newLat - origLat) * 111320;
-            const dLngFromOrig = (newLng - origLng) * 111320 * Math.cos(origLat * Math.PI / 180);
-            const distFromOrig = Math.sqrt(dLatFromOrig ** 2 + dLngFromOrig ** 2);
-            if (distFromOrig > 30) {
-              newLat = origLat + (newLat - origLat) * (30 / distFromOrig);
-              newLng = origLng + (newLng - origLng) * (30 / distFromOrig);
-            }
+          const origLat = m.position[0];
+          const origLng = m.position[1];
+          const dLatFromOrig = (newLat - origLat) * 111320;
+          const dLngFromOrig = (newLng - origLng) * 111320 * Math.cos(origLat * Math.PI / 180);
+          const distFromOrig = Math.sqrt(dLatFromOrig ** 2 + dLngFromOrig ** 2);
+          if (distFromOrig > 30) {
+            newLat = origLat + (newLat - origLat) * (30 / distFromOrig);
+            newLng = origLng + (newLng - origLng) * (30 / distFromOrig);
           }
 
           return { ...m, position: [newLat, newLng] as [number, number] };
@@ -313,7 +314,7 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
         chaosTimerRef.current = null;
       }
     };
-  }, [chaosActive]);
+  }, [chaosActive, chaosVersion]);
 
   useEffect(() => {
     if (!session?.game_id || !session?.klan_id) return;
