@@ -1374,6 +1374,10 @@ export type Database = {
         Args: { p_game_id: string }
         Returns: undefined
       }
+      insert_ogrody_bogow_quest: {
+        Args: { p_game_id: string }
+        Returns: undefined
+      }
       insert_pajeczyna_mokoszy_quest: {
         Args: { p_game_id: string }
         Returns: undefined
