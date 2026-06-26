@@ -299,27 +299,39 @@ export function ShopView() {
                   {!item.activeUntil && !isOwned && (
                     <>
                       {item.type === 'curse' && (
-                        <select
-                          className="shop-card__target-select"
-                          value={targetKlanId[item.id] || ''}
-                          onChange={e => setTargetKlanId(prev => ({ ...prev, [item.id]: e.target.value }))}
-                          style={{
-                            width: '100%',
-                            marginBottom: 8,
-                            padding: '8px 12px',
-                            background: '#1a1a2e',
-                            color: '#fff',
-                            border: '1px solid #444',
-                            borderRadius: 8,
-                            fontFamily: 'Metamorphous, serif',
-                            fontSize: '0.8rem',
-                          }}
-                        >
-                          <option value="">🎯 Wybierz cel klątwy...</option>
-                          {klans.filter(k => k.id !== session?.klan_id).map(k => (
-                            <option key={k.id} value={k.id}>{k.name}</option>
-                          ))}
-                        </select>
+                        <div style={{ width: '100%', marginBottom: 8 }}>
+                          {klans.length === 0 ? (
+                            <p style={{ color: '#888', fontSize: '0.75rem', textAlign: 'center', margin: 0, padding: 8 }}>
+                              ⏳ Ładowanie klanów...
+                            </p>
+                          ) : klans.filter(k => k.id !== session?.klan_id).length === 0 ? (
+                            <p style={{ color: '#ef4444', fontSize: '0.75rem', textAlign: 'center', margin: 0, padding: 8 }}>
+                              ⚠️ Brak innych klanów w grze
+                            </p>
+                          ) : (
+                            <select
+                              className="shop-card__target-select"
+                              value={targetKlanId[item.id] || ''}
+                              onChange={e => setTargetKlanId(prev => ({ ...prev, [item.id]: e.target.value }))}
+                              style={{
+                                width: '100%',
+                                padding: '8px 12px',
+                                background: '#1a1a2e',
+                                color: '#fff',
+                                border: '2px solid #9B59B6',
+                                borderRadius: 8,
+                                fontFamily: 'Metamorphous, serif',
+                                fontSize: '0.8rem',
+                                outline: 'none',
+                              }}
+                            >
+                              <option value="">🎯 Wybierz cel klątwy...</option>
+                              {klans.filter(k => k.id !== session?.klan_id).map(k => (
+                                <option key={k.id} value={k.id}>{k.name}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
                       )}
                       <button
                       className="quest-card__action-btn"
