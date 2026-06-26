@@ -1344,6 +1344,7 @@ export type Database = {
         Args: { p_base_points: number; p_klan_id: string }
         Returns: number
       }
+      cleanse_curses: { Args: { p_klan_id: string }; Returns: number }
       create_game: {
         Args: { game_description?: string; game_name: string }
         Returns: string

@@ -153,6 +153,26 @@ export function ShopView() {
 
     setPurchasing(item.id);
     try {
+      const itemEffect = item.effect as Record<string, unknown>;
+
+      if (itemEffect?.type === 'cleanse_curses') {
+        const { data: count, error: cleanseErr } = await (supabase as any).rpc('cleanse_curses', { p_klan_id: session.klan_id });
+        if (cleanseErr) { alert(`Błąd: ${cleanseErr.message}`); return; }
+        await supabase.from('klans').update({ points: klanPoints - item.price }).eq('id', session.klan_id);
+        await supabase.from('clan_items').insert({
+          shop_item_id: item.id,
+          klan_id: session.klan_id,
+          game_id: session.game_id,
+          name: item.name,
+          type: item.type,
+          description: item.description,
+          target_type: 'klan',
+          effect: item.effect,
+        });
+        alert(`Oczyszczono ${count || 0} klątw!`);
+        return;
+      }
+
       await Promise.all([
         supabase.from('clan_items').insert({
           shop_item_id: item.id,
