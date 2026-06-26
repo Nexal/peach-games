@@ -262,7 +262,7 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
     };
   }, [session?.game_id, session?.klan_id]);
 
-  // Klątwa Chaosu: jitter markers randomly within 30m of original positions
+  // Klątwa Chaosu: jitter markers randomly within 50m of original positions
   useEffect(() => {
     if (!chaosActive) {
       if (chaosTimerRef.current) {
@@ -295,9 +295,9 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
           const dLatFromOrig = (newLat - origLat) * 111320;
           const dLngFromOrig = (newLng - origLng) * 111320 * Math.cos(origLat * Math.PI / 180);
           const distFromOrig = Math.sqrt(dLatFromOrig ** 2 + dLngFromOrig ** 2);
-          if (distFromOrig > 30) {
-            newLat = origLat + (newLat - origLat) * (30 / distFromOrig);
-            newLng = origLng + (newLng - origLng) * (30 / distFromOrig);
+          if (distFromOrig > 50) {
+            newLat = origLat + (newLat - origLat) * (50 / distFromOrig);
+            newLng = origLng + (newLng - origLng) * (50 / distFromOrig);
           }
 
           return { ...m, position: [newLat, newLng] as [number, number] };
