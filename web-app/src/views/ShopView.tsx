@@ -93,6 +93,20 @@ export function ShopView() {
 
   const now = Date.now();
 
+  const immuneKlanIds = useMemo(() => {
+    return new Set(
+      purchases
+        .filter(p => {
+          if (p.type !== 'buff' || !p.active || !p.activated_at || !p.duration_seconds) return false;
+          const effect = p.effect as Record<string, unknown> | null;
+          if (effect?.type !== 'curse_immunity') return false;
+          const expiresAt = new Date(p.activated_at).getTime() + p.duration_seconds * 1000;
+          return expiresAt > now;
+        })
+        .map(p => p.klan_id),
+    );
+  }, [purchases, now, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const shopItems = useMemo<ShopItemView[]>(() => {
     return catalog.map(item => {
       const purchasedByGame = purchases.filter(p => p.shop_item_id === item.id).length;
@@ -326,9 +340,14 @@ export function ShopView() {
                               }}
                             >
                               <option value="">🎯 Wybierz cel klątwy...</option>
-                              {klans.filter(k => k.id !== session?.klan_id).map(k => (
-                                <option key={k.id} value={k.id}>{k.name}</option>
-                              ))}
+                              {klans.filter(k => k.id !== session?.klan_id).map(k => {
+                                const isImmune = immuneKlanIds.has(k.id);
+                                return (
+                                  <option key={k.id} value={k.id} disabled={isImmune}>
+                                    {k.name} {isImmune ? '🛡️' : ''}
+                                  </option>
+                                );
+                              })}
                             </select>
                           )}
                         </div>
