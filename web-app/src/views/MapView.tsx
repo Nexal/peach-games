@@ -107,6 +107,7 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
   const [chaosActive, setChaosActive] = useState(false);
   const [chaosVersion, setChaosVersion] = useState(0);
   const originalMarkersRef = useRef<MapMarker[]>([]);
+  const jitteredPositionsRef = useRef<Record<string, [number, number]>>({});
   const chaosTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const map = useMap();
 
@@ -214,6 +215,9 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
 
         if (isChaos) {
           originalMarkersRef.current = loaded;
+          const pos: Record<string, [number, number]> = {};
+          loaded.forEach(m => { pos[m.id] = [m.position[0], m.position[1]]; });
+          jitteredPositionsRef.current = pos;
           setChaosActive(true);
           setChaosVersion(v => v + 1);
         } else {
@@ -279,30 +283,39 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
       const latPerM = 1 / 111320;
       const maxDist = 2; // meters per tick
 
-      setMarkers(() =>
-        originals.map(m => {
+      setMarkers(() => {
+        const newPositions: Record<string, [number, number]> = {};
+
+        const jittered = originals.map(m => {
+          const curPos = jitteredPositionsRef.current[m.id] || [m.position[0], m.position[1]];
           const angle = Math.random() * 2 * Math.PI;
           const dist = Math.random() * maxDist;
-          const dLat = dist * Math.cos(angle) * latPerM;
-          const dLng = dist * Math.sin(angle) / (111320 * Math.cos((m.position[0] ?? 50.09) * Math.PI / 180));
+          const cosLat = Math.cos(curPos[0] * Math.PI / 180);
 
-          let newLat = m.position[0] + dLat;
-          let newLng = m.position[1] + dLng;
+          let newLat = curPos[0] + dist * Math.cos(angle) * latPerM;
+          let newLng = curPos[1] + dist * Math.sin(angle) / (111320 * cosLat);
 
-          // Clamp to 30m radius from original
-          const origLat = m.position[0];
-          const origLng = m.position[1];
-          const dLatFromOrig = (newLat - origLat) * 111320;
-          const dLngFromOrig = (newLng - origLng) * 111320 * Math.cos(origLat * Math.PI / 180);
-          const distFromOrig = Math.sqrt(dLatFromOrig ** 2 + dLngFromOrig ** 2);
-          if (distFromOrig > 50) {
-            newLat = origLat + (newLat - origLat) * (50 / distFromOrig);
-            newLng = origLng + (newLng - origLng) * (50 / distFromOrig);
+          // Clamp to 50m radius from original
+          const origPos = originals.find(o => o.id === m.id);
+          if (origPos) {
+            const origLat = origPos.position[0];
+            const origLng = origPos.position[1];
+            const dLatFromOrig = (newLat - origLat) * 111320;
+            const dLngFromOrig = (newLng - origLng) * 111320 * Math.cos(origLat * Math.PI / 180);
+            const distFromOrig = Math.sqrt(dLatFromOrig ** 2 + dLngFromOrig ** 2);
+            if (distFromOrig > 50) {
+              newLat = origLat + (newLat - origLat) * (50 / distFromOrig);
+              newLng = origLng + (newLng - origLng) * (50 / distFromOrig);
+            }
           }
 
+          newPositions[m.id] = [newLat, newLng];
           return { ...m, position: [newLat, newLng] as [number, number] };
-        }),
-      );
+        });
+
+        jitteredPositionsRef.current = newPositions;
+        return jittered;
+      });
     };
 
     jitterMarkers();
