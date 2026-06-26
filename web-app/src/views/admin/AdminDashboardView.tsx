@@ -1429,7 +1429,8 @@ function QuestsPanel({
                                   onClick={async () => {
                                     const updates: Record<string, any> = { title: editMarkerTitle, lat: parseFloat(editMarkerLat), lng: parseFloat(editMarkerLng) };
                                     if (quest.type === 'qr' || m.type === 'qr') updates.qr_secret = editMarkerSecret;
-                                    await (supabase as any).from('map_markers').update(updates).eq('id', m.id);
+                                    const { error } = await (supabase as any).from('map_markers').update(updates).eq('id', m.id);
+                                    if (error) { alert(`Błąd zapisu: ${error.message || JSON.stringify(error)}`); return; }
                                     setEditingMarkerId(null);
                                     onMarkersChange();
                                   }}
