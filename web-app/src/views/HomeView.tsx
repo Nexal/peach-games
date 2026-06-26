@@ -73,30 +73,39 @@ export function HomeView() {
     if (!session?.klan_id || !session?.game_id) return;
 
     const loadEffects = () => {
-      supabase
-        .from('clan_items')
-        .select('id, name, type, effect, duration_seconds, activated_at, active')
-        .eq('klan_id', session.klan_id)
-        .eq('game_id', session.game_id)
-        .eq('active', true)
-        .then(({ data }) => {
-          if (!data) return;
-          const now = Date.now();
-          const effects = data
-            .map((item) => {
-              if (!item.activated_at || !item.duration_seconds) return null;
-              const expiresAt = new Date(item.activated_at).getTime() + item.duration_seconds * 1000;
-              if (expiresAt <= now) return null;
-              const effect = item.effect as Record<string, unknown>;
-              let icon = item.type === 'curse' ? '💀' : '⚡';
-              if (effect?.type === 'points_multiplier') icon = '⚡';
-              else if (effect?.type === 'curse_immunity') icon = '🛡️';
-              else if (effect?.type === 'reveal_hidden_quests') icon = '🔮';
-              return { id: item.id, name: item.name, icon, type: item.type, activatedAt: item.activated_at, durationSeconds: item.duration_seconds };
-            })
-            .filter(Boolean);
-          setActiveEffects(effects as typeof activeEffects);
-        });
+      Promise.all([
+        supabase
+          .from('clan_items')
+          .select('id, name, type, effect, duration_seconds, activated_at, active, klan_id')
+          .eq('klan_id', session.klan_id)
+          .eq('game_id', session.game_id)
+          .eq('active', true),
+        supabase
+          .from('clan_items')
+          .select('id, name, type, effect, duration_seconds, activated_at, active, klan_id')
+          .eq('target_klan_id', session.klan_id)
+          .eq('game_id', session.game_id)
+          .eq('active', true),
+      ]).then(([{ data: ownData }, { data: curseData }]) => {
+        const now = Date.now();
+        const allItems = [...(ownData || []), ...(curseData || [])];
+        const effects = allItems
+          .map((item) => {
+            if (!item.activated_at || !item.duration_seconds) return null;
+            const expiresAt = new Date(item.activated_at).getTime() + item.duration_seconds * 1000;
+            if (expiresAt <= now) return null;
+            const effect = item.effect as Record<string, unknown>;
+            const isCurse = item.type === 'curse' && item.klan_id !== session.klan_id;
+            let icon = isCurse ? '💀' : item.type === 'curse' ? '💀' : '⚡';
+            if (effect?.type === 'points_multiplier') icon = '⚡';
+            else if (effect?.type === 'points_divider') icon = '💀';
+            else if (effect?.type === 'curse_immunity') icon = '🛡️';
+            else if (effect?.type === 'reveal_hidden_quests') icon = '🔮';
+            return { id: item.id, name: item.name, icon, type: item.type, activatedAt: item.activated_at, durationSeconds: item.duration_seconds };
+          })
+          .filter(Boolean);
+        setActiveEffects(effects as typeof activeEffects);
+      });
     };
 
     loadEffects();
@@ -111,6 +120,16 @@ export function HomeView() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'clan_items', filter: `klan_id=eq.${session.klan_id}` },
+        () => loadEffects(),
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'clan_items', filter: `target_klan_id=eq.${session.klan_id}` },
+        () => loadEffects(),
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'clan_items', filter: `target_klan_id=eq.${session.klan_id}` },
         () => loadEffects(),
       )
       .subscribe();

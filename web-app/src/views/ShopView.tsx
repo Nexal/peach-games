@@ -7,6 +7,7 @@ import type { Database } from '../types/database.types';
 
 type ShopItemRow = Database['public']['Tables']['shop_items']['Row'];
 type ClanItemRow = Database['public']['Tables']['clan_items']['Row'];
+type KlanRow = Database['public']['Tables']['klans']['Row'];
 
 type ShopItemView = ShopItemRow & {
   purchasedByGame: number;
@@ -25,7 +26,9 @@ export function ShopView() {
   const { session, gameStatus } = usePlayerSession();
   const [catalog, setCatalog] = useState<ShopItemRow[]>([]);
   const [purchases, setPurchases] = useState<ClanItemRow[]>([]);
+  const [klans, setKlans] = useState<KlanRow[]>([]);
   const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [targetKlanId, setTargetKlanId] = useState<Record<string, string>>({});
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -60,6 +63,14 @@ export function ShopView() {
 
     fetchCatalog();
     fetchPurchases();
+
+    supabase
+      .from('klans')
+      .select('*')
+      .eq('game_id', session.game_id)
+      .then(({ data }) => {
+        if (data) setKlans(data);
+      });
 
     const channel = supabase
       .channel('shop-realtime')
@@ -113,6 +124,11 @@ export function ShopView() {
   const handleBuy = async (item: ShopItemView) => {
     if (!session?.klan_id || !session?.game_id) return;
 
+    if (item.type === 'curse' && !targetKlanId[item.id]) {
+      alert('Wybierz klan-cel klątwy.');
+      return;
+    }
+
     if (klanPoints < item.price) {
       alert(`Za mało ogników! Potrzebujesz ${item.price - klanPoints} więcej.`);
       return;
@@ -146,6 +162,7 @@ export function ShopView() {
           type: item.type,
           description: item.description,
           target_type: 'klan',
+          target_klan_id: item.type === 'curse' ? targetKlanId[item.id] || null : null,
           effect: item.effect,
           duration_seconds: item.duration_seconds,
           active: item.duration_seconds != null ? true : false,
@@ -260,13 +277,38 @@ export function ShopView() {
                   )}
 
                   {!item.activeUntil && !isOwned && (
-                    <button
+                    <>
+                      {item.type === 'curse' && (
+                        <select
+                          className="shop-card__target-select"
+                          value={targetKlanId[item.id] || ''}
+                          onChange={e => setTargetKlanId(prev => ({ ...prev, [item.id]: e.target.value }))}
+                          style={{
+                            width: '100%',
+                            marginBottom: 8,
+                            padding: '8px 12px',
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            border: '1px solid #444',
+                            borderRadius: 8,
+                            fontFamily: 'Metamorphous, serif',
+                            fontSize: '0.8rem',
+                          }}
+                        >
+                          <option value="">🎯 Wybierz cel klątwy...</option>
+                          {klans.filter(k => k.id !== session?.klan_id).map(k => (
+                            <option key={k.id} value={k.id}>{k.name}</option>
+                          ))}
+                        </select>
+                      )}
+                      <button
                       className="quest-card__action-btn"
                       onClick={() => handleBuy(item)}
                       disabled={!canBuy || isPurchasing}
                     >
                       {isPurchasing ? '⏳ Kupowanie...' : canBuy ? '🔥 Kup' : outOfStock ? 'Wyczerpane' : 'Za mało ogników'}
                     </button>
+                    </>
                   )}
                 </div>
               );
