@@ -147,10 +147,34 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
       });
   }, [session?.game_id]));
 
+  // Unified marker loading — respects Klątwa Mgły
   useEffect(() => {
-    if (!session?.game_id) return;
+    if (!session?.game_id || !session?.klan_id) return;
 
-    const fetchMarkers = async () => {
+    const loadMarkers = async () => {
+      const { data: curses } = await (supabase as any)
+        .from('clan_items')
+        .select('activated_at, duration_seconds, effect')
+        .eq('target_klan_id', session.klan_id)
+        .eq('game_id', session.game_id)
+        .eq('type', 'curse')
+        .eq('active', true);
+
+      const now = Date.now();
+      const hidden = curses?.some((c: any) => {
+        const effect = c.effect as Record<string, unknown> | null;
+        if (effect?.type !== 'hide_markers') return false;
+        if (!c.activated_at || !c.duration_seconds) return false;
+        const expiresAt = new Date(c.activated_at).getTime() + c.duration_seconds * 1000;
+        return expiresAt > now;
+      });
+
+      if (hidden) {
+        setMarkers([]);
+        setChaseQuestIds([]);
+        return;
+      }
+
       const { data } = await (supabase as any)
         .from('map_markers')
         .select('*')
@@ -158,7 +182,6 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
         .eq('is_active', true);
 
       if (data) {
-        console.log('[MapView] map_markers fetched:', data.length, 'markers');
         setMarkers(data.map((m: any) => ({
           id: m.id,
           position: [m.lat ?? 0, m.lng ?? 0] as [number, number],
@@ -173,22 +196,44 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
           reward_points: m.reward_points ?? undefined,
         })));
       }
+
+      (supabase as any)
+        .from('quests')
+        .select('id')
+        .eq('game_id', session.game_id)
+        .eq('type', 'chase')
+        .then(({ data: chaseData }: { data: any }) => {
+          if (chaseData) setChaseQuestIds(chaseData.map((q: any) => q.id));
+        });
     };
 
-    fetchMarkers();
+    loadMarkers();
 
-    const channel = supabase
+    const markersChannel = supabase
       .channel('map_markers_changes')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'map_markers',
         filter: `game_id=eq.${session.game_id}`,
-      }, fetchMarkers)
+      }, loadMarkers)
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [session?.game_id]);
+    const fogChannel = supabase
+      .channel('fog-curse-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'clan_items',
+        filter: `target_klan_id=eq.${session.klan_id}`,
+      }, loadMarkers)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(markersChannel);
+      supabase.removeChannel(fogChannel);
+    };
+  }, [session?.game_id, session?.klan_id]);
 
   useEffect(() => {
     if (!session?.game_id || !session?.klan_id) return;
@@ -296,19 +341,6 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
 
     return () => { supabase.removeChannel(channel); };
   }, [session?.game_id, session?.klan_id, taskRefresh]);
-
-  useEffect(() => {
-    if (!session?.game_id) return;
-
-    (supabase as any)
-      .from('quests')
-      .select('id')
-      .eq('game_id', session.game_id)
-      .eq('type', 'chase')
-      .then(({ data }: { data: any }) => {
-        if (data) setChaseQuestIds(data.map((q: any) => q.id));
-      });
-  }, [session?.game_id]);
 
   return (
     <>
