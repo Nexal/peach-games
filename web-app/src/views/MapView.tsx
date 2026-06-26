@@ -104,6 +104,9 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
   const [showClanMembers, setShowClanMembers] = useState(true);
   const [mapTheme, setMapTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem('map_theme') as 'dark' | 'light') || 'dark');
   const [enlargedAvatar, setEnlargedAvatar] = useState<string | null>(null);
+  const [chaosActive, setChaosActive] = useState(false);
+  const originalMarkersRef = useRef<MapMarker[]>([]);
+  const chaosTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const map = useMap();
 
   const fetchTasksRef = useRef<() => void>(() => {});
@@ -161,6 +164,7 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
         .eq('active', true);
 
       const now = Date.now();
+
       const hidden = curses?.some((c: any) => {
         const effect = c.effect as Record<string, unknown> | null;
         if (effect?.type !== 'hide_markers') return false;
@@ -172,8 +176,19 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
       if (hidden) {
         setMarkers([]);
         setChaseQuestIds([]);
+        setChaosActive(false);
         return;
       }
+
+      const chaosCurses = curses?.filter((c: any) => {
+        const effect = c.effect as Record<string, unknown> | null;
+        if (effect?.type !== 'chaos_markers') return false;
+        if (!c.activated_at || !c.duration_seconds) return false;
+        const expiresAt = new Date(c.activated_at).getTime() + c.duration_seconds * 1000;
+        return expiresAt > now;
+      });
+
+      setChaosActive(chaosCurses && chaosCurses.length > 0);
 
       const { data } = await (supabase as any)
         .from('map_markers')
@@ -234,6 +249,71 @@ function MapContent({ focusPoint, onFocusHandled }: { focusPoint?: [number, numb
       supabase.removeChannel(fogChannel);
     };
   }, [session?.game_id, session?.klan_id]);
+
+  // Klątwa Chaosu: jitter markers randomly within 30m of original positions
+  useEffect(() => {
+    if (!chaosActive) {
+      if (chaosTimerRef.current) {
+        clearInterval(chaosTimerRef.current);
+        chaosTimerRef.current = null;
+      }
+      originalMarkersRef.current = [];
+      return;
+    }
+
+    setMarkers(prev => {
+      if (originalMarkersRef.current.length === 0) {
+        originalMarkersRef.current = prev;
+      }
+      return prev;
+    });
+
+    const jitterMarkers = () => {
+      const originals = originalMarkersRef.current;
+      if (originals.length === 0) return;
+
+      const latPerM = 1 / 111320;
+      const maxDist = 2; // meters per tick
+
+      setMarkers(() =>
+        originals.map(m => {
+          const angle = Math.random() * 2 * Math.PI;
+          const dist = Math.random() * maxDist;
+          const dLat = dist * Math.cos(angle) * latPerM;
+          const dLng = dist * Math.sin(angle) / (111320 * Math.cos((m.position[0] ?? 50.09) * Math.PI / 180));
+
+          let newLat = (originals.length > 0 ? originals.find(o => o.id === m.id)?.position[0] ?? m.position[0] : m.position[0]) + dLat;
+          let newLng = (originals.length > 0 ? originals.find(o => o.id === m.id)?.position[1] ?? m.position[1] : m.position[1]) + dLng;
+
+          // Clamp to 30m radius from original
+          const orig = originals.find(o => o.id === m.id);
+          if (orig) {
+            const origLat = orig.position[0];
+            const origLng = orig.position[1];
+            const dLatFromOrig = (newLat - origLat) * 111320;
+            const dLngFromOrig = (newLng - origLng) * 111320 * Math.cos(origLat * Math.PI / 180);
+            const distFromOrig = Math.sqrt(dLatFromOrig ** 2 + dLngFromOrig ** 2);
+            if (distFromOrig > 30) {
+              newLat = origLat + (newLat - origLat) * (30 / distFromOrig);
+              newLng = origLng + (newLng - origLng) * (30 / distFromOrig);
+            }
+          }
+
+          return { ...m, position: [newLat, newLng] as [number, number] };
+        }),
+      );
+    };
+
+    jitterMarkers();
+    chaosTimerRef.current = setInterval(jitterMarkers, 1000);
+
+    return () => {
+      if (chaosTimerRef.current) {
+        clearInterval(chaosTimerRef.current);
+        chaosTimerRef.current = null;
+      }
+    };
+  }, [chaosActive]);
 
   useEffect(() => {
     if (!session?.game_id || !session?.klan_id) return;

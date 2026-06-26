@@ -100,6 +100,8 @@ export function HomeView() {
             if (effect?.type === 'points_multiplier') icon = '⚡';
             else if (effect?.type === 'points_divider') icon = '💀';
             else if (effect?.type === 'curse_immunity') icon = '🛡️';
+            else if (effect?.type === 'hide_markers') icon = '🌫️';
+            else if (effect?.type === 'chaos_markers') icon = '🌀';
             else if (effect?.type === 'reveal_hidden_quests') icon = '🔮';
             return { id: item.id, name: item.name, icon, type: item.type, activatedAt: item.activated_at, durationSeconds: item.duration_seconds };
           })
